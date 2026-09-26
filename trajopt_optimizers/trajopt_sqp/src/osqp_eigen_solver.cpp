@@ -28,6 +28,10 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+#include <atomic>
+#include "qp_trace.h"
+#include <atomic>
+#include "qp_trace.h"
 
 namespace
 {
@@ -109,6 +113,103 @@ bool OSQPEigenSolver::solve()
       solver_->setWarmStart(x0_, y0_);
   }
 
+  // Optional trace (see qp_trace.h): digests of the OSQP-side problem data and the settings for the
+  // first TRAJOPT_TRACE_MAX_QPS QP solves of the process; the post-solve half below logs the run info
+  // and a digest of the primal solution. Read-only. qp_trace_idx stays -1 when the trace is off.
+  int qp_trace_idx = -1;
+  if (qp_trace::dir() != nullptr)
+  {
+    static std::atomic<int> qp_counter{ 0 };
+    qp_trace_idx = qp_counter.fetch_add(1);
+    if (qp_trace_idx < qp_trace::maxQps())
+    {
+      if (std::FILE* f = qp_trace::open("qp_trace"))
+      {
+        const OsqpEigen::OSQPData* d = solver_->data()->getData();
+        const OSQPSettings* s = solver_->settings()->getSettings();
+        // P and A: raw bytes of the OSQP CSC arrays held in OsqpEigen's Data object (exact for the
+        // first solve; on later solves they can lag behind in-place update* calls into the workspace).
+        long long p_nnz = -1, a_nnz = -1;
+        std::uint64_t p_x = 0, p_i = 0, p_p = 0, a_x = 0, a_i = 0, a_p = 0;
+        if (d != nullptr && d->P != nullptr && d->P->p != nullptr)
+        {
+          p_nnz = static_cast<long long>(d->P->p[d->P->n]);
+          p_x = qp_trace::fnv1a64(d->P->x, sizeof(OSQPFloat) * static_cast<std::size_t>(p_nnz));
+          p_i = qp_trace::fnv1a64(d->P->i, sizeof(OSQPInt) * static_cast<std::size_t>(p_nnz));
+          p_p = qp_trace::fnv1a64(d->P->p, sizeof(OSQPInt) * static_cast<std::size_t>(d->P->n + 1));
+        }
+        if (d != nullptr && d->A != nullptr && d->A->p != nullptr)
+        {
+          a_nnz = static_cast<long long>(d->A->p[d->A->n]);
+          a_x = qp_trace::fnv1a64(d->A->x, sizeof(OSQPFloat) * static_cast<std::size_t>(a_nnz));
+          a_i = qp_trace::fnv1a64(d->A->i, sizeof(OSQPInt) * static_cast<std::size_t>(a_nnz));
+          a_p = qp_trace::fnv1a64(d->A->p, sizeof(OSQPInt) * static_cast<std::size_t>(d->A->n + 1));
+        }
+        std::fprintf(f,
+                     "QPSOLVE#%d dims n=%lld m=%lld P_nnz=%lld A_nnz=%lld\n",
+                     qp_trace_idx,
+                     static_cast<long long>(num_vars_),
+                     static_cast<long long>(num_cnts_),
+                     p_nnz,
+                     a_nnz);
+        std::fprintf(f,
+                     "QPSOLVE#%d P src=osqp-data fmt=csc x=%016llx i=%016llx p=%016llx\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(p_x),
+                     static_cast<unsigned long long>(p_i),
+                     static_cast<unsigned long long>(p_p));
+        std::fprintf(f,
+                     "QPSOLVE#%d A src=osqp-data fmt=csc x=%016llx i=%016llx p=%016llx\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(a_x),
+                     static_cast<unsigned long long>(a_i),
+                     static_cast<unsigned long long>(a_p));
+        // q/l/u: raw double bytes of this wrapper's own members (always current).
+        std::fprintf(f,
+                     "QPSOLVE#%d q src=member hash=%016llx n=%lld\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(qp_trace::fnv1a64(
+                         gradient_.data(), sizeof(double) * static_cast<std::size_t>(gradient_.size()))),
+                     static_cast<long long>(gradient_.size()));
+        std::fprintf(f,
+                     "QPSOLVE#%d l src=member hash=%016llx m=%lld\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(qp_trace::fnv1a64(
+                         bounds_lower_.data(), sizeof(double) * static_cast<std::size_t>(bounds_lower_.size()))),
+                     static_cast<long long>(bounds_lower_.size()));
+        std::fprintf(f,
+                     "QPSOLVE#%d u src=member hash=%016llx m=%lld\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(qp_trace::fnv1a64(
+                         bounds_upper_.data(), sizeof(double) * static_cast<std::size_t>(bounds_upper_.size()))),
+                     static_cast<long long>(bounds_upper_.size()));
+        if (s != nullptr)
+          std::fprintf(f,
+                       "QPSOLVE#%d settings rho=%.17g rho_is_vec=%lld sigma=%.17g alpha=%.17g adaptive_rho=%lld "
+                       "adaptive_rho_interval=%lld adaptive_rho_fraction=%.17g adaptive_rho_tolerance=%.17g "
+                       "scaling=%lld polishing=%lld max_iter=%lld eps_abs=%.17g eps_rel=%.17g "
+                       "check_termination=%lld time_limit=%.17g\n",
+                       qp_trace_idx,
+                       static_cast<double>(s->rho),
+                       static_cast<long long>(s->rho_is_vec),
+                       static_cast<double>(s->sigma),
+                       static_cast<double>(s->alpha),
+                       static_cast<long long>(s->adaptive_rho),
+                       static_cast<long long>(s->adaptive_rho_interval),
+                       static_cast<double>(s->adaptive_rho_fraction),
+                       static_cast<double>(s->adaptive_rho_tolerance),
+                       static_cast<long long>(s->scaling),
+                       static_cast<long long>(s->polishing),
+                       static_cast<long long>(s->max_iter),
+                       static_cast<double>(s->eps_abs),
+                       static_cast<double>(s->eps_rel),
+                       static_cast<long long>(s->check_termination),
+                       static_cast<double>(s->time_limit));
+        std::fclose(f);
+      }
+    }
+  }
+
   const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
   {
@@ -162,12 +263,213 @@ bool OSQPEigenSolver::solve()
   if (OSQP_COMPARE_DEBUG_MODE)
     std::cout << "OSQP Status Value: " << static_cast<int>(solver_->getStatus()) << '\n';
 
+  // Post-solve half of the optional trace (same counter as above): run info and a digest of the
+  // primal solution, or the failure status.
+  if (qp_trace_idx >= 0 && qp_trace_idx < qp_trace::maxQps())
+  {
+    if (std::FILE* f = qp_trace::open("qp_trace"))
+    {
+      const OSQPSolver* os = solver_->solver().get();
+      const OSQPInfo* info = (os != nullptr) ? os->info : nullptr;
+      if (info != nullptr)
+        std::fprintf(f,
+                     "QPSOLVE#%d info status_val=%lld status_polish=%lld iter=%lld rho_updates=%lld "
+                     "rho_estimate=%.17g setup_time=%.17g solve_time=%.17g update_time=%.17g polish_time=%.17g "
+                     "obj_val=%.17g prim_res=%.17g dual_res=%.17g\n",
+                     qp_trace_idx,
+                     static_cast<long long>(info->status_val),
+                     static_cast<long long>(info->status_polish),
+                     static_cast<long long>(info->iter),
+                     static_cast<long long>(info->rho_updates),
+                     static_cast<double>(info->rho_estimate),
+                     static_cast<double>(info->setup_time),
+                     static_cast<double>(info->solve_time),
+                     static_cast<double>(info->update_time),
+                     static_cast<double>(info->polish_time),
+                     static_cast<double>(info->obj_val),
+                     static_cast<double>(info->prim_res),
+                     static_cast<double>(info->dual_res));
+      // Same success condition as the return path below (read-only re-check).
+      if ((solveExitFlag == OsqpEigen::ErrorExitFlag::NoError) &&
+          ((status == OsqpEigen::Status::Solved) || (status == OsqpEigen::Status::SolvedInaccurate)))
+      {
+        const Eigen::VectorXd qp_solution = solver_->getSolution();
+        std::fprintf(f,
+                     "QPSOLVE#%d x hash=%016llx n=%lld exitflag=%d status=%d\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(qp_trace::fnv1a64(
+                         qp_solution.data(), sizeof(double) * static_cast<std::size_t>(qp_solution.size()))),
+                     static_cast<long long>(qp_solution.size()),
+                     static_cast<int>(solveExitFlag),
+                     static_cast<int>(status));
+      }
+      else
+      {
+        std::fprintf(f,
+                     "QPSOLVE#%d x NOT-SOLVED exitflag=%d status=%d\n",
+                     qp_trace_idx,
+                     static_cast<int>(solveExitFlag),
+                     static_cast<int>(status));
+      }
+      std::fclose(f);
+    }
+  }
+
+  // Post-solve half of the optional trace (same counter as above): run info and a digest of the
+  // primal solution, or the failure status.
+  if (qp_trace_idx >= 0 && qp_trace_idx < qp_trace::maxQps())
+  {
+    if (std::FILE* f = qp_trace::open("qp_trace"))
+    {
+      const OSQPSolver* os = solver_->solver().get();
+      const OSQPInfo* info = (os != nullptr) ? os->info : nullptr;
+      if (info != nullptr)
+        std::fprintf(f,
+                     "QPSOLVE#%d info status_val=%lld status_polish=%lld iter=%lld rho_updates=%lld "
+                     "rho_estimate=%.17g setup_time=%.17g solve_time=%.17g update_time=%.17g polish_time=%.17g "
+                     "obj_val=%.17g prim_res=%.17g dual_res=%.17g\n",
+                     qp_trace_idx,
+                     static_cast<long long>(info->status_val),
+                     static_cast<long long>(info->status_polish),
+                     static_cast<long long>(info->iter),
+                     static_cast<long long>(info->rho_updates),
+                     static_cast<double>(info->rho_estimate),
+                     static_cast<double>(info->setup_time),
+                     static_cast<double>(info->solve_time),
+                     static_cast<double>(info->update_time),
+                     static_cast<double>(info->polish_time),
+                     static_cast<double>(info->obj_val),
+                     static_cast<double>(info->prim_res),
+                     static_cast<double>(info->dual_res));
+      // Same success condition as the return path below (read-only re-check).
+      if ((solveExitFlag == OsqpEigen::ErrorExitFlag::NoError) &&
+          ((status == OsqpEigen::Status::Solved) || (status == OsqpEigen::Status::SolvedInaccurate)))
+      {
+        const Eigen::VectorXd qp_solution = solver_->getSolution();
+        std::fprintf(f,
+                     "QPSOLVE#%d x hash=%016llx n=%lld exitflag=%d status=%d\n",
+                     qp_trace_idx,
+                     static_cast<unsigned long long>(qp_trace::fnv1a64(
+                         qp_solution.data(), sizeof(double) * static_cast<std::size_t>(qp_solution.size()))),
+                     static_cast<long long>(qp_solution.size()),
+                     static_cast<int>(solveExitFlag),
+                     static_cast<int>(status));
+      }
+      else
+      {
+        std::fprintf(f,
+                     "QPSOLVE#%d x NOT-SOLVED exitflag=%d status=%d\n",
+                     qp_trace_idx,
+                     static_cast<int>(solveExitFlag),
+                     static_cast<int>(status));
+      }
+      std::fclose(f);
+    }
+  }
+
   if ((solveExitFlag == OsqpEigen::ErrorExitFlag::NoError) &&
       ((status == OsqpEigen::Status::Solved) || (status == OsqpEigen::Status::SolvedInaccurate)))
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {
       std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << '\n';
+    }
+
+    // Optional trace (see qp_trace.h): digests of the OSQP-side problem data and the settings for the
+    // first TRAJOPT_TRACE_MAX_QPS QP solves of the process; the post-solve half below logs the run info
+    // and a digest of the primal solution. Read-only. qp_trace_idx stays -1 when the trace is off.
+    int qp_trace_idx = -1;
+    if (qp_trace::dir() != nullptr)
+    {
+      static std::atomic<int> qp_counter{ 0 };
+      qp_trace_idx = qp_counter.fetch_add(1);
+      if (qp_trace_idx < qp_trace::maxQps())
+      {
+        if (std::FILE* f = qp_trace::open("qp_trace"))
+        {
+          const OsqpEigen::OSQPData* d = solver_->data()->getData();
+          const OSQPSettings* s = solver_->settings()->getSettings();
+          // P and A: raw bytes of the OSQP CSC arrays held in OsqpEigen's Data object (exact for the
+          // first solve; on later solves they can lag behind in-place update* calls into the workspace).
+          long long p_nnz = -1, a_nnz = -1;
+          std::uint64_t p_x = 0, p_i = 0, p_p = 0, a_x = 0, a_i = 0, a_p = 0;
+          if (d != nullptr && d->P != nullptr && d->P->p != nullptr)
+          {
+            p_nnz = static_cast<long long>(d->P->p[d->P->n]);
+            p_x = qp_trace::fnv1a64(d->P->x, sizeof(OSQPFloat) * static_cast<std::size_t>(p_nnz));
+            p_i = qp_trace::fnv1a64(d->P->i, sizeof(OSQPInt) * static_cast<std::size_t>(p_nnz));
+            p_p = qp_trace::fnv1a64(d->P->p, sizeof(OSQPInt) * static_cast<std::size_t>(d->P->n + 1));
+          }
+          if (d != nullptr && d->A != nullptr && d->A->p != nullptr)
+          {
+            a_nnz = static_cast<long long>(d->A->p[d->A->n]);
+            a_x = qp_trace::fnv1a64(d->A->x, sizeof(OSQPFloat) * static_cast<std::size_t>(a_nnz));
+            a_i = qp_trace::fnv1a64(d->A->i, sizeof(OSQPInt) * static_cast<std::size_t>(a_nnz));
+            a_p = qp_trace::fnv1a64(d->A->p, sizeof(OSQPInt) * static_cast<std::size_t>(d->A->n + 1));
+          }
+          std::fprintf(f,
+                       "QPSOLVE#%d dims n=%lld m=%lld P_nnz=%lld A_nnz=%lld\n",
+                       qp_trace_idx,
+                       static_cast<long long>(num_vars_),
+                       static_cast<long long>(num_cnts_),
+                       p_nnz,
+                       a_nnz);
+          std::fprintf(f,
+                       "QPSOLVE#%d P src=osqp-data fmt=csc x=%016llx i=%016llx p=%016llx\n",
+                       qp_trace_idx,
+                       static_cast<unsigned long long>(p_x),
+                       static_cast<unsigned long long>(p_i),
+                       static_cast<unsigned long long>(p_p));
+          std::fprintf(f,
+                       "QPSOLVE#%d A src=osqp-data fmt=csc x=%016llx i=%016llx p=%016llx\n",
+                       qp_trace_idx,
+                       static_cast<unsigned long long>(a_x),
+                       static_cast<unsigned long long>(a_i),
+                       static_cast<unsigned long long>(a_p));
+          // q/l/u: raw double bytes of this wrapper's own members (always current).
+          std::fprintf(f,
+                       "QPSOLVE#%d q src=member hash=%016llx n=%lld\n",
+                       qp_trace_idx,
+                       static_cast<unsigned long long>(qp_trace::fnv1a64(
+                           gradient_.data(), sizeof(double) * static_cast<std::size_t>(gradient_.size()))),
+                       static_cast<long long>(gradient_.size()));
+          std::fprintf(f,
+                       "QPSOLVE#%d l src=member hash=%016llx m=%lld\n",
+                       qp_trace_idx,
+                       static_cast<unsigned long long>(qp_trace::fnv1a64(
+                           lower_bounds_.data(), sizeof(double) * static_cast<std::size_t>(lower_bounds_.size()))),
+                       static_cast<long long>(lower_bounds_.size()));
+          std::fprintf(f,
+                       "QPSOLVE#%d u src=member hash=%016llx m=%lld\n",
+                       qp_trace_idx,
+                       static_cast<unsigned long long>(qp_trace::fnv1a64(
+                           upper_bounds_.data(), sizeof(double) * static_cast<std::size_t>(upper_bounds_.size()))),
+                       static_cast<long long>(upper_bounds_.size()));
+          if (s != nullptr)
+            std::fprintf(f,
+                         "QPSOLVE#%d settings rho=%.17g rho_is_vec=%lld sigma=%.17g alpha=%.17g adaptive_rho=%lld "
+                         "adaptive_rho_interval=%lld adaptive_rho_fraction=%.17g adaptive_rho_tolerance=%.17g "
+                         "scaling=%lld polishing=%lld max_iter=%lld eps_abs=%.17g eps_rel=%.17g "
+                         "check_termination=%lld time_limit=%.17g\n",
+                         qp_trace_idx,
+                         static_cast<double>(s->rho),
+                         static_cast<long long>(s->rho_is_vec),
+                         static_cast<double>(s->sigma),
+                         static_cast<double>(s->alpha),
+                         static_cast<long long>(s->adaptive_rho),
+                         static_cast<long long>(s->adaptive_rho_interval),
+                         static_cast<double>(s->adaptive_rho_fraction),
+                         static_cast<double>(s->adaptive_rho_tolerance),
+                         static_cast<long long>(s->scaling),
+                         static_cast<long long>(s->polishing),
+                         static_cast<long long>(s->max_iter),
+                         static_cast<double>(s->eps_abs),
+                         static_cast<double>(s->eps_rel),
+                         static_cast<long long>(s->check_termination),
+                         static_cast<double>(s->time_limit));
+          std::fclose(f);
+        }
+      }
     }
     return true;
   }
