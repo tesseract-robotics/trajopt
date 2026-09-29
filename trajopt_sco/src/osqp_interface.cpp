@@ -520,7 +520,7 @@ CvxOptStatus OSQPModel::optimize()
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << '\n';
     }
 
-    if (tesseract::common::getLogger()->should_log(spdlog::level::debug))
+    if (tesseract::common::isLogLevelEnabled(spdlog::level::debug))
     {
       switch (status)
       {

@@ -395,7 +395,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   // the Model
   new_x = DblVec(model_var_vals.begin(), model_var_vals.begin() + static_cast<long int>(prev_opt_results.x.size()));
 
-  if (tesseract::common::getLogger()->should_log(spdlog::level::debug))
+  if (tesseract::common::isLogLevelEnabled(spdlog::level::debug))
   {
     const DblVec cnt_costs1 = parent_.evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
@@ -418,7 +418,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   exact_merit_improve = old_merit - new_merit;
   merit_improve_ratio = exact_merit_improve / approx_merit_improve;
 
-  if (tesseract::common::getLogger()->should_log(spdlog::level::info))
+  if (tesseract::common::isLogLevelEnabled(spdlog::level::info))
   {
     TESSERACT_LOG_INFO(" ");
     print();
@@ -709,7 +709,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::FILE* log_vars_stream = nullptr;
   std::FILE* log_costs_stream = nullptr;
   std::FILE* log_constraints_stream = nullptr;
-  if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
+  if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
   {
     log_solver_stream = std::fopen((param_.log_dir + "/trajopt_solver.log").c_str(), "w");
     log_vars_stream = std::fopen((param_.log_dir + "/trajopt_vars.log").c_str(), "w");
@@ -753,7 +753,8 @@ OptStatus BasicTrustRegionSQP::optimize()
       }
       callCallbacks();
 
-      TESSERACT_LOG_DEBUG("current iterate: {}", CSTR(results_.x));
+      if (tesseract::common::isLogLevelEnabled(spdlog::level::debug))
+        TESSERACT_LOG_DEBUG("current iterate: {}", CSTR(results_.x));
       TESSERACT_LOG_INFO("iteration {}", iter);
 
       // speedup: if you just evaluated the cost when doing the line search, use
@@ -846,7 +847,7 @@ OptStatus BasicTrustRegionSQP::optimize()
           iteration_results.printRaw();
         }
 
-        if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
+        if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
         {
           if (log_solver_stream != nullptr)
             iteration_results.writeSolver(log_solver_stream, results_.n_func_evals == 1);
@@ -942,8 +943,9 @@ OptStatus BasicTrustRegionSQP::optimize()
         {
           if (results_.cnt_viols[idx] > param_.cnt_tolerance)
           {
-            TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for {}",
-                                CSTR(cnt_names[idx]));
+            if (tesseract::common::isLogLevelEnabled(spdlog::level::debug))
+              TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for {}",
+                                  CSTR(cnt_names[idx]));
             merit_error_coeffs[idx] *= param_.merit_coeff_increase_ratio;
           }
         }
@@ -954,7 +956,8 @@ OptStatus BasicTrustRegionSQP::optimize()
         for (auto& merit_error_coeff : merit_error_coeffs)
           merit_error_coeff *= param_.merit_coeff_increase_ratio;
       }
-      TESSERACT_LOG_DEBUG("New merit_error_coeffs: {}", CSTR(merit_error_coeffs));
+      if (tesseract::common::isLogLevelEnabled(spdlog::level::debug))
+        TESSERACT_LOG_DEBUG("New merit_error_coeffs: {}", CSTR(merit_error_coeffs));
       param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
   } /* merit adjustment loop */
@@ -965,11 +968,12 @@ cleanup:
   assert(retval != INVALID && "should never happen");
   results_.status = retval;
   results_.total_cost = vecSum(results_.cost_vals);
-  TESSERACT_LOG_INFO("\n==================\n{}==================", CSTR(results_));
+  if (tesseract::common::isLogLevelEnabled(spdlog::level::info))
+    TESSERACT_LOG_INFO("\n==================\n{}==================", CSTR(results_));
   callCallbacks();
 
   // NOLINTBEGIN(clang-analyzer-core.NonNullParamChecker)
-  if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
+  if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
   {
     std::fclose(log_solver_stream);
     std::fclose(log_vars_stream);
