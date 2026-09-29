@@ -68,7 +68,8 @@ GurobiModel::GurobiModel()
   if (!gEnv)
   {
     GRBloadenv(&gEnv, nullptr);
-    if (!tesseract::common::getLogger()->should_log(spdlog::level::debug))
+    // Suppress Gurobi's console output unless Tesseract debug logging is enabled.
+    if (!tesseract::common::isLogLevelEnabled(spdlog::level::debug))
     {
       ENSURE_SUCCESS(GRBsetintparam(gEnv, "OutputFlag", 0));
     }
@@ -96,7 +97,8 @@ Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 {
   const std::scoped_lock lock(m_mutex);
-  TESSERACT_LOG_TRACE("adding eq constraint: {} = 0", CSTR(expr));
+  if (tesseract::common::isLogLevelEnabled(spdlog::level::trace))
+    TESSERACT_LOG_TRACE("adding eq constraint: {} = 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
@@ -114,7 +116,8 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 {
   const std::scoped_lock lock(m_mutex);
-  TESSERACT_LOG_TRACE("adding ineq: {} <= 0", CSTR(expr));
+  if (tesseract::common::isLogLevelEnabled(spdlog::level::trace))
+    TESSERACT_LOG_TRACE("adding ineq: {} <= 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
