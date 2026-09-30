@@ -157,9 +157,9 @@ struct SQPResults
   /** @brief The convexified cost achieved this iteration */
   double new_approx_merit{ std::numeric_limits<double>::max() };
 
-  /** @brief Variable values associated with best_exact_merit */
+  /** @brief NLP variable values associated with best_exact_merit */
   Eigen::VectorXd best_var_vals;
-  /** @brief Variable values associated with this iteration */
+  /** @brief QP solution of this iteration: the NLP variables followed by the slack variables */
   Eigen::VectorXd new_var_vals;
 
   /** @brief Amount the convexified cost improved over the best this iteration */

@@ -347,7 +347,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     }
     else
     {
-      results_.best_var_vals = results_.new_var_vals;
+      results_.best_var_vals = results_.new_var_vals.head(qp_problem->getNumNLPVars());
 
       results_.best_exact_merit = results_.new_exact_merit;
       results_.best_constraint_violations = results_.new_constraint_violations;
