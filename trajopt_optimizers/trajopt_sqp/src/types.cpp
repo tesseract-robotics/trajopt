@@ -38,7 +38,7 @@ bool SQPParameters::operator==(const SQPParameters& rhs) const
   equal &= tesseract::common::almostEqualRelativeAndAbs(min_trust_box_size, rhs.min_trust_box_size, max_diff);
   equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve, rhs.min_approx_improve, max_diff);
   equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve_frac, rhs.min_approx_improve_frac, max_diff);
-  equal &= (max_iterations == rhs.max_iterations);
+  equal &= (max_iter == rhs.max_iter);
   equal &= tesseract::common::almostEqualRelativeAndAbs(trust_shrink_ratio, rhs.trust_shrink_ratio, max_diff);
   equal &= tesseract::common::almostEqualRelativeAndAbs(trust_expand_ratio, rhs.trust_expand_ratio, max_diff);
   equal &= tesseract::common::almostEqualRelativeAndAbs(cnt_tolerance, rhs.cnt_tolerance, max_diff);
