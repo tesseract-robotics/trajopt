@@ -38,6 +38,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#include <trajopt_sqp/sqp_callback.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/types.h>
@@ -47,21 +48,25 @@ using trajopt_sqp::SQPStatus;
 namespace
 {
 /**
- * @brief One variable in [-1, 1] pulled toward 0.8 by a squared cost, optionally constrained to x = target
- * @param constraint_target When set, adds the hard constraint x = constraint_target (outside [-1, 1] is infeasible)
+ * @brief One variable x in [-bound, bound], starting at 0 and pulled toward cost_target by a squared cost
+ * @param constraint_target When set, adds the hard constraint x = constraint_target (outside the bounds is infeasible)
+ * @param cost_target The target of the squared cost
+ * @param bound The variable bound magnitude
  */
-std::shared_ptr<trajopt_sqp::TrajOptQPProblem> makeProblem(std::optional<double> constraint_target = std::nullopt)
+std::shared_ptr<trajopt_sqp::TrajOptQPProblem> makeProblem(std::optional<double> constraint_target = std::nullopt,
+                                                           double cost_target = 0.8,
+                                                           double bound = 1.0)
 {
   auto node = std::make_unique<trajopt_ifopt::Node>("Joints");
   const std::shared_ptr<const trajopt_ifopt::Var> var =
-      node->addVar("position", { "j0" }, Eigen::VectorXd::Zero(1), { trajopt_ifopt::Bounds(-1.0, 1.0) });
+      node->addVar("position", { "j0" }, Eigen::VectorXd::Zero(1), { trajopt_ifopt::Bounds(-bound, bound) });
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   nodes.push_back(std::move(node));
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("trajectory", std::move(nodes));
 
   auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(variables);
   qp->addCostSet(std::make_shared<trajopt_ifopt::JointPosConstraint>(
-                     Eigen::VectorXd::Constant(1, 0.8), var, Eigen::VectorXd::Ones(1), "Target"),
+                     Eigen::VectorXd::Constant(1, cost_target), var, Eigen::VectorXd::Ones(1), "Target"),
                  trajopt_sqp::CostPenaltyType::kSquared);
   if (constraint_target)
   {
@@ -75,6 +80,16 @@ std::shared_ptr<trajopt_sqp::TrajOptQPProblem> makeProblem(std::optional<double>
 }
 
 trajopt_sqp::TrustRegionSQPSolver makeSolver() { return { std::make_shared<trajopt_sqp::OSQPEigenSolver>() }; }
+
+/** @brief Stop the optimization after every QP solve */
+class StopCallback : public trajopt_sqp::SQPCallback
+{
+public:
+  bool execute(const trajopt_sqp::QPProblem& /*problem*/, const trajopt_sqp::SQPResults& /*sqp_results*/) override
+  {
+    return false;
+  }
+};
 }  // namespace
 
 class SQPIterationCap : public testing::Test
@@ -95,17 +110,7 @@ private:
 TEST_F(SQPIterationCap, ARoundRunsUpToMaxIterConvexifications)  // NOLINT
 {
   // A far target, a small fixed box and no expansion: every convexification accepts one short step
-  auto node = std::make_unique<trajopt_ifopt::Node>("Joints");
-  const std::shared_ptr<const trajopt_ifopt::Var> var =
-      node->addVar("position", { "j0" }, Eigen::VectorXd::Zero(1), { trajopt_ifopt::Bounds(-1000.0, 1000.0) });
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  nodes.push_back(std::move(node));
-  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(
-      std::make_shared<trajopt_ifopt::NodesVariables>("trajectory", std::move(nodes)));
-  qp->addCostSet(std::make_shared<trajopt_ifopt::JointPosConstraint>(
-                     Eigen::VectorXd::Constant(1, 100.0), var, Eigen::VectorXd::Ones(1), "Far"),
-                 trajopt_sqp::CostPenaltyType::kSquared);
-  qp->setup();
+  auto qp = makeProblem(std::nullopt, 100.0, 1000.0);
 
   auto solver = makeSolver();
   solver.params.initial_trust_box_size = 0.5;
@@ -126,6 +131,8 @@ TEST_F(SQPIterationCap, IterationLimitAtAnInfeasibleIterateRaisesThePenalty)  //
   solver.solve(makeProblem(5.0));  // the pin lies outside the variable bounds
   EXPECT_EQ(solver.getStatus(), SQPStatus::kPenaltyIterationLimit);
   EXPECT_EQ(solver.getResults().penalty_iteration, 1);
+  // Without the limit the growing trust box would take several convexifications to reach the variable bound
+  EXPECT_EQ(solver.getResults().convexify_iteration, 1);
 }
 
 TEST_F(SQPIterationCap, EachPenaltyIterationGetsItsOwnIterationBudget)  // NOLINT
@@ -138,7 +145,8 @@ TEST_F(SQPIterationCap, EachPenaltyIterationGetsItsOwnIterationBudget)  // NOLIN
   solver.params.max_merit_coeff_increases = 3;
   solver.solve(makeProblem(0.9));
   EXPECT_EQ(solver.getStatus(), SQPStatus::kPenaltyIterationLimit);
-  EXPECT_GE(solver.getResults().overall_iteration, 9);
+  EXPECT_EQ(solver.getResults().overall_iteration, 9);
+  EXPECT_EQ(solver.getResults().convexify_iteration, 3);
   EXPECT_NEAR(solver.getResults().best_var_vals[0], 0.09, 1e-3);
 }
 
@@ -159,4 +167,15 @@ TEST_F(SQPIterationCap, ZeroIterationBudgetEndsWithoutAStep)  // NOLINT
     EXPECT_EQ(solver.getStatus(), SQPStatus::kPenaltyIterationLimit);
     EXPECT_EQ(solver.getResults().overall_iteration, 0);
   }
+}
+
+TEST_F(SQPIterationCap, CallbackStopEndsTheSolve)  // NOLINT
+{
+  // An infeasible problem, so that neither the limit nor a converged iterate can end the solve first
+  auto solver = makeSolver();
+  solver.registerCallback(std::make_shared<StopCallback>());
+  solver.solve(makeProblem(0.5));
+  EXPECT_EQ(solver.getStatus(), SQPStatus::kStoppedByCallback);
+  EXPECT_EQ(solver.getResults().overall_iteration, 1);
+  EXPECT_EQ(solver.getResults().penalty_iteration, 0);
 }
