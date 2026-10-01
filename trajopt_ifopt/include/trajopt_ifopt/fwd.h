@@ -38,6 +38,15 @@ class NodesVariables;
 class Node;
 class Var;
 
+// cartesian_axis_align_constraint.h
+class CartAxisAlignConstraint;
+
+// cartesian_axis_cone_constraint.h
+class CartAxisConeConstraint;
+
+// cartesian_axis_kinematics.h
+class CartAxisKinematics;
+
 // cartesian_line_constraint.h
 struct CartLineInfo;
 class CartLineConstraint;

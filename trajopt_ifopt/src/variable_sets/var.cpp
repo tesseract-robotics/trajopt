@@ -61,7 +61,7 @@ Var::Var(Eigen::Index index,
   if (names_.size() != bounds_.size())
     throw std::runtime_error("Varaible: '" + identifier_ + "' has miss matched size for names and values");
 
-  if (names_.size() != values_.size())
+  if (static_cast<Eigen::Index>(names_.size()) != values_.size())
     throw std::runtime_error("Varaible: '" + identifier_ + "' has miss matched size for names and values");
 
   values_ = trajopt_ifopt::getClosestValidPoint(values, bounds_);

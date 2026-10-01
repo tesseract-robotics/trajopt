@@ -30,6 +30,9 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/core/problem.cpp
     src/costs/absolute_cost.cpp
     src/costs/squared_cost.cpp
+    src/constraints/cartesian_axis_align_constraint.cpp
+    src/constraints/cartesian_axis_cone_constraint.cpp
+    src/constraints/cartesian_axis_kinematics.cpp
     src/constraints/cartesian_position_constraint.cpp
     src/constraints/inverse_kinematics_constraint.cpp
     src/constraints/joint_acceleration_constraint.cpp

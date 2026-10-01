@@ -89,7 +89,7 @@ Eigen::VectorXd Problem::evaluateCostFunctionGradient(bool use_finite_difference
       // calculate forward difference by disturbing each optimization variable
       double g = evaluateCostFunction();
       std::vector<double> x_new(x.data(), x.data() + x.size());
-      for (std::size_t i = 0; i < n; ++i)
+      for (std::size_t i = 0; i < static_cast<std::size_t>(n); ++i)
       {
         x_new[i] += step_size;  // disturb
         setVariables(x_new.data());
