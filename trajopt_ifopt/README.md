@@ -86,6 +86,7 @@ Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back throug
 * Joint Acceleration
 * Joint Jerk
 * Cartesian Position (FK)
+* Cartesian Axis Cone and Cartesian Axis Align (see below)
 * Cartesian Line
 * Inverse Kinematics
 * Collision, in fixed-size and dynamic-size forms, with these evaluators:
@@ -93,6 +94,34 @@ Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back throug
   * longest valid segment, discrete
   * longest valid segment, continuous
 * Numerical-Jacobian variants of the discrete and continuous collision constraints
+
+### Cartesian Axis Constraints
+Both constrain the direction of a unit axis $a_s$ fixed in a source link relative to a unit axis $a_t$ fixed in a target link. Either link, or both, may move. Rotation about the source axis is free. Both use the source axis expressed in target link coordinates,
+
+$$v(q) = R_t(q)^\top R_s(q)\, a_s, \qquad \frac{\partial v}{\partial q} = -R_t^\top [R_s a_s]_\times (J_{\omega,s} - J_{\omega,t})$$
+
+where the Jacobian is exact, built from the angular rows of the links' geometric Jacobians.
+
+* `CartAxisConeConstraint` keeps the angle between the axes within a half angle $\theta \in (0, \pi)$: one row, $\varphi = \operatorname{atan2}(\lVert a_t \times v\rVert,\ a_t \cdot v) \le \theta$, in radians. Box bounds on `CartPosConstraint`'s rotation-vector error describe a square, never this cone: the inscribed square rejects tilts inside the cone, the circumscribing one accepts tilts outside it. `atan2` keeps full precision near $0$ and $\pi$, where $\arccos(a_t \cdot v)$ does not. $\varphi$ is not differentiable at $0$, which lies strictly inside the cone; the Jacobian there is zero. At $\varphi = \pi$ the direction the joints can move the axis fastest is used.
+* `CartAxisAlignConstraint` aligns the axes with two equality rows, the logarithm map of the sphere at $a_t$: $r = \frac{\varphi}{\sin\varphi} P v = 0$, with $P$ the $2 \times 3$ basis perpendicular to $a_t$ fixed in target link coordinates. $\lVert r \rVert = \varphi$, so the only zero is $v = a_t$ and the $\ell_1$ merit decreases monotonically as the tilt shrinks. The simpler rows $P v = 0$ also vanish at $v = -a_t$, and adding $a_t \cdot v \ge 0$ does not help a gradient method: within $\pi/4$ of $-a_t$ the merit decreases towards it. At the solution the Jacobian is $P\,\partial v / \partial q$, with full rank. Use this instead of a cone with $\theta = 0$, whose gradient vanishes on the feasible set.
+
+`cart_axis_formulation_study_unit` in `trajopt_sqp` compares both against alternative formulations on seeded orientation-only problems with `TrajOptQPProblem` (100 per band, PR2 right arm, macOS arm64):
+
+| formulation | any start: solved, median SQP iterations | start ≥ 150°: solved, median iterations |
+|---|---|---|
+| align, logarithm map | 99/100, 6 | 100/100, 8 |
+| align, $P v = 0$ and $a_t \cdot v \ge 0$ | 85/100, 6 | 0/100 |
+| align, `CartPosConstraint` with $r_z$ dropped | 100/100, 6 | 100/100, 8 |
+| cone $\theta = 0.2$, `atan2` | 99/100, 5 | 99/100, 8 |
+| cone $\theta = 0.2$, $\arccos$ with forward differences | 99/100, 5 | 99/100, 8 |
+| cone $\theta = 0.2$, $a_t \cdot v \ge \cos\theta$ | 99/100, 6 | 99/100, 8 |
+| cone $\theta = 0.2$, `CartPosConstraint` inscribed box | 100/100, 4 | 100/100, 6 |
+| cone $\theta = 0.01$, `atan2` | 99/100, 10 | 99/100, 14 |
+| cone $\theta = 0.01$, $\arccos$ with forward differences | 99/100, 10 | 99/100, 14 |
+| cone $\theta = 0.01$, $a_t \cdot v \ge \cos\theta$ | 99/100, 12 | 98/100, 14 |
+| cone $\theta = 0.01$, `CartPosConstraint` inscribed box | 100/100, 5 | 100/100, 7 |
+
+The new constraints are as robust as the alternatives with the same feasible set, not more; the failures that remain end at local minima against joint limits. The cone's distinguishing property is its feasible set. Tight cones cost more iterations than a box, because a linearizing solver has to approximate a round boundary of curvature $1/\theta$.
 
 ### Adding New Constraints
 * Fill in only your own block of the Jacobian; its placement in the full Jacobian is handled for you.
