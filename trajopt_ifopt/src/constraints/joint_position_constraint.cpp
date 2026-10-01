@@ -149,7 +149,7 @@ Eigen::VectorXd JointPosConstraint::getValues() const
 {
   const auto& jp = position_var_->value();
   Eigen::VectorXd values(coeffs_.size());
-  for (int i = 0; i < indices_.size(); ++i)
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(indices_.size()); ++i)
     values[i] = jp(indices_[static_cast<std::size_t>(i)]);
 
   return values;
@@ -166,7 +166,7 @@ Jacobian JointPosConstraint::getJacobian() const
   jac.reserve(non_zeros_);
 
   // Loop over all of the variables this constraint uses
-  for (int j = 0; j < indices_.size(); j++)  // NOLINT
+  for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(indices_.size()); j++)  // NOLINT
   {
     jac.startVec(j);
     jac.insertBack(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)]) = 1.0;
