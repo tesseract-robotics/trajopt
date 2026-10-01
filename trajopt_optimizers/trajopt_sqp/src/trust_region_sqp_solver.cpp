@@ -122,7 +122,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       }
 
       // The limit ends this penalty iteration; a feasible iterate then ends the solve, an infeasible one raises the
-      // penalty
+      // penalty, and after the last penalty iteration ends the solve with kPenaltyIterationLimit
       if (results_.convexify_iteration >= params.max_iter)
       {
         TESSERACT_LOG_DEBUG("Iteration limit");
@@ -132,6 +132,10 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       if (stepSQPSolver())
         break;
     }
+
+    // A callback stop ends the solve with its own status
+    if (status_ == SQPStatus::kStoppedByCallback)
+      break;
 
     // Check if constraints are satisfied
     if (verifySQPSolverConvergence())
@@ -256,8 +260,8 @@ bool TrustRegionSQPSolver::stepSQPSolver()
   // Trust region loop
   runTrustRegionLoop();
 
-  // Check if the NLP has converged
-  if (status_ == SQPStatus::kConverged)
+  // Check if the NLP has converged or a callback stopped it
+  if (status_ == SQPStatus::kConverged || status_ == SQPStatus::kStoppedByCallback)
     return true;
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
