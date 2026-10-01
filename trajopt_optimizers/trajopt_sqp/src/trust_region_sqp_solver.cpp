@@ -110,8 +110,8 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     results_.penalty_iteration = penalty_iteration;
     results_.convexify_iteration = 0;
 
-    // Convexification loop
-    for (int convex_iteration = 1; convex_iteration < 100; convex_iteration++)
+    // Convexification loop: max_iter bounds each penalty iteration and max_time the whole run
+    while (true)
     {
       const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
@@ -121,10 +121,11 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
         break;
       }
 
-      if (results_.overall_iteration >= params.max_iterations)
+      // The limit ends this penalty iteration; a feasible iterate then ends the solve, an infeasible one raises the
+      // penalty
+      if (results_.convexify_iteration >= params.max_iter)
       {
         TESSERACT_LOG_DEBUG("Iteration limit");
-        status_ = SQPStatus::kIterationLimit;
         break;
       }
 
@@ -139,8 +140,8 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       break;
     }
 
-    // If status is iteration limit or time limit we need to exit penalty iteration loop
-    if (status_ == SQPStatus::kIterationLimit || status_ == SQPStatus::kTimeLimit)
+    // A time limit ends the penalty iteration loop
+    if (status_ == SQPStatus::kTimeLimit)
       break;
 
     // Set status to running

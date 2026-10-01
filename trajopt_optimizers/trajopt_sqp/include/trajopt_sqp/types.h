@@ -120,8 +120,8 @@ struct SQPParameters
   double min_approx_improve = 1e-4;
   /** @brief NLP converges if approx_merit_improve / best_exact_merit < min_approx_improve_frac */
   double min_approx_improve_frac = std::numeric_limits<double>::lowest();
-  /** @brief Max number of QP calls allowed */
-  int max_iterations = 50;
+  /** @brief Max convexifications per penalty iteration; rejected trust-region steps do not count */
+  int max_iter = 50;
 
   /** @brief Trust region is scaled by this when it is shrunk */
   double trust_shrink_ratio = 0.1;
