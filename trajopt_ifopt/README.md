@@ -23,6 +23,8 @@ The two placements give the same penalty but different QPs. Interior-point and a
 - With the weight on the slack, a row's coupling in OSQP is set by its Jacobian, independent of its weight. With the weight in the row, as in `trajopt_sco`, heavier rows are coupled more strongly.
 - ADMM tends to converge faster when the rows active at the QP solution are strongly coupled and the inactive ones weakly, so on OSQP this placement can cost iterations compared with `trajopt_sco`.
 
+`trajopt_sqp::PIQPSolver`, an interior-point solver, is insensitive to this scaling: its iteration count per QP stays nearly constant across constraint weights.
+
 #### 3) Slack variables remain interpretable
 With `g(x)` in natural units, the slack is the amount of violation in those units. Scaling rows by `w` puts slacks in weighted units.
 
@@ -103,7 +105,7 @@ Any constraint set can be used as a cost:
 * The `SquaredCost` and `AbsoluteCost` wrappers turn a constraint set into a `CostTerm` for a `trajopt_ifopt::Problem`.
 
 ## Solver
-`trajopt_sqp` (in `trajopt_optimizers`) solves these problems with OSQP through [OsqpEigen](https://github.com/gbionics/osqp-eigen/tree/master/include/OsqpEigen). It is the only NLP solver: the ifopt dependency, and with it the IPOPT and SNOPT interfaces, was removed.
+`trajopt_sqp` (in `trajopt_optimizers`) solves these problems with OSQP through [OsqpEigen](https://github.com/gbionics/osqp-eigen/tree/master/include/OsqpEigen), or with [PIQP](https://github.com/PREDICT-EPFL/piqp) through `PIQPSolver` when PIQP is found at build time. It is the only NLP solver: the ifopt dependency, and with it the IPOPT and SNOPT interfaces, was removed.
 
 ## TODO
 

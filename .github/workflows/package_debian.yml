@@ -111,6 +111,16 @@ jobs:
             cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
           fi
 
+      - name: Package piqp
+        shell: bash
+        run: |
+          if [ -d $GITHUB_WORKSPACE/target_ws/build/piqp ]; then
+            cd $GITHUB_WORKSPACE/target_ws/build/piqp
+            cpack --config CPackConfig.cmake
+            cp ./*.deb $GITHUB_WORKSPACE/artifacts
+            cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+          fi
+
       - name: Package trajopt_common
         working-directory: target_ws/build/trajopt_common
         shell: bash

@@ -2,6 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sstream>
 #include <string>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -28,6 +29,26 @@ TEST(SolverInterface, simplify2)  // NOLINT
   EXPECT_EQ(values.size(), 2);
   EXPECT_TRUE((indices == IntVec{ 0, 1 }));
   EXPECT_TRUE((values == DblVec{ 1e-7, 1e3 }));
+}
+
+TEST(SolverInterface, ModelTypeNames)  // NOLINT
+{
+  const std::vector<std::pair<ModelType::Value, std::string>> expected = {
+    { ModelType::GUROBI, "GUROBI" }, { ModelType::OSQP, "OSQP" }, { ModelType::QPOASES, "QPOASES" },
+    { ModelType::BPMPD, "BPMPD" },   { ModelType::PIQP, "PIQP" }, { ModelType::AUTO_SOLVER, "AUTO_SOLVER" }
+  };
+  ASSERT_EQ(ModelType::MODEL_NAMES_.size(), expected.size());
+  for (const auto& [value, name] : expected)
+  {
+    EXPECT_TRUE(ModelType(name) == value) << name;
+    std::stringstream ss;
+    ss << ModelType(value);
+    EXPECT_EQ(ss.str(), name);
+  }
+
+  EXPECT_ANY_THROW(ModelType("UNKNOWN"));  // NOLINT
+  std::stringstream ss;
+  EXPECT_ANY_THROW(ss << ModelType(static_cast<int>(ModelType::MODEL_NAMES_.size())));  // NOLINT
 }
 
 TEST_P(SolverInterface, setup_problem)  // NOLINT
