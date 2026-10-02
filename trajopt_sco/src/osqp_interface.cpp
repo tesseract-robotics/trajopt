@@ -194,10 +194,7 @@ bool OSQPModel::updateObjective(bool check_sparsity)
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   // Check if sparsity has changed
-  sparsity_equal = sparsity_equal &&
-                   memcmp(prev_column_pointers.data(), P_column_pointers_.data(), static_cast<size_t>(P_->n) + 1) == 0;
-  sparsity_equal =
-      sparsity_equal && (memcmp(prev_row_indices.data(), P_row_indices_.data(), static_cast<size_t>(P_->nzmax)) == 0);
+  sparsity_equal = sparsity_equal && prev_column_pointers == P_column_pointers_ && prev_row_indices == P_row_indices_;
 
   P_.reset(OSQPCscMatrix_new(n_,
                              n_,
@@ -264,10 +261,7 @@ bool OSQPModel::updateConstraints(bool check_sparsity)
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
   // Check if sparsity has changed
-  sparsity_equal = sparsity_equal &&
-                   memcmp(prev_column_pointers.data(), A_column_pointers_.data(), static_cast<size_t>(A_->n) + 1) == 0;
-  sparsity_equal =
-      sparsity_equal && (memcmp(prev_row_indices.data(), A_row_indices_.data(), static_cast<size_t>(A_->nzmax)) == 0);
+  sparsity_equal = sparsity_equal && prev_column_pointers == A_column_pointers_ && prev_row_indices == A_row_indices_;
 
   A_.reset(OSQPCscMatrix_new(m_,
                              n_,
@@ -310,6 +304,16 @@ void OSQPModel::createOrUpdateSolver()
   // Only allow update or warm start if the sparsity of P and A did not change
   allow_update = allow_update && P_sparsity_equal && A_sparsity_equal;
   allow_explicit_warm_start = allow_explicit_warm_start && P_sparsity_equal && A_sparsity_equal;
+
+  // Without warm starting nothing carries over to the next solve, so undo the adaptation of rho. OSQP itself only
+  // resets the iterate.
+  if (allow_update && (config_.settings.warm_starting == 0) &&
+      (osqp_workspace_->settings->rho != config_.settings.rho) &&
+      (osqp_update_rho(osqp_workspace_, config_.settings.rho) != 0))
+  {
+    allow_update = false;
+    TESSERACT_LOG_WARN("OSQP resetting rho failed.");
+  }
 
   // If sparsity did not change, update data, otherwise cleanup and setup
   if (allow_update && (osqp_update_data_vec(osqp_workspace_, q_.data(), l_.data(), u_.data()) != 0))
