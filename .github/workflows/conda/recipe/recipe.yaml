@@ -50,6 +50,7 @@ requirements:
       - qpoases
       - if: unix
         then:
+          - piqp 0.6.*
           - xorg-libx11
           - xorg-libxext
     run:
@@ -75,6 +76,7 @@ requirements:
       - qpoases
       - if: unix
         then:
+          - piqp 0.6.*
           - xorg-libx11
           - xorg-libxext
 
