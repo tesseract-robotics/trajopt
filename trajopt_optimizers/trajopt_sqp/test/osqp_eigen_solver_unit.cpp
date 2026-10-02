@@ -535,6 +535,214 @@ TEST(OSQPEigenSolverUnit, SeedAfterAnInPlaceUpdateUsesTheNewScaling)  // NOLINT
   EXPECT_NEAR((solver.getSolution() - target).norm(), 0.0, 1e-6);
 }
 
+namespace
+{
+double osqpRho(const OSQPEigenSolver& solver) { return solver.solver_->solver()->settings->rho; }
+
+double configuredRho(const OSQPEigenSolver& solver) { return solver.solver_->settings()->getSettings()->rho; }
+
+/** @brief A solver that adapts rho every few iterations, whatever the size of the QP */
+void adaptRhoOften(OSQPEigenSolver& solver)
+{
+  checkEveryIteration(solver);
+  solveTightly(solver);
+}
+
+/** @brief Set up @p solver from @p qp and solve it to its optimum; rho has moved away from the configured one */
+void solveAndAdaptRho(OSQPEigenSolver& solver, const SmallQP& qp)
+{
+  ASSERT_NO_FATAL_FAILURE(loadQP(solver, qp));
+  ASSERT_TRUE(solver.solve());
+  ASSERT_NE(osqpRho(solver), configuredRho(solver)) << "the solve must adapt rho";
+}
+
+/** @brief Set up @p solver from the QP loaded into it and solve in one iteration; the rho of that set-up */
+double rhoOfSetup(OSQPEigenSolver& solver)
+{
+  // Loose enough to end Solved after one iteration; a solve without a solution would reset rho
+  solver.solver_->settings()->setMaxIteration(1);
+  solver.solver_->settings()->setCheckTermination(1);
+  solver.solver_->settings()->setAbsoluteTolerance(1e6);
+  solver.solver_->settings()->setRelativeTolerance(1e6);
+  EXPECT_TRUE(solver.solve());
+  return osqpRho(solver);
+}
+
+/** @brief Set up @p solver from @p qp and solve in one iteration, so rho is the one the workspace was set up with */
+double rhoOfNextSetup(OSQPEigenSolver& solver, const SmallQP& qp)
+{
+  EXPECT_NO_FATAL_FAILURE(loadQP(solver, qp));
+  return rhoOfSetup(solver);
+}
+
+/** @brief Two variables without coupling and no active row */
+SmallQP makeSmallerQP()
+{
+  SmallQP qp;
+  qp.hessian = makeMatrix(2, 2, { { 0, 0, 3.0 }, { 1, 1, 5.0 } });
+  qp.constraints = makeMatrix(2, 2, { { 0, 0, 1.0 }, { 1, 1, 1.0 } });
+  qp.lower = Eigen::Vector2d(-1.0, -1.0);
+  qp.upper = Eigen::Vector2d(1.0, 1.0);
+  return qp;
+}
+}  // namespace
+
+// A solver set up again starts from the rho the last solve adapted, and leaves the configured rho in its settings.
+TEST(OSQPEigenSolverUnit, RebuildKeepsTheAdaptedRho)  // NOLINT
+{
+  const SmallQP qp;
+  for (const SmallQP& next : { qp, makeSmallerQP() })
+  {
+    OSQPEigenSolver solver;
+    adaptRhoOften(solver);
+    ASSERT_NO_FATAL_FAILURE(solveAndAdaptRho(solver, qp));
+    const double adapted = osqpRho(solver);
+
+    // Another configured rho than the one the solver was set up with
+    solver.solver_->settings()->setRho(0.5);
+    ASSERT_NE(adapted, 0.5);
+    EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, next), adapted);
+    EXPECT_DOUBLE_EQ(configuredRho(solver), 0.5);
+  }
+}
+
+// A rho a failed solve drove astray is gone, in place and in the next set-up.
+TEST(OSQPEigenSolverUnit, NoRhoCarryAfterAFailedSolve)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  adaptRhoOften(solver);
+  solver.solver_->settings()->setMaxIteration(200);
+  solver.solver_->settings()->setAbsoluteTolerance(1e-30);
+  solver.solver_->settings()->setRelativeTolerance(1e-30);
+  ASSERT_NO_FATAL_FAILURE(loadQP(solver, qp));
+  ASSERT_FALSE(solver.solve());
+  ASSERT_GT(solver.solver_->solver()->info->rho_updates, 0) << "the solve must adapt rho";
+
+  EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, qp), configuredRho(solver));
+}
+
+// Without adaptive rho the configured rho wins, including one the caller changed between runs.
+TEST(OSQPEigenSolverUnit, ConfiguredRhoWinsWithoutAdaptiveRho)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  adaptRhoOften(solver);
+  solver.solver_->settings()->setAdaptiveRho(false);
+  ASSERT_NO_FATAL_FAILURE(loadQP(solver, qp));
+  ASSERT_TRUE(solver.solve());
+  ASSERT_DOUBLE_EQ(osqpRho(solver), configuredRho(solver));
+
+  solver.solver_->settings()->setRho(2.0);
+  EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, qp), 2.0);
+  EXPECT_DOUBLE_EQ(configuredRho(solver), 2.0);
+}
+
+// A set-up without adaptive rho starts from the configured rho, even when adaptive rho was turned off after the carry
+// was taken.
+TEST(OSQPEigenSolverUnit, SetupWithoutAdaptiveRhoIgnoresTheCarriedRho)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  adaptRhoOften(solver);
+  ASSERT_NO_FATAL_FAILURE(solveAndAdaptRho(solver, qp));
+  ASSERT_TRUE(solver.clear());
+  solver.solver_->settings()->setAdaptiveRho(false);
+  EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, qp), configuredRho(solver));
+}
+
+// A solver that never solved has nothing to carry.
+TEST(OSQPEigenSolverUnit, NoRhoCarryWithoutASolve)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  EXPECT_TRUE(solver.clear());
+  EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, qp), configuredRho(solver));
+}
+
+// A solver loaded but never solved has nothing to carry either: its next set-up starts from the rho configured then.
+TEST(OSQPEigenSolverUnit, NoRhoCarryFromAnUnsolvedQP)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  ASSERT_NO_FATAL_FAILURE(loadQP(solver, qp));
+  ASSERT_TRUE(solver.clear());
+  solver.solver_->settings()->setRho(2.0);
+  ASSERT_TRUE(solver.init(qp.gradient.size(), qp.lower.size()));
+  ASSERT_TRUE(solver.updateHessianMatrix(qp.hessian));
+  ASSERT_TRUE(solver.updateGradient(qp.gradient));
+  ASSERT_TRUE(solver.updateLinearConstraintsMatrix(qp.constraints));
+  ASSERT_TRUE(solver.updateBounds(qp.lower, qp.upper));
+  EXPECT_DOUBLE_EQ(rhoOfSetup(solver), 2.0);
+}
+
+// Clearing a solver that holds no set-up keeps the rho carried to its next set-up: clearing twice, or loading a QP and
+// clearing it unsolved, does not drop it.
+TEST(OSQPEigenSolverUnit, ClearWithoutASetupKeepsTheCarriedRho)  // NOLINT
+{
+  const SmallQP qp;
+  const std::vector<std::pair<std::string, std::function<void(OSQPEigenSolver&)>>> clears{
+    { "clear", [](OSQPEigenSolver& s) { ASSERT_TRUE(s.clear()); } },
+    { "load and clear", [&qp](OSQPEigenSolver& s) { ASSERT_NO_FATAL_FAILURE(loadQP(s, qp)); } },
+  };
+  for (const auto& [name, clear_again] : clears)
+  {
+    OSQPEigenSolver solver;
+    adaptRhoOften(solver);
+    ASSERT_NO_FATAL_FAILURE(solveAndAdaptRho(solver, qp));
+    const double adapted = osqpRho(solver);
+    ASSERT_TRUE(solver.clear());
+    ASSERT_NO_FATAL_FAILURE(clear_again(solver)) << name;
+    // Loading the QP clears the solver once more
+    EXPECT_DOUBLE_EQ(rhoOfNextSetup(solver, qp), adapted) << name;
+  }
+}
+
+// An in-place matrix update keeps the rho OSQP adapted.
+TEST(OSQPEigenSolverUnit, InPlaceUpdateKeepsTheAdaptedRho)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  adaptRhoOften(solver);
+  ASSERT_NO_FATAL_FAILURE(solveAndAdaptRho(solver, qp));
+  const double adapted = osqpRho(solver);
+
+  SmallQP updated;
+  updated.hessian = makeMatrix(2, 2, { { 0, 0, 2.0 }, { 0, 1, -0.5 }, { 1, 0, -0.5 }, { 1, 1, 3.0 } });
+  updated.constraints = makeMatrix(3, 2, { { 0, 0, 1.0 }, { 0, 1, 2.0 }, { 1, 0, 0.5 }, { 2, 1, 1.0 } });
+  // One iteration that ends Solved: too few to adapt rho again
+  OSQPSettings* live = solver.solver_->solver()->settings;
+  live->max_iter = 1;
+  live->eps_abs = 1e6;
+  live->eps_rel = 1e6;
+  ASSERT_TRUE(solver.updateHessianMatrix(updated.hessian));
+  ASSERT_TRUE(solver.updateLinearConstraintsMatrix(updated.constraints));
+  ASSERT_TRUE(solver.updateGradient(updated.gradient));
+  ASSERT_TRUE(solver.updateBounds(updated.lower, updated.upper));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_DOUBLE_EQ(osqpRho(solver), adapted);
+}
+
+// A set-up solver does not keep a rho adapted during a solve that returned no solution.
+TEST(OSQPEigenSolverUnit, FailedSolveResetsTheAdaptedRhoInPlace)  // NOLINT
+{
+  const SmallQP qp;
+  OSQPEigenSolver solver;
+  adaptRhoOften(solver);
+  ASSERT_NO_FATAL_FAILURE(solveAndAdaptRho(solver, qp));
+
+  // Too few iterations to reach a tolerance that tight, but enough to adapt rho
+  OSQPSettings* live = solver.solver_->solver()->settings;
+  live->max_iter = 200;
+  live->eps_abs = 1e-30;
+  live->eps_rel = 1e-30;
+  ASSERT_TRUE(solver.updateGradient(Eigen::Vector2d(-2.0, -0.5)));
+  ASSERT_FALSE(solver.solve());
+  ASSERT_GT(solver.solver_->solver()->info->rho_updates, 0) << "the solve must adapt rho";
+
+  EXPECT_DOUBLE_EQ(osqpRho(solver), configuredRho(solver));
+}
+
 // A successful solve replaces the failed status of an earlier one.
 TEST(OSQPEigenSolverUnit, SuccessfulSolveClearsTheFailedStatus)  // NOLINT
 {
