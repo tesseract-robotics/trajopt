@@ -1,10 +1,11 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
+#include <utility>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/kinematics/joint_group.h>
-#include <tesseract/kinematics/utils.h>
+#include <tesseract/common/utils.h>
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/visualization/visualization.h>
@@ -190,9 +191,77 @@ void DebugPrintInfo(const tesseract::collision::ContactResult& res,
   std::printf("\n");
 }
 
+/**
+ * @brief Select the configuration a link the check gave no interval is linearised at
+ * @param i Which of the contact's two links
+ * @param isTimestep1 Which endpoint the expression is being built at
+ *
+ * A link pinned to an endpoint linearises there. Any other is treated as occurring at the state
+ * being linearised: interpolating by its negative time would place the linearisation outside the
+ * segment.
+ */
+const Eigen::VectorXd& untimedLinearisationState(const tesseract::collision::ContactResult& contact_result,
+                                                 std::size_t i,
+                                                 const Eigen::VectorXd& dofvals0,
+                                                 const Eigen::VectorXd& dofvals1,
+                                                 bool isTimestep1)
+{
+  if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0)
+    return dofvals0;
+
+  if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1)
+    return dofvals1;
+
+  return isTimestep1 ? dofvals1 : dofvals0;
+}
+
+/** @brief Fill one timestep's gradient of one of a contact's links */
+void setLinkGradient(LinkGradientResults& link_gradient, double scale, Eigen::VectorXd gradient)
+{
+  link_gradient.has_gradient = true;
+  link_gradient.scale = scale;
+  link_gradient.gradient = std::move(gradient);
+}
+
+/** @brief Add a contact's linearised distance terms to an expression built in the given variables */
+void addGradientTerms(sco::AffExpr& dist,
+                      const GradientResults& grad,
+                      const sco::VarVector& vars,
+                      const Eigen::VectorXd& dofvals)
+{
+  for (const auto& g : grad.gradients)
+  {
+    if (g.has_gradient)
+    {
+      sco::exprInc(dist, sco::varDot(g.scale * g.gradient, vars));
+      sco::exprInc(dist, g.scale * -g.gradient.dot(dofvals));
+    }
+  }
+}
+
 }  // namespace
 
 GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
+                                                const tesseract::collision::ContactResult& contact_result,
+                                                double margin,
+                                                double coeff,
+                                                bool isTimestep1)
+{
+  // A cast contact stores the poses at the ends of the interval it was found in, which need not be
+  // those at dofvals, so take them from the state source.
+  tesseract::common::LinkIdTransformMap link_transforms;
+  get_state_fn_(link_transforms, dofvals);
+  std::array<Eigen::Isometry3d, 2> link_poses = contact_result.transform;
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (manip_->isActiveLinkId(contact_result.link_ids[i]))
+      link_poses[i] = link_transforms.at(contact_result.link_ids[i]);
+  }
+  return GetGradient(dofvals, link_poses, contact_result, margin, coeff, isTimestep1);
+}
+
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
+                                                const std::array<Eigen::Isometry3d, 2>& link_poses,
                                                 const tesseract::collision::ContactResult& contact_result,
                                                 double margin,
                                                 double coeff,
@@ -205,32 +274,30 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
     {
       results.gradients[i].has_gradient = true;
 
-      // Calculate Jacobian
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, contact_result.link_ids[i]);
-
-      // Need to change the base and ref point of the jacobian.
-      // When changing ref point you must provide a vector from the current ref
-      // point to the new ref point.
+      // One state carries the whole segment here, so the contact's interval is the segment and its
+      // weights reduce to 1 - cc_time and cc_time. An untimed contact takes the full weight.
       results.gradients[i].scale = 1;
-      Eigen::Isometry3d link_transform = contact_result.transform[i];
+      bool on_link = false;
       if (contact_result.cc_type[i] != tesseract::collision::ContinuousCollisionType::CCType_None)
       {
         assert(contact_result.cc_time[i] >= 0.0 && contact_result.cc_time[i] <= 1.0);
-        results.gradients[i].scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
-        link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
+        const trajopt_common::IntervalWeights w =
+            trajopt_common::intervalWeights(contact_result.cc_time[i], { 0.0, 1.0 });
+        results.gradients[i].scale = isTimestep1 ? w.end_a + w.end_b : w.start_a + w.start_b;
+        on_link = isTimestep1 ? w.end_at_contact : w.start_at_contact;
       }
-      // Since the link transform is known do not call calcJacobian with link point
-      tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
-#ifndef NDEBUG
-//      Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvals).at(contact_result.link_ids[i]);
-//      assert(test_link_transform.isApprox(link_transform, 0.0001));
+      // The reference point offset must be rotated by the pose at the configuration the Jacobian is
+      // evaluated at, except where the contact's own time names that configuration and the contact
+      // locates the witness in the world itself.
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, contact_result.link_ids[i]);
+      Eigen::Vector3d offset;
+      if (on_link)
+        offset = contact_result.nearest_points[i] - link_poses[i].translation();
+      else
+        offset = link_poses[i].linear() * contact_result.nearest_points_local[i];
 
-//      Eigen::MatrixXd jac_test;
-//      jac_test.resize(6, manip_->numJoints());
-//      tesseract::kinematics::numericalJacobian(jac_test, *manip_, dofvals, contact_result.link_ids[i],
-//      contact_result.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-#endif
+      tesseract::common::jacobianChangeRefPoint(jac, offset);
 
       results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
     }
@@ -262,59 +329,139 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
                                                 bool isTimestep1)
 {
   GradientResults results(margin, coeff);
-  Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
+  tesseract::common::LinkIdTransformMap link_transforms;
+  CalcGradientTwoState(dofvals0,
+                       dofvals1,
+                       link_transforms,
+                       contact_result,
+                       GetCastCount(dofvals0, dofvals1),
+                       isTimestep1 ? nullptr : &results,
+                       isTimestep1 ? &results : nullptr);
+  return results;
+}
+
+Eigen::VectorXd CollisionEvaluator::CalcLinkGradient(const Eigen::VectorXd& dofvalst,
+                                                     tesseract::common::LinkIdTransformMap& link_transforms,
+                                                     const tesseract::collision::ContactResult& contact_result,
+                                                     std::size_t i,
+                                                     bool on_link)
+{
+  // The reference point offset must be rotated by the pose at the configuration the jacobian is
+  // evaluated at. The contact's stored transforms need not be that configuration (a link the check
+  // gave no interval is linearised at a segment endpoint).
+  Eigen::MatrixXd jac = manip_->calcJacobian(dofvalst, contact_result.link_ids[i]);
+  get_state_fn_(link_transforms, dofvalst);
+  const Eigen::Isometry3d& link_transform = link_transforms.at(contact_result.link_ids[i]);
+
+  // A witness on the link at this configuration is already located in the world by the contact, so the
+  // offset follows from this pose's origin. The stored local point names a different point there: it is
+  // the mean of the two support points, and for a contact pinned to a cast end it is expressed in the
+  // frame of the pose the contact carries, which is the start of the cast either way.
+  Eigen::Vector3d offset;
+  if (on_link)
+    offset = contact_result.nearest_points[i] - link_transform.translation();
+  else
+    offset = link_transform.linear() * contact_result.nearest_points_local[i];
+
+  tesseract::common::jacobianChangeRefPoint(jac, offset);
+
+  return ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
+}
+
+void CollisionEvaluator::CalcLinkGradientTwoState(const Eigen::VectorXd& dofvals0,
+                                                  const Eigen::VectorXd& dofvals1,
+                                                  tesseract::common::LinkIdTransformMap& link_transforms,
+                                                  const tesseract::collision::ContactResult& contact_result,
+                                                  std::size_t i,
+                                                  long cast_count,
+                                                  LinkGradientResults* start,
+                                                  LinkGradientResults* end)
+{
+  const double cc_time = contact_result.cc_time[i];
+
+  // A link the check gave no interval carries full weight at the state it is linearised at, there
+  // being no interval to split between the endpoints. Gated on the time rather than cc_type, unlike
+  // trajopt_common's gradient functions' cc_type != CCType_None gate. The two agree on every contact
+  // the checks produce, because the backends' cast results and addInterpolatedCollisionResults both
+  // type every active link. Do not "fix" one side to match the other without first finding a caller
+  // that hits this combination.
+  if (cc_time < 0.0)
+  {
+    if (start != nullptr)
+      setLinkGradient(*start,
+                      1.0,
+                      CalcLinkGradient(untimedLinearisationState(contact_result, i, dofvals0, dofvals1, false),
+                                       link_transforms,
+                                       contact_result,
+                                       i,
+                                       false));
+    if (end != nullptr)
+      setLinkGradient(*end,
+                      1.0,
+                      CalcLinkGradient(untimedLinearisationState(contact_result, i, dofvals0, dofvals1, true),
+                                       link_transforms,
+                                       contact_result,
+                                       i,
+                                       false));
+    return;
+  }
+
+  // The link's contact point moves with it at both ends of the interval it was found in, so each
+  // timestep's gradient blends the gradients at those two states. A link pinned to a segment
+  // endpoint is a point in time there, weighted by its own time.
+  const bool pinned = contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0 ||
+                      contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1;
+  const trajopt_common::ContactInterval interval = pinned ? trajopt_common::ContactInterval{ cc_time, cc_time } :
+                                                            trajopt_common::contactInterval(cc_time, cast_count);
+  const trajopt_common::IntervalWeights w = trajopt_common::intervalWeights(cc_time, interval);
+
+  // An end no wanted timestep weights is not evaluated, except that a timestep weighting neither
+  // end takes the interval start's
+  const bool start_wants_a = (start != nullptr) && (w.start_a > 0.0 || w.start_b == 0.0);
+  const bool end_wants_a = (end != nullptr) && (w.end_a > 0.0 || w.end_b == 0.0);
+  const bool wants_b = ((start != nullptr) && w.start_b > 0.0) || ((end != nullptr) && w.end_b > 0.0);
+
+  Eigen::VectorXd at_a;
+  Eigen::VectorXd at_b;
+  if (start_wants_a || end_wants_a)
+    at_a = CalcLinkGradient(trajopt_common::intervalState(contact_result, i, dofvals0, dofvals1, interval.start),
+                            link_transforms,
+                            contact_result,
+                            i,
+                            w.start_at_contact);
+  if (wants_b)
+    at_b = CalcLinkGradient(trajopt_common::intervalState(contact_result, i, dofvals0, dofvals1, interval.end),
+                            link_transforms,
+                            contact_result,
+                            i,
+                            w.end_at_contact);
+
+  if (start != nullptr)
+    setLinkGradient(*start, w.start_a + w.start_b, trajopt_common::blendIntervalEnds(at_a, w.start_a, at_b, w.start_b));
+  if (end != nullptr)
+    setLinkGradient(*end, w.end_a + w.end_b, trajopt_common::blendIntervalEnds(at_a, w.end_a, at_b, w.end_b));
+}
+
+void CollisionEvaluator::CalcGradientTwoState(const Eigen::VectorXd& dofvals0,
+                                              const Eigen::VectorXd& dofvals1,
+                                              tesseract::common::LinkIdTransformMap& link_transforms,
+                                              const tesseract::collision::ContactResult& contact_result,
+                                              long cast_count,
+                                              GradientResults* start,
+                                              GradientResults* end)
+{
   for (std::size_t i = 0; i < 2; ++i)
   {
     if (manip_->isActiveLinkId(contact_result.link_ids[i]))
-    {
-      results.gradients[i].has_gradient = true;
-
-      if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0)
-        dofvalst = dofvals0;
-      else if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1)
-        dofvalst = dofvals1;
-      else
-        dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
-
-      // Calculate Jacobian
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvalst, contact_result.link_ids[i]);
-
-      // Need to change the base and ref point of the jacobian.
-      // When changing ref point you must provide a vector from the current ref
-      // point to the new ref point.
-      results.gradients[i].scale = 1;
-      Eigen::Isometry3d link_transform = contact_result.transform[i];
-
-      assert(contact_result.cc_time[i] >= 0.0 && contact_result.cc_time[i] <= 1.0);
-      results.gradients[i].scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
-      link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
-
-      // Since the link transform is known do not call calcJacobian with link point
-      tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
-
-#ifndef NDEBUG
-      const Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvalst).at(contact_result.link_ids[i]);
-      assert(test_link_transform.isApprox(link_transform, 0.0001));
-
-      Eigen::MatrixXd jac_test;
-      jac_test.resize(6, manip_->numJoints());
-      tesseract::kinematics::numericalJacobian(jac_test,
-                                               Eigen::Isometry3d::Identity(),
-                                               *manip_,
-                                               dofvalst,
-                                               contact_result.link_ids[i],
-                                               contact_result.nearest_points_local[i]);
-      const bool check = jac.isApprox(jac_test, 1e-3);
-      assert(check == true);
-#endif
-
-      results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
-    }
+      CalcLinkGradientTwoState(dofvals0,
+                               dofvals1,
+                               link_transforms,
+                               contact_result,
+                               i,
+                               cast_count,
+                               (start != nullptr) ? &start->gradients[i] : nullptr,
+                               (end != nullptr) ? &end->gradients[i] : nullptr);
   }
-
-  // DebugPrintInfo(contact_result, results.gradients[0].gradient, results.gradients[1].gradient, dofvalst);
-
-  return results;
 }
 
 GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
@@ -337,6 +484,12 @@ const tesseract::common::CollisionMarginData& CollisionEvaluator::getCollisionMa
 }
 
 const trajopt_common::CollisionCoeffData& CollisionEvaluator::getCollisionCoeffData() const { return coeff_data_; }
+
+long CollisionEvaluator::GetCastCount(const Eigen::Ref<const Eigen::VectorXd>& /*dofvals0*/,
+                                      const Eigen::Ref<const Eigen::VectorXd>& /*dofvals1*/) const
+{
+  return 0;
+}
 
 void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                                          std::vector<double>& exprs_margin,
@@ -366,22 +519,81 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
     pair.assign(contact_result.link_ids[0], contact_result.link_ids[1]);
     const double margin = margin_data_.getCollisionMargin(pair);
     const double coeff = coeff_data_.getCollisionCoeff(pair);
-    GradientResults grad = GetGradient(dofvals, contact_result, margin, coeff, isTimestep1);
-    for (const auto& g : grad.gradients)
-    {
-      if (g.has_gradient)
-      {
-        sco::exprInc(dist, sco::varDot(g.scale * g.gradient, vars));
-        sco::exprInc(dist, g.scale * -g.gradient.dot(dofvals));
-      }
-    }
+    GradientResults grad = GetGradient(dofvals, contact_result.transform, contact_result, margin, coeff, isTimestep1);
+    addGradientTerms(dist, grad, vars, dofvals);
 
     if (grad.gradients[0].has_gradient || grad.gradients[1].has_gradient)
     {
-      exprs.push_back(dist);
+      exprs.push_back(std::move(dist));
       exprs_margin.push_back(grad.margin);
       exprs_coeff.push_back(grad.coeff);
     }
+  }
+}
+
+void CollisionEvaluator::CollisionsToDistanceExpressionsTwoState(sco::AffExprVector* exprs0,
+                                                                 sco::AffExprVector* exprs1,
+                                                                 std::vector<double>& exprs_margin,
+                                                                 std::vector<double>& exprs_coeff,
+                                                                 const ContactResultVectorWrapper& dist_results,
+                                                                 const DblVec& x)
+{
+  const Eigen::VectorXd dofvals0 = sco::getVec(x, vars0_);
+  const Eigen::VectorXd dofvals1 = sco::getVec(x, vars1_);
+  // Every contact in the batch comes from the one check of this segment, so they share its cast count
+  const long cast_count = GetCastCount(dofvals0, dofvals1);
+
+  for (sco::AffExprVector* exprs : { exprs0, exprs1 })
+  {
+    if (exprs != nullptr)
+    {
+      exprs->clear();
+      exprs->reserve(dist_results.size());
+    }
+  }
+  exprs_margin.clear();
+  exprs_coeff.clear();
+  exprs_margin.reserve(dist_results.size());
+  exprs_coeff.reserve(dist_results.size());
+  tesseract::common::LinkIdPair pair;
+  for (const auto& res : dist_results)
+  {
+    const tesseract::collision::ContactResult& contact_result = res.get();
+    pair.assign(contact_result.link_ids[0], contact_result.link_ids[1]);
+    const double margin = margin_data_.getCollisionMargin(pair);
+    const double coeff = coeff_data_.getCollisionCoeff(pair);
+    GradientResults grad0(margin, coeff);
+    GradientResults grad1(margin, coeff);
+    CalcGradientTwoState(dofvals0,
+                         dofvals1,
+                         transforms_gradient_,
+                         contact_result,
+                         cast_count,
+                         (exprs0 != nullptr) ? &grad0 : nullptr,
+                         (exprs1 != nullptr) ? &grad1 : nullptr);
+
+    // Every wanted result is filled for the same links, so any one of them tells whether the contact
+    // involves the manipulator
+    const GradientResults& filled = (exprs0 != nullptr) ? grad0 : grad1;
+    if (!filled.gradients[0].has_gradient && !filled.gradients[1].has_gradient)
+      continue;
+
+    // Each expression is built in its own state's variables, so its linear term is offset by their
+    // value, not by the states the gradient is evaluated at
+    if (exprs0 != nullptr)
+    {
+      sco::AffExpr dist(0);
+      addGradientTerms(dist, grad0, vars0_, dofvals0);
+      exprs0->push_back(std::move(dist));
+    }
+    if (exprs1 != nullptr)
+    {
+      sco::AffExpr dist(0);
+      addGradientTerms(dist, grad1, vars1_, dofvals1);
+      exprs1->push_back(std::move(dist));
+    }
+    exprs_margin.push_back(margin);
+    exprs_coeff.push_back(coeff);
   }
 }
 
@@ -472,7 +684,7 @@ void CollisionEvaluator::CalcDistExpressionsStartFree(const DblVec& x,
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
   sco::AffExprVector exprs0;
-  CollisionsToDistanceExpressions(exprs0, exprs_margin, exprs_coeff, dist_results, vars0_, x, false);
+  CollisionsToDistanceExpressionsTwoState(&exprs0, nullptr, exprs_margin, exprs_coeff, dist_results, x);
 
   exprs.resize(exprs0.size());
   assert(exprs0.size() == dist_results.size());
@@ -493,7 +705,7 @@ void CollisionEvaluator::CalcDistExpressionsEndFree(const DblVec& x,
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
   sco::AffExprVector exprs1;
-  CollisionsToDistanceExpressions(exprs1, exprs_margin, exprs_coeff, dist_results, vars1_, x, true);
+  CollisionsToDistanceExpressionsTwoState(nullptr, &exprs1, exprs_margin, exprs_coeff, dist_results, x);
 
   exprs.resize(exprs1.size());
   assert(exprs1.size() == dist_results.size());
@@ -515,20 +727,13 @@ void CollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x,
 
   sco::AffExprVector exprs0;
   sco::AffExprVector exprs1;
-  std::vector<double> exprs_margin0;
-  std::vector<double> exprs_margin1;
-  std::vector<double> exprs_coeff0;
-  std::vector<double> exprs_coeff1;
-  CollisionsToDistanceExpressions(exprs0, exprs_margin0, exprs_coeff0, dist_results, vars0_, x, false);
-  CollisionsToDistanceExpressions(exprs1, exprs_margin1, exprs_coeff1, dist_results, vars1_, x, true);
+  CollisionsToDistanceExpressionsTwoState(&exprs0, &exprs1, exprs_margin, exprs_coeff, dist_results, x);
 
-  exprs_margin = exprs_margin0;
-  exprs_coeff = exprs_coeff0;
   exprs.resize(exprs0.size());
   assert(exprs0.size() == dist_results.size());
   assert(exprs0.size() == exprs1.size());
-  assert(exprs0.size() == exprs_margin0.size());
-  assert(exprs0.size() == exprs_coeff0.size());
+  assert(exprs0.size() == exprs_margin.size());
+  assert(exprs0.size() == exprs_coeff.size());
   for (std::size_t i = 0; i < exprs0.size(); ++i)
   {
     exprs[i] = sco::AffExpr(dist_results[i].get().distance);
@@ -1053,8 +1258,9 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 {
   assert(dist_results.empty());
   // Under LVS_CONTINUOUS a segment longer than the longest valid segment length is split into casts of at most that
-  // length. CONTINUOUS casts the segment once.
-  const double dist = (dof_vals1 - dof_vals0).norm();
+  // length. CONTINUOUS casts the segment once. The gradients place each contact in its cast from GetCastCount, so the
+  // check takes its count from there too.
+  const long cast_count = GetCastCount(dof_vals0, dof_vals1);
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_ids_.empty())
@@ -1089,11 +1295,10 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 #endif
   };
 
-  if (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
-      dist > collision_check_config_.longest_valid_segment_length)
+  if (cast_count > 1)
   {
-    // Calculate the number state to interpolate
-    auto cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;
+    // n casts need n + 1 states
+    const long cnt = cast_count + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract::common::TrajArray subtraj(cnt, dof_vals0.size());
@@ -1103,10 +1308,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
     /** @todo require this to be passed in to reduce memory allocations */
     tesseract::collision::ContactResultMap contacts{ dist_results };
-    // n sub-states give n - 1 casts, so the cast marking the segment end is one below the count.
-    // The count keeps the time normalisation: cast i spans [i * dt, (i + 1) * dt].
-    const tesseract::common::TrajArray::Index cast_count{ subtraj.rows() - 1 };
-    const tesseract::common::TrajArray::Index last_cast_idx{ cast_count - 1 };
+    // The cast marking the segment end is one below the count; cast i spans [i * dt, (i + 1) * dt].
+    const long last_cast_idx{ cast_count - 1 };
     const double dt = 1.0 / double(cast_count);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
@@ -1136,6 +1339,12 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 
     dist_results.filter(filter);
   }
+}
+
+long CastCollisionEvaluator::GetCastCount(const Eigen::Ref<const Eigen::VectorXd>& dofvals0,
+                                          const Eigen::Ref<const Eigen::VectorXd>& dofvals1) const
+{
+  return trajopt_common::castCount(collision_check_config_, (dofvals1 - dofvals0).norm());
 }
 
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x,
