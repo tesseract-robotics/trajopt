@@ -11,10 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-const std::vector<std::string> ModelType::MODEL_NAMES_ = {
-  "GUROBI", "OSQP", "QPOASES", "BPMPD", "PIQP", "AUTO_SOLVER"
-};
-
 void vars2inds(const VarVector& vars, SizeTVec& inds)
 {
   inds = SizeTVec(vars.size());
