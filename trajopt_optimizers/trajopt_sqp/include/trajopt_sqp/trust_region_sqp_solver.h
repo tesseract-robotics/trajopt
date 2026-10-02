@@ -126,7 +126,13 @@ protected:
   SQPResults results_;
   std::vector<std::shared_ptr<SQPCallback>> callbacks_;
 
+  /** @brief Whether this run has already warned that the QP solver rejected a seed */
+  bool warned_seed_rejection_{ false };
+
   void constraintMeritCoeffChanged();
+
+  /** @brief Seed the next solve from the QP problem at its current variables, after its last data update */
+  void seedQP();
 };
 
 }  // namespace trajopt_sqp

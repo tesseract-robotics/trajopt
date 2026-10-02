@@ -56,6 +56,7 @@ TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(
 bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 {
   qp_problem = std::move(qp_prob);
+  warned_seed_rejection_ = false;
 
   // Initialize optimization parameters
   results_ = SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraints(), qp_problem->getNumNLPCosts());
@@ -236,7 +237,6 @@ bool TrustRegionSQPSolver::stepSQPSolver()
     qp_solver->updateGradient(qp_problem->getGradient());
     qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
     qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
-    qp_solver->setWarmStart(*qp_problem);
   }
   else
   {
@@ -246,16 +246,18 @@ bool TrustRegionSQPSolver::stepSQPSolver()
         !qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix()) ||
         !qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper()))
     {
-      // pattern likely changed; fall back to full rebuild
+      // The solver refused an in-place update; set it up again with the whole QP
       qp_solver->clear();
       qp_solver->init(nv, nc);
       qp_solver->updateHessianMatrix(qp_problem->getHessian());
       qp_solver->updateGradient(qp_problem->getGradient());
       qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
-      qp_solver->setWarmStart(*qp_problem);
     }
   }
+
+  // Start this convexification's first solve from its own QP; what the solver kept describes another QP
+  seedQP();
 
   // Trust region loop
   runTrustRegionLoop();
@@ -271,6 +273,21 @@ bool TrustRegionSQPSolver::stepSQPSolver()
     return true;
   }
   return false;
+}
+
+void TrustRegionSQPSolver::seedQP()
+{
+  if (qp_solver->setWarmStart(*qp_problem))
+    return;
+
+  // A solver that rejects one seed usually rejects them all; warn once per run
+  if (warned_seed_rejection_)
+  {
+    TESSERACT_LOG_DEBUG("QP solver rejected the warm start; the next solve starts from the solver's own iterate");
+    return;
+  }
+  TESSERACT_LOG_WARN("QP solver rejected the warm start; the next solve starts from the solver's own iterate");
+  warned_seed_rejection_ = true;
 }
 
 void TrustRegionSQPSolver::runTrustRegionLoop()
@@ -296,11 +313,13 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_solver_failures++;
       TESSERACT_LOG_WARN("Convex solver failed ({}/{})!", qp_solver_failures, params.max_qp_solver_failures);
 
+      // A failed solve leaves no iterate worth continuing from; the variables are back at the best point
       if (qp_solver_failures < params.max_qp_solver_failures)
       {
         qp_problem->scaleBoxSize(params.trust_shrink_ratio);
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
+        seedQP();
 
         TESSERACT_LOG_DEBUG("Shrunk trust region. New box size: {:.4f}", results_.box_size[0]);
         continue;
@@ -312,6 +331,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
         qp_problem->setBoxSize(Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), params.min_trust_box_size));
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
+        seedQP();
 
         TESSERACT_LOG_DEBUG("Shrunk trust region to minimum. New box size: {:.4f}", results_.box_size[0]);
         continue;
