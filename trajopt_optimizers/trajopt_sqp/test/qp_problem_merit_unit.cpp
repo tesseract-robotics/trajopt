@@ -21,6 +21,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/types.h>
+#include <trajopt_sqp/warm_start.h>
 #include <trajopt_ifopt/core/bounds.h>
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
@@ -109,6 +110,37 @@ private:
   Eigen::VectorXd coeffs_;
 };
 
+/** @brief Constraint set with one row, the sum of its variable block, so the row couples every variable in it. */
+class SumTestSet : public trajopt_ifopt::ConstraintSet
+{
+public:
+  SumTestSet(std::shared_ptr<const trajopt_ifopt::Var> var, std::string name, trajopt_ifopt::Bounds bound)
+    : ConstraintSet(std::move(name), 1), var_(std::move(var)), bound_(bound)
+  {
+    non_zeros_ = var_->size();
+  }
+
+  int update() override { return rows_; }
+  Eigen::VectorXd getValues() const override { return Eigen::VectorXd::Constant(1, var_->value().sum()); }
+  Eigen::VectorXd getCoefficients() const override { return Eigen::VectorXd::Ones(1); }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const override { return { bound_ }; }
+
+  trajopt_ifopt::Jacobian getJacobian() const override
+  {
+    trajopt_ifopt::Jacobian jac(1, variables_->getRows());
+    jac.reserve(var_->size());
+    jac.startVec(0);
+    for (Eigen::Index j = 0; j < var_->size(); ++j)
+      jac.insertBack(0, var_->getIndex() + j) = 1.0;
+    jac.finalize();
+    return jac;
+  }
+
+private:
+  std::shared_ptr<const trajopt_ifopt::Var> var_;
+  trajopt_ifopt::Bounds bound_;
+};
+
 /** @brief Dynamic constraint set that currently has no rows, as a collision set out of contact does. */
 class EmptyTestSet : public trajopt_ifopt::ConstraintSet
 {
@@ -134,8 +166,9 @@ struct TestVariables
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
 };
 
-/** @brief One node, holding one unbounded variable block, per entry of @p starts. */
-TestVariables makeVariables(const std::vector<Eigen::VectorXd>& starts)
+/** @brief One node, holding one variable block with every entry limited to @p bound, per entry of @p starts. */
+TestVariables makeVariables(const std::vector<Eigen::VectorXd>& starts,
+                            trajopt_ifopt::Bounds bound = trajopt_ifopt::NoBound)
 {
   TestVariables t;
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -143,10 +176,8 @@ TestVariables makeVariables(const std::vector<Eigen::VectorXd>& starts)
   {
     auto node = std::make_unique<trajopt_ifopt::Node>("node" + std::to_string(k));
     const auto n = static_cast<std::size_t>(starts[k].size());
-    t.vars.push_back(node->addVar("position",
-                                  std::vector<std::string>(n, "j"),
-                                  starts[k],
-                                  std::vector<trajopt_ifopt::Bounds>(n, trajopt_ifopt::NoBound)));
+    t.vars.push_back(node->addVar(
+        "position", std::vector<std::string>(n, "j"), starts[k], std::vector<trajopt_ifopt::Bounds>(n, bound)));
     nodes.push_back(std::move(node));
   }
   t.variables = std::make_shared<trajopt_ifopt::NodesVariables>("trajectory", std::move(nodes));
@@ -170,6 +201,35 @@ void expectVectorNear(const Eigen::Ref<const Eigen::VectorXd>& actual,
   ASSERT_EQ(actual.size(), expected.size());
   for (Eigen::Index i = 0; i < actual.size(); ++i)
     EXPECT_NEAR(actual(i), expected(i), tol) << "at index " << i;
+}
+
+/** @brief Expect the QP's bounds on the NLP variables to be their limits intersected with the trust box */
+template <typename Problem>
+void expectNLPVariableBoundsFollowTheBox(Problem& qp)
+{
+  qp.setBoxSize(Eigen::VectorXd::Constant(1, 0.5));
+  expectVectorNear(qp.getNLPVariableBoundsLower(), toVectorXd({ 0.4 }));
+  expectVectorNear(qp.getNLPVariableBoundsUpper(), toVectorXd({ 1.0 }));
+
+  double scale = 0.1;
+  qp.scaleBoxSize(scale);
+  expectVectorNear(qp.getNLPVariableBoundsLower(), toVectorXd({ 0.85 }));
+  expectVectorNear(qp.getNLPVariableBoundsUpper(), toVectorXd({ 0.95 }));
+}
+
+/** @brief Expect the start point of the convexified @p qp to satisfy every QP row */
+void expectStartPointSatisfiesEveryRow(const trajopt_sqp::QPProblem& qp)
+{
+  const Eigen::VectorXd x = trajopt_sqp::qpStartPoint(qp);
+  ASSERT_EQ(x.size(), qp.getNumQPVars());
+  ASSERT_GT(qp.getNumQPVars(), qp.getNumNLPVars()) << "the fixture must produce slacks";
+
+  const Eigen::VectorXd ax = qp.getConstraintMatrix() * x;
+  for (Eigen::Index r = 0; r < ax.size(); ++r)
+  {
+    EXPECT_GE(ax(r), qp.getBoundsLower()(r) - 1e-12) << "row " << r;
+    EXPECT_LE(ax(r), qp.getBoundsUpper()(r) + 1e-12) << "row " << r;
+  }
 }
 }  // namespace
 
@@ -448,4 +508,69 @@ TEST(QPProblemMerit, SeedMeritWeightsConstraintViolations)  // NOLINT
   expectVectorNear(results.best_constraint_violations.weighted, toVectorXd({ 5.1 }));
   // Hinge cost 2*0.5 + 3*0.8 = 3.4, plus the initial merit coefficient times the weighted violation.
   EXPECT_NEAR(results.best_exact_merit, 3.4 + (solver.params.initial_merit_error_coeff * 5.1), 1e-12);
+}
+
+TEST(QPProblemMerit, TrajOptNLPVariableBoundsFollowTheBox)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.9 }) }, trajopt_ifopt::Bounds(-1.0, 1.0));
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+  qp->convexify();
+  expectNLPVariableBoundsFollowTheBox(*qp);
+}
+
+TEST(QPProblemMerit, IfoptNLPVariableBoundsFollowTheBox)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.9 }) }, trajopt_ifopt::Bounds(-1.0, 1.0));
+  auto qp = std::make_shared<trajopt_sqp::IfoptQPProblem>(t.variables);
+  // The constraint row puts the variable bound rows behind it
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "equality", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 1.0 }))));
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "squared", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+  expectNLPVariableBoundsFollowTheBox(*qp);
+}
+
+// On a convexified TrajOptQPProblem, the start point satisfies every QP row, even from an iterate outside its bounds.
+TEST(QPProblemMerit, StartPointSatisfiesEveryTrajOptRow)  // NOLINT
+{
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 0.5, -0.3 }), toVectorXd({ 1.5 }) }, trajopt_ifopt::Bounds(-1.0, 1.0));
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 1.0, 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "equality", trajopt_ifopt::Bounds(0.2, 0.2), constantWeights(toVectorXd({ 1.0, 1.0 }))));
+  qp->addConstraintSet(std::make_shared<SumTestSet>(t.vars[1], "sum", trajopt_ifopt::BoundGreaterZero));
+  qp->setup();
+  qp->convexify();
+
+  expectVectorNear(trajopt_sqp::qpStartPoint(*qp).head(3), toVectorXd({ 0.5, -0.3, 1.0 }));  // 1.5 clamped
+  expectStartPointSatisfiesEveryRow(*qp);
+}
+
+// On a convexified IfoptQPProblem, whose equality rows hold a slack of each sign, the start point satisfies every QP
+// row, even from an iterate outside its bounds.
+TEST(QPProblemMerit, StartPointSatisfiesEveryIfoptRow)  // NOLINT
+{
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 0.5, -0.3 }), toVectorXd({ 1.5, 0.4 }) }, trajopt_ifopt::Bounds(-1.0, 1.0));
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  auto qp = std::make_shared<trajopt_sqp::IfoptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "equality", trajopt_ifopt::Bounds(0.2, 0.2), constantWeights(toVectorXd({ 1.0, 1.0 }))));
+  qp->addConstraintSet(std::make_shared<SumTestSet>(t.vars[1], "greater", trajopt_ifopt::Bounds(2.0, inf)));
+  qp->addConstraintSet(std::make_shared<SumTestSet>(t.vars[0], "smaller", trajopt_ifopt::Bounds(-inf, -1.0)));
+  qp->setup();
+  qp->convexify();
+
+  expectVectorNear(trajopt_sqp::qpStartPoint(*qp).head(4), toVectorXd({ 0.5, -0.3, 1.0, 0.4 }));  // 1.5 clamped
+  expectStartPointSatisfiesEveryRow(*qp);
 }

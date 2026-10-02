@@ -95,6 +95,15 @@ public:
   const Eigen::VectorXd& getBoundsLower() const override { return bounds_lower_; }
   const Eigen::VectorXd& getBoundsUpper() const override { return bounds_upper_; }
 
+  Eigen::VectorXd getNLPVariableBoundsLower() const override
+  {
+    return bounds_lower_.segment(num_nlp_cnts_, num_nlp_vars_);
+  }
+  Eigen::VectorXd getNLPVariableBoundsUpper() const override
+  {
+    return bounds_upper_.segment(num_nlp_cnts_, num_nlp_vars_);
+  }
+
 protected:
   std::shared_ptr<trajopt_ifopt::Problem> nlp_;
 
