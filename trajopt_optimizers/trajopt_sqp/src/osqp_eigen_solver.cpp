@@ -93,6 +93,19 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 
 bool OSQPEigenSolver::clear()
 {
+  // Only a set-up solver takes or drops the carry; clearing one without a set-up keeps a carry pending. A rho from a
+  // solve without a solution may be extreme, so the configured rho wins; it also wins without adaptive rho, here and at
+  // the set-up in solve()
+  if (solver_->isInitialized())
+  {
+    const bool solved =
+        last_solve_status_ == OsqpEigen::Status::Solved || last_solve_status_ == OsqpEigen::Status::SolvedInaccurate;
+    carried_rho_.reset();
+    if (solved && solver_->settings()->getSettings()->adaptive_rho != 0)  // NOLINT
+      carried_rho_ = solver_->solver()->settings->rho;
+  }
+  last_solve_status_ = OsqpEigen::Status::Unsolved;
+
   // Clear all data
   solver_->clearSolver();
   solver_->data()->clearHessianMatrix();
@@ -114,9 +127,18 @@ bool OSQPEigenSolver::clear()
 bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
+  last_solve_status_ = OsqpEigen::Status::Unsolved;
   if (!solver_->isInitialized())  // NOLINT
   {
-    if (!solver_->initSolver())
+    // OSQP copies the settings in setup: the carried rho goes in for the setup only, and only with adaptive rho on in
+    // the settings it is set up with; every set-up consumes the carry
+    const double configured_rho = solver_->settings()->getSettings()->rho;
+    if (carried_rho_.has_value() && solver_->settings()->getSettings()->adaptive_rho != 0)  // NOLINT
+      solver_->settings()->setRho(*carried_rho_);
+    const bool set_up = solver_->initSolver();
+    solver_->settings()->setRho(configured_rho);
+    carried_rho_.reset();
+    if (!set_up)
     {
       solver_status_ = QPSolverStatus::kFailed;
       return false;
@@ -182,6 +204,8 @@ bool OSQPEigenSolver::solve()
   /** @todo Need to check if this is what we want in the new version */
   const auto solveExitFlag = solver_->solveProblem();
   const auto status = solver_->getStatus();
+  if (solveExitFlag == OsqpEigen::ErrorExitFlag::NoError)
+    last_solve_status_ = status;
   if (OSQP_COMPARE_DEBUG_MODE)
     std::cout << "OSQP Status Value: " << static_cast<int>(solver_->getStatus()) << '\n';
 
@@ -195,6 +219,16 @@ bool OSQPEigenSolver::solve()
     solver_status_ = QPSolverStatus::kInitialized;
     return true;
   }
+
+  // A rho adapted during a solve without a solution may be extreme: the next solve of this workspace starts from the
+  // configured one. The update's own status goes unreported: solve() fails either way.
+  // osqp_update_rho stores the rho before it refactorizes: should that fail, the configured rho stands with a
+  // factorization that does not match it. Termination is still checked against the data, so later solves fail or
+  // return a solution within OSQP's tolerances until the next successful refactorization, at the latest the in-place
+  // matrix update, or set-up, of TrustRegionSQPSolver's next convexification.
+  const OSQPSettings* configured = solver_->settings()->getSettings();
+  if (configured->adaptive_rho != 0 && solver_->solver()->settings->rho != configured->rho)  // NOLINT
+    osqp_update_rho(solver_->solver().get(), configured->rho);
 
   if (verbosity > 0)  // NOLINT
   {
