@@ -305,6 +305,16 @@ void OSQPModel::createOrUpdateSolver()
   allow_update = allow_update && P_sparsity_equal && A_sparsity_equal;
   allow_explicit_warm_start = allow_explicit_warm_start && P_sparsity_equal && A_sparsity_equal;
 
+  // Without warm starting nothing carries over to the next solve, so undo the adaptation of rho. OSQP itself only
+  // resets the iterate.
+  if (allow_update && (config_.settings.warm_starting == 0) &&
+      (osqp_workspace_->settings->rho != config_.settings.rho) &&
+      (osqp_update_rho(osqp_workspace_, config_.settings.rho) != 0))
+  {
+    allow_update = false;
+    TESSERACT_LOG_WARN("OSQP resetting rho failed.");
+  }
+
   // If sparsity did not change, update data, otherwise cleanup and setup
   if (allow_update && (osqp_update_data_vec(osqp_workspace_, q_.data(), l_.data(), u_.data()) != 0))
   {

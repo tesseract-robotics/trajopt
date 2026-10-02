@@ -22,6 +22,7 @@ struct OSQPModelConfig : public ModelConfig
 
   /**
    * @brief Update the OSQP workspace for subsequent optimizations, instead of recreating it each time.
+   * @details Whether the iterate and rho carry over to the next solve is decided by settings.warm_starting alone.
    */
   bool update_workspace{ false };
 
