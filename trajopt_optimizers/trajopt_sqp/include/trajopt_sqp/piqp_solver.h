@@ -50,8 +50,8 @@ public:
   ~PIQPSolver() override;
   PIQPSolver(const PIQPSolver&) = delete;
   PIQPSolver& operator=(const PIQPSolver&) = delete;
-  PIQPSolver(PIQPSolver&&) = default;
-  PIQPSolver& operator=(PIQPSolver&&) = default;
+  PIQPSolver(PIQPSolver&&) = delete;
+  PIQPSolver& operator=(PIQPSolver&&) = delete;
 
   static void setDefaultPIQPSettings(piqp::Settings<double>& settings);
 
