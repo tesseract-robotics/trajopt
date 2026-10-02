@@ -42,6 +42,14 @@ class QPProblem;
 
 /**
  * @brief An Interface to the OSQPEigen QP Solver
+ *
+ * OSQP copies the settings when it sets a solver up: settings changed through solver_->settings() afterwards take
+ * effect at the next set-up only, and in-place updates keep OSQP's copy.
+ *
+ * Matrix values taken in place reach OSQP in one refactorization at the next bounds update, seed or solve. A
+ * matrix-only in-place update keeps OSQP's classification of each row as an equality, an inequality or loose, which
+ * sets the row's rho, from the last bounds given; the next bounds update classifies the rows again with the new data.
+ * TrustRegionSQPSolver always updates the bounds after the matrices.
  */
 class OSQPEigenSolver : public QPSolver
 {
@@ -66,19 +74,35 @@ public:
 
   Eigen::VectorXd getSolution() override;
 
+  /**
+   * @brief Load the Hessian; a set-up solver takes it in place only when the sparsity pattern of its upper triangle,
+   * explicit zeros included, equals the one the solver was set up with, and refuses any other
+   */
   bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) override;
 
   bool updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient) override;
 
+  /** @brief Load the lower bounds; see updateBounds() */
   bool updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound) override;
 
+  /** @brief Load the upper bounds; see updateBounds() */
   bool updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
+  /**
+   * @brief Load the bounds
+   * @details A set-up solver takes any matrix values pending in place first, so OSQP classifies the rows as the new
+   * data scales them; false if OSQP rejects those values.
+   */
   bool updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
                     const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
+  /**
+   * @brief Load the constraint matrix; a set-up solver takes it in place only when its sparsity pattern, explicit zeros
+   * included, equals the one the solver was set up with, and refuses any other
+   */
   bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) override;
 
+  /** @brief Seed the primal from @p qp_problem and start the duals at zero; ignored with warm starting off */
   bool setWarmStart(const QPProblem& qp_problem) override;
 
   QPSolverStatus getSolverStatus() const override { return solver_status_; }
@@ -86,13 +110,21 @@ public:
   std::unique_ptr<OsqpEigen::Solver> solver_;
 
 private:
+  /** @brief Hand OSQP the matrix values taken in place, in one refactorization; false if OSQP rejects them */
+  bool applyPendingMatrices();
+
   // Depending on what they decide to do with this issue, these could be dropped
   // https://github.com/gbionics/osqp-eigen/issues/17
   Eigen::VectorXd x0_;
-  Eigen::VectorXd y0_;
+  Eigen::VectorXd y0_;  // the seed's dual half, passed to OSQP with x0_
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   Eigen::VectorXd gradient_;
+  // Matrices taken in place but not yet handed to OSQP, in OSQP's column-major layout; P holds its upper triangle
+  Eigen::SparseMatrix<double, Eigen::ColMajor> pending_hessian_;
+  Eigen::SparseMatrix<double, Eigen::ColMajor> pending_constraints_;
+  bool hessian_pending_{ false };
+  bool constraints_pending_{ false };
   Eigen::Index num_vars_{ 0 };
   Eigen::Index num_cnts_{ 0 };
 
