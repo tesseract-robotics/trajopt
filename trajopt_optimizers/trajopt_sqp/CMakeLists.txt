@@ -29,7 +29,8 @@ add_library(
   src/trust_region_sqp_solver.cpp
   src/trajopt_qp_problem.cpp
   src/expressions.cpp
-  src/types.cpp)
+  src/types.cpp
+  src/warm_start.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_ifopt tesseract::common OsqpEigen::OsqpEigen)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                                   $<INSTALL_INTERFACE:include>)

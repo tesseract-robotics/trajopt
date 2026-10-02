@@ -1256,4 +1256,16 @@ const trajopt_ifopt::Jacobian& TrajOptQPProblem::getConstraintMatrix() const { r
 const Eigen::VectorXd& TrajOptQPProblem::getBoundsLower() const { return impl_->cvp.bounds_lower; }
 const Eigen::VectorXd& TrajOptQPProblem::getBoundsUpper() const { return impl_->cvp.bounds_upper; }
 
+Eigen::VectorXd TrajOptQPProblem::getNLPVariableBoundsLower() const
+{
+  const auto& cvp = std::as_const<Implementation>(*impl_).cvp;
+  return cvp.bounds_lower.segment(cvp.n_merit_constraints + cvp.n_penalty_constraints, cvp.n_nlp_vars);
+}
+
+Eigen::VectorXd TrajOptQPProblem::getNLPVariableBoundsUpper() const
+{
+  const auto& cvp = std::as_const<Implementation>(*impl_).cvp;
+  return cvp.bounds_upper.segment(cvp.n_merit_constraints + cvp.n_penalty_constraints, cvp.n_nlp_vars);
+}
+
 }  // namespace trajopt_sqp

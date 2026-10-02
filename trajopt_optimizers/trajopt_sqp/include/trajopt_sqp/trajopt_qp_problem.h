@@ -73,6 +73,9 @@ public:
   const Eigen::VectorXd& getBoundsLower() const override;
   const Eigen::VectorXd& getBoundsUpper() const override;
 
+  Eigen::VectorXd getNLPVariableBoundsLower() const override;
+  Eigen::VectorXd getNLPVariableBoundsUpper() const override;
+
 private:
   struct Implementation;
   std::unique_ptr<Implementation> impl_;

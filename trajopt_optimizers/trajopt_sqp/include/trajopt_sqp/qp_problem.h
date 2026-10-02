@@ -137,6 +137,11 @@ public:
   virtual const trajopt_ifopt::Jacobian& getConstraintMatrix() const = 0;
   virtual const Eigen::VectorXd& getBoundsLower() const = 0;
   virtual const Eigen::VectorXd& getBoundsUpper() const = 0;
+
+  /** @brief The lower bounds the QP imposes on the NLP variables: their limits intersected with the trust box */
+  virtual Eigen::VectorXd getNLPVariableBoundsLower() const = 0;
+  /** @brief The upper bounds the QP imposes on the NLP variables: their limits intersected with the trust box */
+  virtual Eigen::VectorXd getNLPVariableBoundsUpper() const = 0;
 };
 
 }  // namespace trajopt_sqp
