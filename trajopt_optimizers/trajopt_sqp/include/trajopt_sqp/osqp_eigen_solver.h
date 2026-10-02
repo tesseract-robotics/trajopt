@@ -26,7 +26,9 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <OsqpEigen/Constants.hpp>
 #include <OsqpEigen/Settings.hpp>
+#include <optional>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/qp_solver.h>
@@ -50,6 +52,15 @@ class QPProblem;
  * matrix-only in-place update keeps OSQP's classification of each row as an equality, an inequality or loose, which
  * sets the row's rho, from the last bounds given; the next bounds update classifies the rows again with the new data.
  * TrustRegionSQPSolver always updates the bounds after the matrices.
+ *
+ * With adaptive rho on, clear() carries the rho OSQP adapted to the next set-up of this solver, provided the last
+ * solve() returned true; the configured rho in the settings is left as it was. Clearing a solver that holds no set-up
+ * keeps the rho carried so far. A set-up with adaptive rho off in the settings starts from the configured rho and
+ * drops the carry. A solver reused across runs therefore carries rho across them; a new solver starts from the
+ * configured rho. A rho adapted during a solve() that returned false does not survive it, in place either:
+ * solve() resets OSQP to the configured rho, clamped to OSQP's range. A solve() that fails before OSQP runs, on
+ * rejected pending matrices or a failed set-up, resets nothing. solve() returns false even if the refactorization for
+ * the reset fails, which cannot happen while P + sigma I is positive definite.
  */
 class OSQPEigenSolver : public QPSolver
 {
@@ -68,6 +79,7 @@ public:
 
   bool init(Eigen::Index num_vars, Eigen::Index num_cnts) override;
 
+  /** @brief Drop the QP and the workspace; see the class description for the rho the next set-up starts from */
   bool clear() override;
 
   bool solve() override;
@@ -127,6 +139,11 @@ private:
   bool constraints_pending_{ false };
   Eigen::Index num_vars_{ 0 };
   Eigen::Index num_cnts_{ 0 };
+
+  // The OSQP status of the last solve(); Unsolved when OSQP did not run it, or after clear()
+  OsqpEigen::Status last_solve_status_{ OsqpEigen::Status::Unsolved };
+  // The adapted rho the next set-up in solve() starts from
+  std::optional<double> carried_rho_;
 
   QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
 };
