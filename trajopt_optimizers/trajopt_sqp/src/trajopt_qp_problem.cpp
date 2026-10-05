@@ -899,16 +899,17 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Process Squared Costs
   /** @note See CostFromFunc::convex in modeling_utils.cpp. */
+  // Sized without objective rows too, so the expression never holds the rows of an earlier convexification
+  cvp.squared_objective_nlp.constants.setZero(cvp.n_objective_terms);
+  cvp.squared_objective_nlp.linear_coeffs.resize(cvp.n_objective_terms, cvp.n_nlp_vars);
+  cvp.squared_objective_nlp.linear_coeffs.setZero();
+  cvp.squared_objective_nlp.objective_linear_coeffs.setZero(cvp.n_nlp_vars);
+  cvp.squared_objective_nlp.objective_quadratic_coeffs.resize(cvp.n_nlp_vars, cvp.n_nlp_vars);
+  cvp.squared_objective_nlp.objective_quadratic_coeffs.setZero();
+  cvp.squared_objective_nlp.quadratic_coeffs.resize(static_cast<std::size_t>(cvp.n_objective_terms));
+
   if (cvp.n_objective_terms > 0)
   {
-    cvp.squared_objective_nlp.constants.setZero(cvp.n_objective_terms);
-    cvp.squared_objective_nlp.linear_coeffs.resize(cvp.n_objective_terms, cvp.n_nlp_vars);
-    cvp.squared_objective_nlp.linear_coeffs.setZero();
-    cvp.squared_objective_nlp.objective_linear_coeffs.setZero(cvp.n_nlp_vars);
-    cvp.squared_objective_nlp.objective_quadratic_coeffs.resize(cvp.n_nlp_vars, cvp.n_nlp_vars);
-    cvp.squared_objective_nlp.objective_quadratic_coeffs.setZero();
-    cvp.squared_objective_nlp.quadratic_coeffs.resize(static_cast<std::size_t>(cvp.n_objective_terms));
-
     Eigen::Index row = 0;
     bool has_obj_quad = false;
     for (std::size_t i = 0; i < objective_terms.size(); ++i)
