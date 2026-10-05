@@ -26,13 +26,15 @@
  * so this does not have to manage this internally. This would allow for other high level solvers
  * SNOPT to be leveraged.
  *
- * QP Variables: |NLP Vars, Hinge Cnt Cost Slack Variable, Absolute Cnt Cost Slack Variable, NLP Constraint Slack Vars |
+ * QP Variables: |NLP Vars, Hinge Cnt Cost Slack Variable, Absolute Cnt Cost Slack Variable, NLP Constraint Slack Vars,
+ *                Squared Cost One-Sided Row Slack Vars |
  *
  * Constraint Matrix
- * | Hinge Cost Cnt Jacobian   , Hinge cost cnt slack variable jacobian    |
- * | Absolute Cost Cnt Jacobian, Absolute cost cnt slack variable jacobian |
- * | NLP constraint jacobian   , NLP constraint slack variable jacobian    |
- * |        QP Variable Jacobian (Diag Matrix of ones)                     |
+ * | Hinge Cost Cnt Jacobian           , Hinge cost cnt slack variable jacobian            |
+ * | Absolute Cost Cnt Jacobian        , Absolute cost cnt slack variable jacobian         |
+ * | NLP constraint jacobian           , NLP constraint slack variable jacobian            |
+ * | Squared cost one-sided row jacobian, Squared cost one-sided row slack variable jacobian |
+ * |        QP Variable Jacobian (Diag Matrix of ones)                                     |
  *
  *
  * A slack variable is referred to as an additional variable that has been introduced
@@ -136,7 +138,7 @@ struct ComponentInfo
   ComponentInfoType type{ ComponentInfoType::kUnknown };
   Eigen::Index rows{ 0 };
   Eigen::Index non_zeros{ 0 };
-  /** @brief Per-row weights read at the most recent convexify(); filled for penalty and merit rows only */
+  /** @brief Per-row weights read at the most recent convexify(); not filled in objective_term_infos */
   Eigen::VectorXd coeffs;
   std::vector<trajopt_ifopt::Bounds> bounds;
 };
@@ -149,9 +151,11 @@ struct ConvexProblem
 
   // These quantities are computed in the update() method
   Eigen::Index n_objective_terms{ 0 };
-  Eigen::Index n_constraint_terms{ 0 };  // (n_penalty_constraints + n_merit_constraints)
+  Eigen::Index n_constraint_terms{ 0 };  // (n_penalty_constraints + n_merit_constraints + n_objective_slack_rows)
   Eigen::Index n_penalty_constraints{ 0 };
   Eigen::Index n_merit_constraints{ 0 };
+  /** @brief One-sided rows of the objective terms; each owns a QP row below the merit rows, and a slack */
+  Eigen::Index n_objective_slack_rows{ 0 };
 
   Eigen::Index n_objective_term_non_zeros{ 0 };
   Eigen::Index n_constraint_term_non_zeros{ 0 };
@@ -162,6 +166,8 @@ struct ConvexProblem
   Eigen::Index num_qp_cnts{ 0 };
 
   std::vector<ComponentInfo> objective_term_infos;
+  /** @brief One entry per objective term: the count, bounds and weights of its one-sided rows, in row order */
+  std::vector<ComponentInfo> objective_slack_infos;
   std::vector<std::reference_wrapper<ComponentInfo>> constraint_term_infos;  // (penalty_constraint_infos +
                                                                              // merit_constraint_infos)
   std::vector<ComponentInfo> penalty_constraint_infos;
@@ -256,6 +262,19 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
     }
   }
 
+  // One-sided rows of the squared costs are charged their weight times the squared violation of the linearized row
+  row_offset = n_penalty_constraints + n_merit_constraints;
+  for (std::size_t i = 0; i < objective_slack_infos.size(); ++i)
+  {
+    const auto& s_info = objective_slack_infos[i];
+    if (s_info.rows == 0)
+      continue;
+
+    const auto err = linearizedViolations(var_block, row_offset, s_info);
+    costs(static_cast<Eigen::Index>(i)) += weightedSum(err.array().square(), s_info.coeffs);
+    row_offset += s_info.rows;
+  }
+
   // Reset row offset for constraint matrix
   row_offset = 0;
   for (const auto& c_info : penalty_constraint_infos)
@@ -313,13 +332,11 @@ struct TrajOptQPProblem::Implementation
   bool has_dyn_component{ false };
 
   /**
-   * @brief Convex objective-only terms (no additional QP constraint rows).
+   * @brief The squared-cost terms.
    * @details
-   * These are the standard NLP cost terms that are convexified into the QP objective
-   * (i.e., contribute to the Hessian/gradient directly). In the current implementation,
-   * this bucket contains the squared-cost terms.
-   *
-   * @note These terms do not introduce slack variables or constraint rows by themselves.
+   * An equality row is convexified into the QP objective (it contributes to the Hessian/gradient directly) and
+   * adds no QP constraint row. A one-sided row adds one QP constraint row and one slack variable, and its weight
+   * goes on that slack's Hessian diagonal.
    */
   std::vector<trajopt_ifopt::Differentiable::Ptr> objective_terms;
 
@@ -357,8 +374,11 @@ struct TrajOptQPProblem::Implementation
   std::vector<trajopt_ifopt::Differentiable::Ptr> merit_constraints;
 
   /**
-   * @brief Convenience container for all QP constraint-row producing terms.
+   * @brief Convenience container for the terms whose every row is a QP constraint row.
    * @details
+   * The one-sided rows of @ref objective_terms add QP constraint rows too, below the rows of these terms; they
+   * are not part of this container.
+   *
    * This is the union of:
    *  - @ref penalty_constraints (hinge/abs style costified constraints)
    *  - @ref merit_constraints   (primary NLP constraints)
@@ -474,19 +494,12 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
                                                   CostPenaltyType penalty_type)
 {
   constraint_set->linkWithVariables(variables);
-  const std::vector<trajopt_ifopt::Bounds> cost_bounds = constraint_set->getBounds();
-  checkCostRowBounds(cost_bounds, constraint_set->getName());
+  checkCostRowBounds(constraint_set->getBounds(), constraint_set->getName());
 
   switch (penalty_type)
   {
     case CostPenaltyType::kSquared:
     {
-      for (const auto& bound : cost_bounds)
-      {
-        if (bound.getType() != trajopt_ifopt::BoundsType::kEquality)
-          throw std::runtime_error("TrajOpt Ifopt squared cost must have equality bounds!");
-      }
-
       if (constraint_set->isDynamic())
         dyn_squared_costs.emplace_back(std::move(constraint_set));
       else
@@ -531,19 +544,24 @@ void TrajOptQPProblem::Implementation::update()
   cvp.n_objective_terms = 0;
   cvp.n_penalty_constraints = 0;
   cvp.n_merit_constraints = 0;
+  cvp.n_objective_slack_rows = 0;
 
   cvp.n_objective_term_non_zeros = 0;
   cvp.n_constraint_term_non_zeros = 0;
   cvp.n_penalty_constraint_non_zeros = 0;
   cvp.n_merit_constraint_non_zeros = 0;
 
+  Eigen::Index n_objective_slack_non_zeros{ 0 };
   for (std::size_t i = 0; i < objective_terms.size(); ++i)
   {
     const auto& cost = objective_terms[i];
+    auto& slack_info = cvp.objective_slack_infos[i];
     if (initialized && !cost->isDynamic())
     {
       cvp.n_objective_terms += cost->getRows();
       cvp.n_objective_term_non_zeros += cost->getNonZeros();
+      cvp.n_objective_slack_rows += slack_info.rows;
+      n_objective_slack_non_zeros += slack_info.non_zeros;
       continue;
     }
 
@@ -551,9 +569,22 @@ void TrajOptQPProblem::Implementation::update()
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
     info.bounds = cost->getBounds();
+    checkCostRowBounds(info.bounds, cost->getName());
+
+    slack_info.bounds.clear();
+    for (const auto& b : info.bounds)
+    {
+      if (b.getType() != trajopt_ifopt::BoundsType::kEquality)
+        slack_info.bounds.push_back(b);
+    }
+    slack_info.rows = static_cast<Eigen::Index>(slack_info.bounds.size());
+    // An upper bound: the non-zeros of the whole set, its equality rows included
+    slack_info.non_zeros = (slack_info.rows > 0) ? info.non_zeros : 0;
 
     cvp.n_objective_terms += info.rows;
     cvp.n_objective_term_non_zeros += info.non_zeros;
+    cvp.n_objective_slack_rows += slack_info.rows;
+    n_objective_slack_non_zeros += slack_info.non_zeros;
   }
 
   // Each row of a linear-penalty cost adds a QP row, with one slack if it is one-sided and two if it is an equality
@@ -596,14 +627,15 @@ void TrajOptQPProblem::Implementation::update()
     cvp.n_merit_constraint_non_zeros += info.non_zeros;
   }
 
-  cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints;
-  cvp.n_constraint_term_non_zeros = cvp.n_penalty_constraint_non_zeros + cvp.n_merit_constraint_non_zeros;
+  cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints + cvp.n_objective_slack_rows;
+  cvp.n_constraint_term_non_zeros =
+      cvp.n_penalty_constraint_non_zeros + cvp.n_merit_constraint_non_zeros + n_objective_slack_non_zeros;
 
   cvp.squared_objective_target.setZero(cvp.n_objective_terms);
   cvp.constraint_constant.setZero(cvp.n_constraint_terms);
 
-  cvp.bounds_lower.resize(cvp.n_nlp_vars + cvp.n_penalty_constraints + cvp.n_merit_constraints);
-  cvp.bounds_upper.resize(cvp.n_nlp_vars + cvp.n_penalty_constraints + cvp.n_merit_constraints);
+  cvp.bounds_lower.resize(cvp.n_nlp_vars + cvp.n_constraint_terms);
+  cvp.bounds_upper.resize(cvp.n_nlp_vars + cvp.n_constraint_terms);
 }
 
 void TrajOptQPProblem::Implementation::setup()
@@ -677,6 +709,9 @@ void TrajOptQPProblem::Implementation::setup()
   // Get NLP Cost and Constraint Names for Debug Print
   cvp.objective_term_infos.clear();
   cvp.objective_term_infos.resize(objective_terms.size());
+
+  cvp.objective_slack_infos.clear();
+  cvp.objective_slack_infos.resize(objective_terms.size());
 
   cvp.penalty_constraint_infos.clear();
   cvp.penalty_constraint_infos.resize(penalty_constraints.size());
@@ -769,7 +804,6 @@ void TrajOptQPProblem::Implementation::convexify()
   const Eigen::VectorXd x_initial = variables->getValues();
 
   // Convexify
-  // Hinge and Asolute costs are handled differently than squared cost because they add constraints to the qp problem
 
   /** Use cache triplet and clear */
   cache_triplets_2.clear();
@@ -868,8 +902,13 @@ void TrajOptQPProblem::Implementation::convexify()
     constraint_matrix_row += info.rows;
   }
 
+  // Each one-sided row of an objective term takes the next QP row and the next slack, below. Its slack is
+  // charged in the Hessian, so its gradient entry stays zero.
+  cvp.n_slack_vars += cvp.n_objective_slack_rows;
+  cache_slack_gradient.insert(cache_slack_gradient.end(), static_cast<std::size_t>(cvp.n_objective_slack_rows), 0.0);
+
   cvp.num_qp_vars = cvp.n_nlp_vars + cvp.n_slack_vars;
-  cvp.num_qp_cnts = cvp.n_penalty_constraints + cvp.n_merit_constraints + cvp.num_qp_vars;
+  cvp.num_qp_cnts = cvp.n_constraint_terms + cvp.num_qp_vars;
 
   // Initialize the constraint bounds
   // We default to slack variable bounds to avoid having to set those seperatly
@@ -913,25 +952,63 @@ void TrajOptQPProblem::Implementation::convexify()
     for (std::size_t i = 0; i < objective_terms.size(); ++i)
     {
       const auto& info = cvp.objective_term_infos[i];
+      auto& slack_info = cvp.objective_slack_infos[i];
       const auto& obj = objective_terms[i];
 
-      Eigen::Index idx{ row };
-      for (const auto& b : info.bounds)
-        cvp.squared_objective_target(idx++) = b.getLower();
-
-      // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of
-      // the affine expression
-      //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
-
-      // This should be correct now
       trajopt_ifopt::Jacobian jac = obj->getJacobian();
       // Filter the linearized rows and not their square: a product of retained entries may itself be small.
       // The rows are filtered before the affine model is built, so it reproduces the cost values at x_initial.
       zeroSmallEntries(jac);
       cache_aff_expr.create(obj->getValues(), jac, x_initial);
+      const Eigen::VectorXd weights = obj->getCoefficients();
+
+      // An equality row is charged in the objective, its weight times its squared distance from its target. A
+      // one-sided row is charged its weight times its squared violation: its slack absorbs the violation of the
+      // linearized row and carries the weight on its Hessian diagonal, and the row leaves the objective expression.
+      slack_info.coeffs.resize(slack_info.rows);
+      Eigen::Index slack_idx{ 0 };
+      for (Eigen::Index r = 0; r < info.rows; ++r)
+      {
+        const auto& b = info.bounds[static_cast<std::size_t>(r)];
+        const bool is_equality = (b.getType() == trajopt_ifopt::BoundsType::kEquality);
+        cvp.squared_objective_target(row + r) = is_equality ? b.getLower() : 0.0;
+        if (is_equality)
+          continue;
+
+        for (trajopt_ifopt::Jacobian::InnerIterator it(cache_aff_expr.linear_coeffs, r); it; ++it)
+          cache_triplets_2.emplace_back(constraint_matrix_row, it.col(), it.value());
+
+        const double constant = cache_aff_expr.constants(r);
+        cvp.constraint_constant(constraint_matrix_row) = constant;
+        cvp.bounds_lower(constraint_matrix_row) = b.getLower() - constant;
+        cvp.bounds_upper(constraint_matrix_row) = b.getUpper() - constant;
+
+        const double slack_sign = (b.getType() == trajopt_ifopt::BoundsType::kLowerBound) ? 1.0 : -1.0;
+        cache_triplets_2.emplace_back(constraint_matrix_row, current_var_index++, slack_sign);
+        ++constraint_matrix_row;
+
+        slack_info.coeffs(slack_idx++) = weights(r);
+        cache_aff_expr.constants(r) = 0.0;
+      }
+      // A set without equality rows adds nothing to the objective expression
+      if (slack_info.rows == info.rows)
+      {
+        for (Eigen::Index r = 0; r < info.rows; ++r)
+          cvp.squared_objective_nlp.quadratic_coeffs[static_cast<std::size_t>(row + r)].resize(0, 0);
+        row += info.rows;
+        continue;
+      }
+
+      if (slack_info.rows > 0)
+      {
+        cache_aff_expr.linear_coeffs.prune([&info](Eigen::Index r, Eigen::Index /*col*/, double /*value*/) {
+          return info.bounds[static_cast<std::size_t>(r)].getType() == trajopt_ifopt::BoundsType::kEquality;
+        });
+      }
+
       cache_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cache_aff_expr.constants);
       cache_aff_expr.linear_coeffs *= -1;
-      cache_aff_expr.square(cache_quad_expr, obj->getCoefficients());
+      cache_aff_expr.square(cache_quad_expr, weights);
 
       // Update has objective quad
       has_obj_quad |= (cache_quad_expr.objective_quadratic_coeffs.nonZeros() > 0);
@@ -973,9 +1050,9 @@ void TrajOptQPProblem::Implementation::convexify()
     cvp.gradient.head(cvp.n_nlp_vars) = cvp.squared_objective_nlp.objective_linear_coeffs;
 
     // Insert QP Problem Objective Quadratic Coefficients
-    if (has_obj_quad)
+    if (has_obj_quad || cvp.n_objective_slack_rows > 0)
     {
-      cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros());
+      cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros() + cvp.n_objective_slack_rows);
       for (Eigen::Index r = 0; r < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++r)
       {
         cvp.hessian.startVec(r);  // start row k (RowMajor)
@@ -984,6 +1061,23 @@ void TrajOptQPProblem::Implementation::convexify()
         for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, r); it;
              ++it)
           cvp.hessian.insertBack(r, it.col()) = it.value();
+      }
+
+      // The slacks of the one-sided rows are the last QP variables; each carries its row's weight on its diagonal
+      if (cvp.n_objective_slack_rows > 0)
+      {
+        Eigen::Index r = cvp.num_qp_vars - cvp.n_objective_slack_rows;
+        for (Eigen::Index empty = cvp.n_nlp_vars; empty < r; ++empty)
+          cvp.hessian.startVec(empty);
+
+        for (const auto& slack_info : cvp.objective_slack_infos)
+        {
+          for (Eigen::Index k = 0; k < slack_info.rows; ++k, ++r)
+          {
+            cvp.hessian.startVec(r);
+            cvp.hessian.insertBack(r, r) = slack_info.coeffs(k);
+          }
+        }
       }
       cvp.hessian.finalize();
       cvp.hessian.makeCompressed();
@@ -996,7 +1090,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
   // the cost) below the actual constraints
-  constraint_matrix_row = cvp.n_merit_constraints + cvp.n_penalty_constraints;
+  constraint_matrix_row = cvp.n_constraint_terms;
   for (Eigen::Index i = 0; i < cvp.num_qp_vars; ++i)
     cache_triplets_2.emplace_back(constraint_matrix_row + i, i, 1.0);
 
@@ -1133,7 +1227,7 @@ void TrajOptQPProblem::Implementation::print() const
 void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<const Eigen::VectorXd>& nlp_values)
 {
   // Equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
-  const Eigen::Index idx = cvp.n_merit_constraints + cvp.n_penalty_constraints;
+  const Eigen::Index idx = cvp.n_constraint_terms;
 
   auto lower = cvp.bounds_lower.segment(idx, cvp.n_nlp_vars);
   auto upper = cvp.bounds_upper.segment(idx, cvp.n_nlp_vars);

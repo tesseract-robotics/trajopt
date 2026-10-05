@@ -36,24 +36,23 @@ namespace trajopt_sqp
  * sides with lb < ub, or on neither side, is not supported; express a range as two one-sided rows (see
  * trajopt_ifopt::RangeBoundHandling).
  *
- * @note This is the contract of TrajOptQPProblem. IfoptQPProblem accepts kSquared and kAbsolute only.
+ * @note This is the contract of TrajOptQPProblem. IfoptQPProblem accepts kSquared and kAbsolute only, and its QP
+ * models every cost row as an equality row: give it equality rows.
  */
 enum class CostPenaltyType : std::uint8_t
 {
   /**
    * @brief Squared penalty (least-squares style).
    *
-   * Interprets the term as a squared objective contribution, typically of the form:
+   * Charges, with @c w the per-row coefficients:
    * @code
-   *   w ∘ (g(x) - target)^2
+   *   w ∘ (g(x) - target)^2      // equality row
+   *   w ∘ max(0, g(x) - ub)^2    // upper-bound row
+   *   w ∘ max(0, lb - g(x))^2    // lower-bound row
    * @endcode
-   * where @c w are per-row coefficients.
    *
-   * Commonly used for "soft equality" costs. In this formulation the term usually
-   * expects equality-like bounds (lb == ub) to define the target value.
-   *
-   * @note This form is handled as a pure objective term (no additional QP constraint
-   *       rows or slack variables are required beyond what the solver already uses).
+   * An equality row is handled as a pure objective term. A one-sided row adds a QP constraint row and a
+   * non-negative slack variable, and is charged through the QP Hessian.
    */
   kSquared,
 

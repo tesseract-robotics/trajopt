@@ -8,7 +8,7 @@ A soft constraint keeps its **constraint function** in natural units and allows 
 
 - Original constraint (example): `g(x) <= 0`
 - Softened with slack: `g(x) <= s`, `s >= 0` (an equality needs two slacks)
-- Penalize `s` in the objective: `w * s` for a hinge or absolute cost, `mu * w * s` for a constraint (ℓ1 penalty)
+- Penalize `s` in the objective: `w * s` for a hinge or absolute cost, `mu * w * s` for a constraint (ℓ1 penalty), `w * s^2` for a one-sided row of a squared cost
 
 The weight `w` scales the **slack penalty**, not the **constraint value** and **Jacobian** (the QP row).
 
@@ -44,11 +44,11 @@ For `w >= 0` both placements give the same ℓ1 penalty (`w * |g|⁺ = |w * g|�
 
 $$v_i(x) = \max(l_i - c_i(x),\, 0) + \max(c_i(x) - u_i,\, 0)$$
 
-which is $\lvert c_i(x) - l_i\rvert$ for an equality row and a hinge for a one-sided one. A squared cost row has target $t_i = l_i = u_i$. With $\mu_s$ the merit coefficient of constraint set $s$, the merit is
+which is $\lvert c_i(x) - l_i\rvert$ for an equality row and a hinge for a one-sided one. With $\mu_s$ the merit coefficient of constraint set $s$, the merit is
 
-$$\phi(x) = \sum_{\text{squared}} w_i \big(c_i(x) - t_i\big)^2 + \sum_{\text{hinge, abs}} w_i v_i(x) + \sum_s \mu_s \sum_{i \in s} w_i v_i(x)$$
+$$\phi(x) = \sum_{\text{squared}} w_i v_i(x)^2 + \sum_{\text{hinge, abs}} w_i v_i(x) + \sum_s \mu_s \sum_{i \in s} w_i v_i(x)$$
 
-The QP model $m$ is the same expression with each row linearized at the iterate $x_k$; slacks carry the $v_i$ terms at cost $\mu_s w_i$ ($w_i$ for costs). The trust-region ratio $\rho = (\phi(x_k) - \phi(x^+)) / (\phi(x_k) - m(x^+))$ compares merit and model, so both must use the same weights. `TrajOptQPProblem` re-reads the weights at every `convexify()`, so the model stays exact at $x_k$ when weights follow the iterate (collision coefficients do).
+The QP model $m$ is the same expression with each row linearized at the iterate $x_k$. Slacks carry the $v_i$ terms of the linear penalties at cost $\mu_s w_i$ ($w_i$ for costs). A squared cost puts an equality row, $w_i (c_i(x) - l_i)^2$, straight into the objective and gives a one-sided row a slack $s_i$ at cost $w_i s_i^2$. The trust-region ratio $\rho = (\phi(x_k) - \phi(x^+)) / (\phi(x_k) - m(x^+))$ compares merit and model, so both must use the same weights. `TrajOptQPProblem` re-reads the weights at every `convexify()`, so the model stays exact at $x_k$ when weights follow the iterate (collision coefficients do).
 
 Violations are reported per constraint set in two forms (`ConstraintViolations`):
 - `weighted` sums $w_i v_i$ and feeds the merit.
@@ -130,7 +130,7 @@ The new constraints are as robust as the alternatives with the same feasible set
 ## Currently Supported Costs
 Any constraint set can be used as a cost:
 
-* `TrajOptQPProblem::addCostSet` takes a `CostPenaltyType`: squared, absolute, or hinge.
+* `TrajOptQPProblem::addCostSet` takes a `CostPenaltyType`, squared or linear (`kAbsolute` and `kHinge` name the same linear penalty), and charges each row for its distance outside its own bounds. A set may mix equality rows with one-sided rows, so a toleranced row is free inside its tolerance and charged outside it. A row bounded on both sides must be split into two one-sided rows, which `CartPosConstraint` and `JointPosConstraint` do by default (`RangeBoundHandling::kSplitToTwoInequalities`).
 * The `SquaredCost` and `AbsoluteCost` wrappers turn a constraint set into a `CostTerm` for a `trajopt_ifopt::Problem`.
 
 ## Solver

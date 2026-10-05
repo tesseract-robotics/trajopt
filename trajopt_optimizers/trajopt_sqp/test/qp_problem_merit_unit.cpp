@@ -273,6 +273,12 @@ using trajopt_common::toVectorXd;
 
 const double kInf = std::numeric_limits<double>::infinity();
 
+/** @brief An equality row at 0.1, a row bounded above by 0.2 and a row bounded below by 0.1. */
+std::vector<trajopt_ifopt::Bounds> mixedBounds()
+{
+  return { trajopt_ifopt::Bounds(0.1, 0.1), trajopt_ifopt::Bounds(-kInf, 0.2), trajopt_ifopt::Bounds(0.1, kInf) };
+}
+
 CoeffFn constantWeights(Eigen::VectorXd weights)
 {
   return [weights = std::move(weights)](const Eigen::VectorXd& /*x*/) { return weights; };
@@ -288,6 +294,14 @@ void expectVectorNear(const Eigen::Ref<const Eigen::VectorXd>& actual,
   ASSERT_EQ(actual.size(), expected.size());
   for (Eigen::Index i = 0; i < actual.size(); ++i)
     EXPECT_NEAR(actual(i), expected(i), tol) << "at index " << i;
+}
+
+/** @brief Expect the Hessian of @p qp to hold @p diagonal on its diagonal and nothing else. */
+void expectDiagonalHessian(const trajopt_sqp::TrajOptQPProblem& qp, const Eigen::VectorXd& diagonal)
+{
+  const Eigen::MatrixXd hessian = qp.getHessian().toDense();
+  const Eigen::MatrixXd expected = diagonal.asDiagonal();
+  EXPECT_TRUE(hessian.isApprox(expected)) << hessian;
 }
 }  // namespace
 
@@ -487,7 +501,222 @@ TEST(QPProblemMerit, CostRowsBoundedOnBothOrNoSidesAreRejected)  // NOLINT
   }
 }
 
-// A dynamic squared cost can report no rows. The QP then holds none of its earlier rows and the cost evaluates to
+// A dynamic set that has no rows when it is added is refused once it reports a row bounded on both sides.
+TEST(QPProblemMerit, DynamicCostRowBoundedOnBothSidesIsRejectedWhenReported)  // NOLINT
+{
+  for (const auto penalty : { trajopt_sqp::CostPenaltyType::kSquared, trajopt_sqp::CostPenaltyType::kHinge })
+  {
+    const TestVariables t = makeVariables({ toVectorXd({ 0.5 }) });
+    auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+    auto rows = std::make_shared<AffineRows>();
+    rows->jac = Eigen::MatrixXd::Zero(0, 1);
+    qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "late", rows), penalty);
+    qp->setup();
+    qp->convexify();
+
+    *rows = AffineRows{
+      Eigen::MatrixXd::Ones(1, 1), toVectorXd({ 0.0 }), { trajopt_ifopt::Bounds(-1.0, 1.0) }, toVectorXd({ 1.0 })
+    };
+    const Eigen::VectorXd x_new = toVectorXd({ 0.6 });
+    qp->setVariables(x_new.data());
+    EXPECT_THROW(qp->convexify(), std::runtime_error);  // NOLINT
+  }
+}
+
+// A squared cost charges an equality row in the objective and a one-sided row through a slack that carries the
+// row weight on its Hessian diagonal.
+TEST(QPProblemMerit, SquaredCostModelsOneSidedRowsWithSlacks)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8, -0.3 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "mixed", mixedBounds(), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+  EXPECT_NEAR(qp->getExactCosts()(0), 2.04, 1e-12);  // 2 * 0.4^2 + 3 * 0.6^2 + 4 * 0.4^2
+
+  // One slack per one-sided row, none for the equality row; two cost rows above the five variable rows.
+  ASSERT_EQ(qp->getNumQPVars(), 5);
+  ASSERT_EQ(qp->getNumQPConstraints(), 7);
+
+  // 2 (x0 - 0.1)^2 in the objective; the slacks cost 3 s0^2 + 4 s1^2.
+  expectVectorNear(qp->getGradient(), toVectorXd({ -0.4, 0.0, 0.0, 0.0, 0.0 }));
+  expectDiagonalHessian(*qp, toVectorXd({ 2.0, 0.0, 0.0, 3.0, 4.0 }));
+  EXPECT_EQ(qp->getHessian().nonZeros(), 3);  // the one-sided rows have no entry over the NLP variables
+
+  // x1 - s0 <= 0.2 and x2 + s1 >= 0.1, with both slacks non-negative.
+  Eigen::MatrixXd expected_rows(2, 5);
+  expected_rows << 0, 1, 0, -1, 0, 0, 0, 1, 0, 1;
+  const Eigen::MatrixXd rows = qp->getConstraintMatrix().toDense().topRows(2);
+  EXPECT_TRUE(rows.isApprox(expected_rows)) << rows;
+  EXPECT_EQ(qp->getBoundsLower()(0), -kInf);
+  EXPECT_NEAR(qp->getBoundsUpper()(0), 0.2, 1e-12);
+  EXPECT_NEAR(qp->getBoundsLower()(1), 0.1, 1e-12);
+  EXPECT_EQ(qp->getBoundsUpper()(1), kInf);
+  expectVectorNear(qp->getBoundsLower().tail(2), toVectorXd({ 0.0, 0.0 }));
+
+  // The convex cost is read off the linearized rows, whatever the slack values.
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(5);
+  qp_vals.head(3) = toVectorXd({ 0.5, 0.8, -0.3 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 2.04, 1e-12);
+  qp_vals.tail(2) = toVectorXd({ 0.6, 0.4 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 2.04, 1e-12);
+
+  // x2 is inside its bound here, so only the first two rows are charged: 2 * 0.2^2 + 3 * 0.3^2.
+  qp_vals.head(3) = toVectorXd({ 0.3, 0.5, 0.4 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 0.35, 1e-12);
+}
+
+// With no equality row the Hessian has no entries over the NLP variables and holds the row weights on the slack
+// diagonal.
+// A row of weight 0 keeps its slack and costs nothing.
+TEST(QPProblemMerit, SquaredCostOfOnlyOneSidedRows)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.8, -0.3, 0.9 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(-kInf, 0.2),
+                                                   trajopt_ifopt::Bounds(0.1, kInf),
+                                                   trajopt_ifopt::Bounds(-kInf, 0.2) };
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(t.vars[0], "one-sided", bounds, constantWeights(toVectorXd({ 3.0, 4.0, 0.0 }))),
+      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+  EXPECT_NEAR(qp->getExactCosts()(0), 1.72, 1e-12);  // 3 * 0.6^2 + 4 * 0.4^2
+
+  ASSERT_EQ(qp->getNumQPVars(), 6);
+  expectVectorNear(qp->getGradient(), Eigen::VectorXd::Zero(6));
+  expectDiagonalHessian(*qp, toVectorXd({ 0.0, 0.0, 0.0, 3.0, 4.0, 0.0 }));
+  EXPECT_EQ(qp->getHessian().nonZeros(), 3);  // the slack diagonal only
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(6);
+  qp_vals.head(3) = toVectorXd({ 0.8, -0.3, 0.9 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 1.72, 1e-12);
+}
+
+// A one-sided row whose Jacobian row has no entries still gets its slack and its Hessian diagonal, with no other
+// entry in the objective.
+TEST(QPProblemMerit, SquaredOneSidedRowWithoutJacobianEntries)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  auto rows = std::make_shared<AffineRows>();
+  rows->jac = Eigen::MatrixXd::Zero(1, 2);
+  rows->offset = toVectorXd({ 0.5 });
+  rows->bounds = { trajopt_ifopt::Bounds(-kInf, 0.2) };
+  rows->weights = toVectorXd({ 3.0 });
+  qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "constant", rows), trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+  EXPECT_NEAR(qp->getExactCosts()(0), 0.27, 1e-12);  // 3 * 0.3^2
+
+  ASSERT_EQ(qp->getNumQPVars(), 3);
+  expectDiagonalHessian(*qp, toVectorXd({ 0.0, 0.0, 3.0 }));
+  EXPECT_NEAR(qp->evaluateConvexCosts(toVectorXd({ 0.5, 0.8, 0.0 }))(0), 0.27, 1e-12);
+}
+
+// The QP row of a one-sided row is the linearized residual: its Jacobian row over the NLP variables, and its
+// bound shifted by the residual's constant part.
+TEST(QPProblemMerit, SquaredOneSidedRowsOfAnAffineResidual)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  auto rows = std::make_shared<AffineRows>();
+  rows->jac = (Eigen::MatrixXd(2, 2) << 1, 2, 1, -1).finished();
+  rows->offset = toVectorXd({ 0.3, -0.5 });
+  rows->bounds = { trajopt_ifopt::Bounds(-kInf, 1.0), trajopt_ifopt::Bounds(0.2, kInf) };
+  rows->weights = toVectorXd({ 2.0, 3.0 });
+  qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "affine", rows), trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  // The rows evaluate to 2.4 and -0.8, which is 1.4 above and 1.0 below their bounds: 2 * 1.4^2 + 3 * 1.0^2.
+  EXPECT_NEAR(qp->getExactCosts()(0), 6.92, 1e-12);
+
+  // x0 + 2 x1 - s0 <= 1.0 - 0.3 and x0 - x1 + s1 >= 0.2 + 0.5.
+  ASSERT_EQ(qp->getNumQPVars(), 4);
+  Eigen::MatrixXd expected_rows(2, 4);
+  expected_rows << 1, 2, -1, 0, 1, -1, 0, 1;
+  const Eigen::MatrixXd qp_rows = qp->getConstraintMatrix().toDense().topRows(2);
+  EXPECT_TRUE(qp_rows.isApprox(expected_rows)) << qp_rows;
+  EXPECT_EQ(qp->getBoundsLower()(0), -kInf);
+  EXPECT_NEAR(qp->getBoundsUpper()(0), 0.7, 1e-12);
+  EXPECT_NEAR(qp->getBoundsLower()(1), 0.7, 1e-12);
+  EXPECT_EQ(qp->getBoundsUpper()(1), kInf);
+
+  EXPECT_NEAR(qp->evaluateConvexCosts(toVectorXd({ 0.5, 0.8, 0.0, 0.0 }))(0), 6.92, 1e-12);
+  // At (0.1, 0.2) the rows evaluate to 0.8, inside its bound, and -0.6, which is 0.8 below: 3 * 0.8^2.
+  EXPECT_NEAR(qp->evaluateConvexCosts(toVectorXd({ 0.1, 0.2, 0.0, 0.0 }))(0), 1.92, 1e-12);
+}
+
+// A dynamic squared cost sizes its QP rows and slacks from the rows it reports at each convexification.
+TEST(QPProblemMerit, DynamicSquaredCostFollowsTheRowsItReports)  // NOLINT
+{
+  const Eigen::VectorXd x = toVectorXd({ 0.5, 0.8, -0.3 });
+  const TestVariables t = makeVariables({ x });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  auto rows = std::make_shared<AffineRows>();
+  rows->jac = Eigen::MatrixXd::Identity(3, 3);
+  rows->offset = Eigen::VectorXd::Zero(3);
+  rows->bounds = mixedBounds();
+  rows->weights = toVectorXd({ 2.0, 3.0, 4.0 });
+  qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "changing", rows), trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  // An equality row, then an upper-bound and a lower-bound row with one slack each.
+  ASSERT_EQ(qp->getNumQPVars(), 5);
+  ASSERT_EQ(qp->getNumQPConstraints(), 7);
+  expectDiagonalHessian(*qp, toVectorXd({ 2.0, 0.0, 0.0, 3.0, 4.0 }));
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(5);
+  qp_vals.head(3) = x;
+  EXPECT_NEAR(qp->getExactCosts()(0), 2.04, 1e-12);  // 2 * 0.4^2 + 3 * 0.6^2 + 4 * 0.4^2
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 2.04, 1e-12);
+
+  // At the next iterate the set reports a lower-bound row on x2, then an equality row on x0.
+  rows->jac = (Eigen::MatrixXd(2, 3) << 0, 0, 1, 1, 0, 0).finished();
+  rows->offset = Eigen::VectorXd::Zero(2);
+  rows->bounds = { trajopt_ifopt::Bounds(0.1, kInf), trajopt_ifopt::Bounds(0.1, 0.1) };
+  rows->weights = toVectorXd({ 5.0, 6.0 });
+  const Eigen::VectorXd x_new = toVectorXd({ 0.5, 0.8, -0.2 });
+  qp->setVariables(x_new.data());
+  qp->convexify();
+
+  ASSERT_EQ(qp->getNumQPVars(), 4);
+  ASSERT_EQ(qp->getNumQPConstraints(), 5);
+  expectDiagonalHessian(*qp, toVectorXd({ 6.0, 0.0, 0.0, 5.0 }));
+  const Eigen::MatrixXd qp_row = qp->getConstraintMatrix().toDense().topRows(1);
+  EXPECT_TRUE(qp_row.isApprox(toVectorXd({ 0.0, 0.0, 1.0, 1.0 }).transpose())) << qp_row;  // x2 + s >= 0.1
+  EXPECT_NEAR(qp->getBoundsLower()(0), 0.1, 1e-12);
+  EXPECT_EQ(qp->getBoundsUpper()(0), kInf);
+  qp_vals = Eigen::VectorXd::Zero(4);
+  qp_vals.head(3) = x_new;
+  EXPECT_NEAR(qp->getExactCosts()(0), 1.41, 1e-12);  // 5 * 0.3^2 + 6 * 0.4^2
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 1.41, 1e-12);
+
+  // Then two upper-bound rows and a lower-bound row: nothing of the earlier equality row stays in the objective.
+  *rows = AffineRows{
+    Eigen::MatrixXd::Identity(3, 3),
+    Eigen::VectorXd::Zero(3),
+    { trajopt_ifopt::Bounds(-kInf, 0.2), trajopt_ifopt::Bounds(-kInf, 0.2), trajopt_ifopt::Bounds(0.1, kInf) },
+    toVectorXd({ 1.0, 2.0, 3.0 })
+  };
+  const Eigen::VectorXd x_last = toVectorXd({ 0.5, 0.8, -0.1 });
+  qp->setVariables(x_last.data());
+  qp->convexify();
+
+  ASSERT_EQ(qp->getNumQPVars(), 6);
+  ASSERT_EQ(qp->getNumQPConstraints(), 9);
+  expectDiagonalHessian(*qp, toVectorXd({ 0.0, 0.0, 0.0, 1.0, 2.0, 3.0 }));
+  EXPECT_EQ(qp->getHessian().nonZeros(), 3);
+  qp_vals = Eigen::VectorXd::Zero(6);
+  qp_vals.head(3) = x_last;
+  EXPECT_NEAR(qp->getExactCosts()(0), 0.93, 1e-12);  // 1 * 0.3^2 + 2 * 0.6^2 + 3 * 0.2^2
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 0.93, 1e-12);
+}
+
+// A dynamic squared cost that reports no rows, after having had some, leaves the QP without objective and costs
 // nothing; its rows come back with their cost.
 TEST(QPProblemMerit, DynamicSquaredCostThatLosesItsRowsCostsNothing)  // NOLINT
 {
@@ -497,7 +726,7 @@ TEST(QPProblemMerit, DynamicSquaredCostThatLosesItsRowsCostsNothing)  // NOLINT
   AffineRows some;
   some.jac = Eigen::MatrixXd::Identity(3, 3);
   some.offset = Eigen::VectorXd::Zero(3);
-  some.bounds = std::vector<trajopt_ifopt::Bounds>(3, trajopt_ifopt::Bounds(0.1, 0.1));
+  some.bounds = mixedBounds();
   some.weights = toVectorXd({ 2.0, 3.0, 4.0 });
   AffineRows none;
   none.jac = Eigen::MatrixXd::Zero(0, 3);
@@ -505,6 +734,7 @@ TEST(QPProblemMerit, DynamicSquaredCostThatLosesItsRowsCostsNothing)  // NOLINT
   qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "vanishing", rows), trajopt_sqp::CostPenaltyType::kSquared);
   qp->setup();
   qp->convexify();
+  ASSERT_EQ(qp->getNumQPVars(), 5);
 
   // The set's rows follow the iterate: none at the next one.
   *rows = none;
@@ -521,8 +751,84 @@ TEST(QPProblemMerit, DynamicSquaredCostThatLosesItsRowsCostsNothing)  // NOLINT
   *rows = some;
   qp->setVariables(x.data());
   qp->convexify();
-  EXPECT_NEAR(qp->getExactCosts()(0), 2.43, 1e-12);  // 2 * 0.4^2 + 3 * 0.7^2 + 4 * 0.4^2
-  EXPECT_NEAR(qp->evaluateConvexCosts(x)(0), 2.43, 1e-12);
+  ASSERT_EQ(qp->getNumQPVars(), 5);
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(5);
+  qp_vals.head(3) = x;
+  EXPECT_NEAR(qp->getExactCosts()(0), 2.04, 1e-12);  // 2 * 0.4^2 + 3 * 0.6^2 + 4 * 0.4^2
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 2.04, 1e-12);
+}
+
+// The slack rows of a squared cost sit below the penalty and merit rows without disturbing them: with every
+// row kind present, the convex model reproduces the exact costs and violations at the convexify point, and
+// since every residual is linear the trust-region ratio of the step is 1.
+TEST(QPProblemMerit, SquaredSlackRowsCoexistWithPenaltyAndMeritRows)  // NOLINT
+{
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 0.5, 0.8, -0.3 }), toVectorXd({ 0.4, -0.6 }), toVectorXd({ 0.3, -0.1 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "mixed", mixedBounds(), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "equality", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 4.0, 5.0 }))));
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[2], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+  qp->convexify();
+
+  // QP variables: the 7 NLP variables, the hinge slacks (7, 8), the equality slack pairs (9 to 12), then the
+  // squared slacks (13, 14). QP rows: hinge (0, 1), equality (2, 3), squared one-sided (4, 5), then the variables.
+  ASSERT_EQ(qp->getNumQPVars(), 15);
+  ASSERT_EQ(qp->getNumQPConstraints(), 21);
+  Eigen::VectorXd expected_diagonal = Eigen::VectorXd::Zero(15);
+  expected_diagonal(0) = 2.0;
+  expected_diagonal(13) = 3.0;
+  expected_diagonal(14) = 4.0;
+  expectDiagonalHessian(*qp, expected_diagonal);
+  Eigen::MatrixXd expected_rows = Eigen::MatrixXd::Zero(2, 15);
+  expected_rows(0, 1) = 1.0;  // x1 - s13 <= 0.2
+  expected_rows(0, 13) = -1.0;
+  expected_rows(1, 2) = 1.0;  // x2 + s14 >= 0.1
+  expected_rows(1, 14) = 1.0;
+  const Eigen::MatrixXd squared_rows = qp->getConstraintMatrix().toDense().middleRows(4, 2);
+  EXPECT_TRUE(squared_rows.isApprox(expected_rows)) << squared_rows;
+  expectVectorNear(qp->getGradient().segment(7, 2), toVectorXd({ 2.0, 3.0 }));
+  expectVectorNear(qp->getGradient().tail(2), toVectorXd({ 0.0, 0.0 }));
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(7) = qp->getVariableValues();
+  expectVectorNear(qp->getExactCosts(), toVectorXd({ 2.04, 0.6 }));  // hinge: 2 * 0.3
+  expectVectorNear(qp->evaluateConvexCosts(qp_vals), qp->getExactCosts());
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  expectVectorNear(exact.weighted, toVectorXd({ 4.6 }));  // 4 * 0.4 + 5 * 0.6
+  expectVectorNear(qp->evaluateConvexConstraintViolations(qp_vals).weighted, exact.weighted);
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.init(qp);
+  solver.stepSQPSolver();
+  const trajopt_sqp::SQPResults& results = solver.getResults();
+  EXPECT_GT(results.approx_merit_improve, 0.0);
+  EXPECT_NEAR(results.merit_improve_ratio, 1.0, 1e-9);
+}
+
+// Minimizing x0^2 + 3 max(0, x1 - 0.2)^2 + (x0 - 1)^2 + (x1 - 1)^2: x0 settles halfway, and x1 stops past its
+// bound where the squared violation balances the pull, 6 (x1 - 0.2) = 2 (1 - x1).
+TEST(QPProblemMerit, SquaredMixedRowCostSolvesToItsOptimum)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.0, 0.0 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(0.0, 0.0), trajopt_ifopt::Bounds(-kInf, 0.2) };
+  qp->addCostSet(std::make_shared<LinearTestSet>(t.vars[0], "mixed", bounds, constantWeights(toVectorXd({ 1.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "pull", trajopt_ifopt::Bounds(1.0, 1.0), constantWeights(toVectorXd({ 1.0, 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.solve(qp);
+  expectVectorNear(qp->getVariableValues(), toVectorXd({ 0.5, 0.4 }), 1e-3);
 }
 
 // Every residual here is linear in x, so the convex model equals the exact merit everywhere and the
@@ -562,10 +868,9 @@ TEST(QPProblemMerit, SecondSetupGivesTheSameQP)  // NOLINT
   const TestVariables t =
       makeVariables({ toVectorXd({ 0.5, 0.8, -0.3 }), toVectorXd({ 0.4, -0.6 }), toVectorXd({ 0.3, -0.1 }) });
   auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
-  qp->addCostSet(
-      std::make_shared<LinearTestSet>(
-          t.vars[0], "squared", trajopt_ifopt::Bounds(0.1, 0.1), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
-      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "mixed", mixedBounds(), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
   qp->addConstraintSet(std::make_shared<LinearTestSet>(
       t.vars[1], "equality", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 4.0, 5.0 }))));
   qp->addCostSet(std::make_shared<LinearTestSet>(
