@@ -29,11 +29,14 @@
 namespace trajopt_sqp
 {
 /**
- * @brief Specifies how a constraint-like term is represented in the QP subproblem.
+ * @brief Specifies the penalty a cost set charges for each row's violation of its bounds.
  *
- * This enum describes the penalty model used when a term is incorporated into the
- * convexified QP (objective and/or constraints). Different penalty types imply
- * different bound requirements and different auxiliary (slack) variable handling.
+ * A row's violation is its distance outside its bounds, so the bounds decide which directions are charged:
+ * both for an equality row (lb == ub), one for a one-sided row. A set may mix the two. A row bounded on both
+ * sides with lb < ub, or on neither side, is not supported; express a range as two one-sided rows (see
+ * trajopt_ifopt::RangeBoundHandling).
+ *
+ * @note This is the contract of TrajOptQPProblem. IfoptQPProblem accepts kSquared and kAbsolute only.
  */
 enum class CostPenaltyType : std::uint8_t
 {
@@ -55,41 +58,21 @@ enum class CostPenaltyType : std::uint8_t
   kSquared,
 
   /**
-   * @brief Absolute-value penalty (L1 / |·| style).
+   * @brief Linear penalty (L1 style).
    *
-   * Models an equality-like residual with an absolute value cost, conceptually:
+   * Charges, with @c w the per-row coefficients:
    * @code
-   *   w ∘ |g(x) - target|
+   *   w ∘ |g(x) - target|        // equality row
+   *   w ∘ max(0, g(x) - ub)      // upper-bound row
+   *   w ∘ max(0, lb - g(x))      // lower-bound row
    * @endcode
    *
-   * This is typically implemented by introducing auxiliary variable(s) and adding
-   * constraint row(s) that relate those variables to the linearized residual so the
-   * QP objective can penalize the auxiliary variable(s).
-   *
-   * Commonly used for robust costs and sparsity-promoting penalties.
-   *
-   * @note In many setups this expects equality-like bounds (lb == ub) to define the
-   *       target/residual reference value.
+   * Every row adds a QP constraint row and non-negative slack variables charged through the QP gradient: two
+   * for an equality row, one for a one-sided row.
    */
   kAbsolute,
 
-  /**
-   * @brief Hinge penalty (one-sided / max(0, ·) style).
-   *
-   * Penalizes only violations of an inequality bound, conceptually:
-   * @code
-   *   w ∘ max(0, g(x) - ub)   // for upper-bound constraints
-   *   w ∘ max(0, lb - g(x))   // for lower-bound constraints
-   * @endcode
-   *
-   * This is typically implemented by introducing a nonnegative slack variable and
-   * adding a constraint row that couples the slack to the linearized inequality,
-   * while the QP objective penalizes the slack.
-   *
-   * @note This form expects inequality-like bounds (LOWER_BOUND or UPPER_BOUND). Range
-   *       bounds may need special handling (e.g., split into two inequalities) prior
-   *       to applying a hinge penalty.
-   */
+  /** @brief The same linear penalty as kAbsolute. */
   kHinge
 };
 

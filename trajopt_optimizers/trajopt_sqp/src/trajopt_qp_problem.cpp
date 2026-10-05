@@ -106,13 +106,27 @@ void zeroSmallEntries(trajopt_ifopt::Jacobian& jac)
     }
   }
 }
+
+/** @brief Whether a slack can model the row: it is an equality or bounded on one side only. */
+bool isEqualityOrOneSided(const trajopt_ifopt::Bounds& bound)
+{
+  const trajopt_ifopt::BoundsType type = bound.getType();
+  return type == trajopt_ifopt::BoundsType::kEquality || type == trajopt_ifopt::BoundsType::kLowerBound ||
+         type == trajopt_ifopt::BoundsType::kUpperBound;
+}
+
+/** @brief Throw unless a slack can model every row of the cost set. */
+void checkCostRowBounds(const std::vector<trajopt_ifopt::Bounds>& bounds, const std::string& name)
+{
+  if (!std::all_of(bounds.begin(), bounds.end(), isEqualityOrOneSided))
+    throw std::runtime_error("TrajOpt Ifopt cost '" + name + "' rows must have equality or one-sided bounds!");
+}
 }  // namespace
 
 enum class ComponentInfoType : std::uint8_t
 {
   kObjectiveSquared = 0,
-  kPenaltyHinge,
-  kPenaltyAbsolute,
+  kPenaltyLinear,
   kMeritConstraint,
   kUnknown
 };
@@ -461,6 +475,8 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
 {
   constraint_set->linkWithVariables(variables);
   const std::vector<trajopt_ifopt::Bounds> cost_bounds = constraint_set->getBounds();
+  checkCostRowBounds(cost_bounds, constraint_set->getName());
+
   switch (penalty_type)
   {
     case CostPenaltyType::kSquared:
@@ -480,12 +496,6 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
     }
     case CostPenaltyType::kAbsolute:
     {
-      for (const auto& bound : cost_bounds)
-      {
-        if (bound.getType() != trajopt_ifopt::BoundsType::kEquality)
-          throw std::runtime_error("TrajOpt Ifopt absolute cost must have equality bounds!");
-      }
-
       if (constraint_set->isDynamic())
         dyn_abs_costs.emplace_back(std::move(constraint_set));
       else
@@ -495,13 +505,6 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
     }
     case CostPenaltyType::kHinge:
     {
-      for (const auto& bound : cost_bounds)
-      {
-        if (bound.getType() != trajopt_ifopt::BoundsType::kLowerBound &&
-            bound.getType() != trajopt_ifopt::BoundsType::kUpperBound)
-          throw std::runtime_error("TrajOpt Ifopt hinge cost must have inequality bounds!");
-      }
-
       if (constraint_set->isDynamic())
         dyn_hinge_costs.emplace_back(std::move(constraint_set));
       else
@@ -553,9 +556,7 @@ void TrajOptQPProblem::Implementation::update()
     cvp.n_objective_term_non_zeros += info.non_zeros;
   }
 
-  // Hinge cost adds a variable and an inequality constraint (→ 2 constraints)
-  // Absolute cost adds two variables and an equality constraint (→ 3 constraints)
-  /** @todo update to handle absolute cost correctly */
+  // Each row of a linear-penalty cost adds a QP row, with one slack if it is one-sided and two if it is an equality
   for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
   {
     const auto& cost = penalty_constraints[i];
@@ -570,6 +571,7 @@ void TrajOptQPProblem::Implementation::update()
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
     info.bounds = cost->getBounds();
+    checkCostRowBounds(info.bounds, cost->getName());
 
     cvp.n_penalty_constraints += info.rows;
     cvp.n_penalty_constraint_non_zeros += info.non_zeros;
@@ -698,8 +700,7 @@ void TrajOptQPProblem::Implementation::setup()
     cost_names.push_back(penalty_constraints[i]->getName());
 
     auto& info = cvp.penalty_constraint_infos[i];
-    info.type = (i < (hinge_costs.size() + dyn_hinge_costs.size())) ? ComponentInfoType::kPenaltyHinge :
-                                                                      ComponentInfoType::kPenaltyAbsolute;
+    info.type = ComponentInfoType::kPenaltyLinear;
     cvp.constraint_term_infos.emplace_back(info);
   }
 
@@ -840,7 +841,6 @@ void TrajOptQPProblem::Implementation::convexify()
       const double coeff = merit_coeff * info.coeffs(k);
       if (cnt_bound_type == trajopt_ifopt::BoundsType::kEquality)
       {
-        assert(info.type != ComponentInfoType::kPenaltyHinge);
         cache_slack_gradient.emplace_back(coeff);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
@@ -849,14 +849,12 @@ void TrajOptQPProblem::Implementation::convexify()
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::kLowerBound)
       {
-        assert(info.type != ComponentInfoType::kPenaltyAbsolute);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
         ++cvp.n_slack_vars;
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
-        assert(info.type != ComponentInfoType::kPenaltyAbsolute);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
         ++cvp.n_slack_vars;
