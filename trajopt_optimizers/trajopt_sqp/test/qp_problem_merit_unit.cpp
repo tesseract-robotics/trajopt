@@ -180,6 +180,62 @@ private:
   Eigen::VectorXd weights_;
 };
 
+/** @brief The rows of an AffineTestSet: jac * x + offset over its variable block, one bound and one weight per row. */
+struct AffineRows
+{
+  Eigen::MatrixXd jac;
+  Eigen::VectorXd offset;
+  std::vector<trajopt_ifopt::Bounds> bounds;
+  Eigen::VectorXd weights;
+};
+
+/**
+ * @brief Dynamic constraint set that reports the rows @p rows holds at each update(), as a collision set's rows
+ * follow its contacts.
+ * @details A zero of AffineRows::jac has no entry in the Jacobian.
+ */
+class AffineTestSet : public trajopt_ifopt::ConstraintSet
+{
+public:
+  AffineTestSet(std::shared_ptr<const trajopt_ifopt::Var> var, std::string name, std::shared_ptr<const AffineRows> rows)
+    : ConstraintSet(std::move(name), true), var_(std::move(var)), source_(std::move(rows))
+  {
+    AffineTestSet::update();
+  }
+
+  int update() override
+  {
+    current_ = *source_;
+    rows_ = static_cast<int>(current_.offset.size());
+    non_zeros_ = (current_.jac.array() != 0.0).count();
+    return rows_;
+  }
+
+  Eigen::VectorXd getValues() const override { return current_.jac * var_->value() + current_.offset; }
+  Eigen::VectorXd getCoefficients() const override { return current_.weights; }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const override { return current_.bounds; }
+
+  trajopt_ifopt::Jacobian getJacobian() const override
+  {
+    trajopt_ifopt::Jacobian jac(rows_, variables_->getRows());
+    for (Eigen::Index r = 0; r < current_.jac.rows(); ++r)
+    {
+      for (Eigen::Index c = 0; c < current_.jac.cols(); ++c)
+      {
+        if (current_.jac(r, c) != 0.0)
+          jac.insert(r, var_->getIndex() + c) = current_.jac(r, c);
+      }
+    }
+    jac.makeCompressed();
+    return jac;
+  }
+
+private:
+  std::shared_ptr<const trajopt_ifopt::Var> var_;
+  std::shared_ptr<const AffineRows> source_;
+  AffineRows current_;
+};
+
 struct TestVariables
 {
   std::shared_ptr<trajopt_ifopt::NodesVariables> variables;
@@ -344,6 +400,44 @@ TEST(QPProblemMerit, AbsoluteCostIsWeightedAndIgnoresSlackValues)  // NOLINT
   qp_vals.head(2) = toVectorXd({ 0.5, -0.3 });
   qp_vals.tail(4) = toVectorXd({ 0.0, 0.5, 0.3, 0.0 });  // the slacks that zero each row at a QP solution
   EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 1.9, 1e-12);
+}
+
+// A dynamic squared cost can report no rows. The QP then holds none of its earlier rows and the cost evaluates to
+// nothing; its rows come back with their cost.
+TEST(QPProblemMerit, DynamicSquaredCostThatLosesItsRowsCostsNothing)  // NOLINT
+{
+  const Eigen::VectorXd x = toVectorXd({ 0.5, 0.8, -0.3 });
+  const TestVariables t = makeVariables({ x });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  AffineRows some;
+  some.jac = Eigen::MatrixXd::Identity(3, 3);
+  some.offset = Eigen::VectorXd::Zero(3);
+  some.bounds = std::vector<trajopt_ifopt::Bounds>(3, trajopt_ifopt::Bounds(0.1, 0.1));
+  some.weights = toVectorXd({ 2.0, 3.0, 4.0 });
+  AffineRows none;
+  none.jac = Eigen::MatrixXd::Zero(0, 3);
+  auto rows = std::make_shared<AffineRows>(some);
+  qp->addCostSet(std::make_shared<AffineTestSet>(t.vars[0], "vanishing", rows), trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  // The set's rows follow the iterate: none at the next one.
+  *rows = none;
+  const Eigen::VectorXd x_new = toVectorXd({ 0.4, 0.8, -0.3 });
+  qp->setVariables(x_new.data());
+  qp->convexify();
+  ASSERT_EQ(qp->getNumQPVars(), 3);
+  ASSERT_EQ(qp->getNumQPConstraints(), 3);
+  EXPECT_TRUE(qp->getHessian().toDense().isZero());
+  EXPECT_TRUE(qp->getGradient().isZero());
+  expectVectorNear(qp->getExactCosts(), toVectorXd({ 0.0 }));
+  expectVectorNear(qp->evaluateConvexCosts(x_new), toVectorXd({ 0.0 }));
+
+  *rows = some;
+  qp->setVariables(x.data());
+  qp->convexify();
+  EXPECT_NEAR(qp->getExactCosts()(0), 2.43, 1e-12);  // 2 * 0.4^2 + 3 * 0.7^2 + 4 * 0.4^2
+  EXPECT_NEAR(qp->evaluateConvexCosts(x)(0), 2.43, 1e-12);
 }
 
 // Every residual here is linear in x, so the convex model equals the exact merit everywhere and the
