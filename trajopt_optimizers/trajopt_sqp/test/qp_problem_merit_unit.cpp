@@ -523,6 +523,46 @@ TEST(QPProblemMerit, DynamicCostRowBoundedOnBothSidesIsRejectedWhenReported)  //
   }
 }
 
+// A constraint set is held to the same row shapes as a cost set, and is refused when it is added.
+TEST(QPProblemMerit, ConstraintRowsBoundedOnBothOrNoSidesAreRejected)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8 }) });
+  for (const auto& unsupported : { trajopt_ifopt::Bounds(-1.0, 1.0), trajopt_ifopt::NoBound })
+  {
+    auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+    const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(0.0, 0.0), unsupported };
+    EXPECT_THROW(qp->addConstraintSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "unsupported", bounds, constantWeights(toVectorXd({ 1.0, 1.0 })))),
+                 std::runtime_error);
+  }
+}
+
+// A dynamic constraint set that has no rows when it is added is refused by name once it reports an unbounded row.
+TEST(QPProblemMerit, DynamicConstraintRowWithoutBoundsIsRejectedByNameWhenReported)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  auto rows = std::make_shared<AffineRows>();
+  rows->jac = Eigen::MatrixXd::Zero(0, 1);
+  qp->addConstraintSet(std::make_shared<AffineTestSet>(t.vars[0], "late", rows));
+  qp->setup();
+  qp->convexify();
+
+  *rows =
+      AffineRows{ Eigen::MatrixXd::Ones(1, 1), toVectorXd({ 0.0 }), { trajopt_ifopt::NoBound }, toVectorXd({ 1.0 }) };
+  const Eigen::VectorXd x_new = toVectorXd({ 0.6 });
+  qp->setVariables(x_new.data());
+  try
+  {
+    qp->convexify();
+    FAIL() << "convexify() accepted an unbounded row";
+  }
+  catch (const std::runtime_error& e)
+  {
+    EXPECT_NE(std::string(e.what()).find("'late'"), std::string::npos) << e.what();
+  }
+}
+
 // A squared cost charges an equality row in the objective and a one-sided row through a slack that carries the
 // row weight on its Hessian diagonal.
 TEST(QPProblemMerit, SquaredCostModelsOneSidedRowsWithSlacks)  // NOLINT

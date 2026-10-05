@@ -126,6 +126,7 @@ The new constraints are as robust as the alternatives with the same feasible set
 ### Adding New Constraints
 * Fill in only your own block of the Jacobian; its placement in the full Jacobian is handled for you.
 * `getCoefficients()` returns exactly one finite, non-negative weight per row, in row order; `0` disables the row. Validate weights where they are set, as the in-tree constraints do.
+* `getBounds()` returns an equality or a one-sided bound per row. `TrajOptQPProblem` refuses a set with a row bounded on both sides or on neither, as a constraint and as a cost; split a range into two one-sided rows (`RangeBoundHandling::kSplitToTwoInequalities`).
 
 ## Currently Supported Costs
 Any constraint set can be used as a cost:
