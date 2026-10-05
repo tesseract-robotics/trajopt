@@ -21,6 +21,11 @@ public:
   TrajOptQPProblem(TrajOptQPProblem&&) = default;
   TrajOptQPProblem& operator=(TrajOptQPProblem&&) = default;
 
+  /**
+   * @brief Add a constraint set whose every row is an equality or bounded on one side.
+   * @throws std::runtime_error if a row is bounded on both sides or on neither, also when a dynamic set
+   * reports such a row later
+   */
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
   void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;

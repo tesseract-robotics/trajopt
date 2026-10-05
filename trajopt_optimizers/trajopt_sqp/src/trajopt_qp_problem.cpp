@@ -117,11 +117,11 @@ bool isEqualityOrOneSided(const trajopt_ifopt::Bounds& bound)
          type == trajopt_ifopt::BoundsType::kUpperBound;
 }
 
-/** @brief Throw unless a slack can model every row of the cost set. */
-void checkCostRowBounds(const std::vector<trajopt_ifopt::Bounds>& bounds, const std::string& name)
+/** @brief Throw unless a slack can model every row of the set. */
+void checkRowBounds(const std::vector<trajopt_ifopt::Bounds>& bounds, const std::string& name)
 {
   if (!std::all_of(bounds.begin(), bounds.end(), isEqualityOrOneSided))
-    throw std::runtime_error("TrajOpt Ifopt cost '" + name + "' rows must have equality or one-sided bounds!");
+    throw std::runtime_error("TrajOpt Ifopt set '" + name + "' rows must have equality or one-sided bounds!");
 }
 }  // namespace
 
@@ -481,6 +481,7 @@ struct TrajOptQPProblem::Implementation
 void TrajOptQPProblem::Implementation::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
   constraint_set->linkWithVariables(variables);
+  checkRowBounds(constraint_set->getBounds(), constraint_set->getName());
 
   if (constraint_set->isDynamic())
     dyn_constraint.emplace_back(std::move(constraint_set));
@@ -494,7 +495,7 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
                                                   CostPenaltyType penalty_type)
 {
   constraint_set->linkWithVariables(variables);
-  checkCostRowBounds(constraint_set->getBounds(), constraint_set->getName());
+  checkRowBounds(constraint_set->getBounds(), constraint_set->getName());
 
   switch (penalty_type)
   {
@@ -569,7 +570,7 @@ void TrajOptQPProblem::Implementation::update()
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
     info.bounds = cost->getBounds();
-    checkCostRowBounds(info.bounds, cost->getName());
+    checkRowBounds(info.bounds, cost->getName());
 
     slack_info.bounds.clear();
     for (const auto& b : info.bounds)
@@ -602,7 +603,7 @@ void TrajOptQPProblem::Implementation::update()
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
     info.bounds = cost->getBounds();
-    checkCostRowBounds(info.bounds, cost->getName());
+    checkRowBounds(info.bounds, cost->getName());
 
     cvp.n_penalty_constraints += info.rows;
     cvp.n_penalty_constraint_non_zeros += info.non_zeros;
@@ -622,6 +623,7 @@ void TrajOptQPProblem::Implementation::update()
     info.rows = cnt->getRows();
     info.non_zeros = cnt->getNonZeros();
     info.bounds = cnt->getBounds();
+    checkRowBounds(info.bounds, cnt->getName());
 
     cvp.n_merit_constraints += info.rows;
     cvp.n_merit_constraint_non_zeros += info.non_zeros;
