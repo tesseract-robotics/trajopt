@@ -38,23 +38,35 @@ struct Dynamic
 
 /**
  * @brief Constraint set whose value is its variable block, with an identity Jacobian over that block.
- * @details Every row shares one bound. update() recomputes the per-row coefficients from the current
- * variable values through @p coeff_fn, as the collision constraints recompute theirs.
+ * @details Rows are bounded one by one, or all by one shared bound. update() recomputes the per-row
+ * coefficients from the current variable values through @p coeff_fn, as the collision constraints recompute
+ * theirs.
  */
 class LinearTestSet : public trajopt_ifopt::ConstraintSet
 {
 public:
   LinearTestSet(std::shared_ptr<const trajopt_ifopt::Var> var,
                 std::string name,
-                trajopt_ifopt::Bounds bound,
+                std::vector<trajopt_ifopt::Bounds> bounds,
                 CoeffFn coeff_fn)
     : ConstraintSet(std::move(name), static_cast<int>(var->size()))
     , var_(std::move(var))
-    , bound_(bound)
+    , bounds_(std::move(bounds))
     , coeff_fn_(std::move(coeff_fn))
     , coeffs_(coeff_fn_(var_->value()))
   {
     non_zeros_ = var_->size();
+  }
+
+  LinearTestSet(const std::shared_ptr<const trajopt_ifopt::Var>& var,
+                std::string name,
+                trajopt_ifopt::Bounds bound,
+                CoeffFn coeff_fn)
+    : LinearTestSet(var,
+                    std::move(name),
+                    std::vector<trajopt_ifopt::Bounds>(static_cast<std::size_t>(var->size()), bound),
+                    std::move(coeff_fn))
+  {
   }
 
   LinearTestSet(Dynamic,
@@ -64,7 +76,7 @@ public:
                 CoeffFn coeff_fn)
     : ConstraintSet(std::move(name), true)
     , var_(std::move(var))
-    , bound_(bound)
+    , bounds_(static_cast<std::size_t>(var_->size()), bound)
     , coeff_fn_(std::move(coeff_fn))
     , coeffs_(coeff_fn_(var_->value()))
   {
@@ -83,11 +95,7 @@ public:
 
   Eigen::VectorXd getValues() const override { return var_->value(); }
   Eigen::VectorXd getCoefficients() const override { return coeffs_; }
-  std::vector<trajopt_ifopt::Bounds> getBounds() const override
-  {
-    std::vector<trajopt_ifopt::Bounds> bounds(static_cast<std::size_t>(var_->size()), bound_);
-    return bounds;
-  }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const override { return bounds_; }
 
   trajopt_ifopt::Jacobian getJacobian() const override
   {
@@ -104,7 +112,7 @@ public:
 
 private:
   std::shared_ptr<const trajopt_ifopt::Var> var_;
-  trajopt_ifopt::Bounds bound_;
+  std::vector<trajopt_ifopt::Bounds> bounds_;
   CoeffFn coeff_fn_;
   Eigen::VectorXd coeffs_;
 };
@@ -263,6 +271,8 @@ TestVariables makeVariables(const std::vector<Eigen::VectorXd>& starts)
 
 using trajopt_common::toVectorXd;
 
+const double kInf = std::numeric_limits<double>::infinity();
+
 CoeffFn constantWeights(Eigen::VectorXd weights)
 {
   return [weights = std::move(weights)](const Eigen::VectorXd& /*x*/) { return weights; };
@@ -400,6 +410,81 @@ TEST(QPProblemMerit, AbsoluteCostIsWeightedAndIgnoresSlackValues)  // NOLINT
   qp_vals.head(2) = toVectorXd({ 0.5, -0.3 });
   qp_vals.tail(4) = toVectorXd({ 0.0, 0.5, 0.3, 0.0 });  // the slacks that zero each row at a QP solution
   EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 1.9, 1e-12);
+}
+
+// A linear-penalty cost charges each row by its own bound: both ways for an equality row, one way for a
+// one-sided row. Absolute and hinge name the same penalty.
+TEST(QPProblemMerit, LinearCostMixesEqualityAndOneSidedRows)  // NOLINT
+{
+  for (const auto penalty : { trajopt_sqp::CostPenaltyType::kAbsolute, trajopt_sqp::CostPenaltyType::kHinge })
+  {
+    const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8, -0.3 }) });
+    auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+    const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(0.0, 0.0),
+                                                     trajopt_ifopt::Bounds(-kInf, 0.2),
+                                                     trajopt_ifopt::Bounds(0.1, kInf) };
+    qp->addCostSet(
+        std::make_shared<LinearTestSet>(t.vars[0], "mixed", bounds, constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+        penalty);
+    qp->setup();
+    qp->convexify();
+    EXPECT_NEAR(qp->getExactCosts()(0), 4.4, 1e-12);  // 2 * 0.5 + 3 * (0.8 - 0.2) + 4 * (0.1 + 0.3)
+
+    // A (+, -) slack pair for the equality row, then one slack per one-sided row, each charged its row weight.
+    ASSERT_EQ(qp->getNumQPVars(), 7);
+    expectVectorNear(qp->getGradient().tail(4), toVectorXd({ 2.0, 2.0, 3.0, 4.0 }));
+    Eigen::MatrixXd expected_slack_block(3, 4);
+    expected_slack_block << 1, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1;
+    const Eigen::MatrixXd slack_block = qp->getConstraintMatrix().toDense().block(0, 3, 3, 4);
+    EXPECT_TRUE(slack_block.isApprox(expected_slack_block)) << slack_block;
+
+    Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(7);
+    qp_vals.head(3) = toVectorXd({ 0.5, 0.8, -0.3 });
+    EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 4.4, 1e-12);
+
+    // Inside both one-sided bounds only the equality row is charged.
+    qp_vals.head(3) = toVectorXd({ -0.1, 0.1, 0.3 });
+    EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 0.2, 1e-12);
+  }
+}
+
+// Minimizing |x0| + 3 max(0, x1 - 0.2) + (x0 - 1)^2 + (x1 - 1)^2: x0 stops where the absolute row's slope
+// balances the pull, x1 stops on its bound.
+TEST(QPProblemMerit, LinearMixedRowCostSolvesToItsOptimum)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.0, 0.0 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(0.0, 0.0), trajopt_ifopt::Bounds(-kInf, 0.2) };
+  qp->addCostSet(std::make_shared<LinearTestSet>(t.vars[0], "mixed", bounds, constantWeights(toVectorXd({ 1.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kAbsolute);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "pull", trajopt_ifopt::Bounds(1.0, 1.0), constantWeights(toVectorXd({ 1.0, 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.solve(qp);
+  expectVectorNear(qp->getVariableValues(), toVectorXd({ 0.5, 0.2 }), 1e-3);
+}
+
+// A row bounded on both sides, or on neither, has no slack model, so every penalty type refuses it.
+TEST(QPProblemMerit, CostRowsBoundedOnBothOrNoSidesAreRejected)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.8 }) });
+  for (const auto penalty : { trajopt_sqp::CostPenaltyType::kSquared,
+                              trajopt_sqp::CostPenaltyType::kAbsolute,
+                              trajopt_sqp::CostPenaltyType::kHinge })
+  {
+    for (const auto& unsupported : { trajopt_ifopt::Bounds(-1.0, 1.0), trajopt_ifopt::NoBound })
+    {
+      auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+      const std::vector<trajopt_ifopt::Bounds> bounds{ trajopt_ifopt::Bounds(0.0, 0.0), unsupported };
+      EXPECT_THROW(qp->addCostSet(std::make_shared<LinearTestSet>(
+                                      t.vars[0], "unsupported", bounds, constantWeights(toVectorXd({ 1.0, 1.0 }))),
+                                  penalty),
+                   std::runtime_error);
+    }
+  }
 }
 
 // A dynamic squared cost can report no rows. The QP then holds none of its earlier rows and the cost evaluates to
