@@ -325,6 +325,38 @@ TEST(QPProblemMerit, LinearProblemStepHasUnitImproveRatio)  // NOLINT
   expectVectorNear(results.best_constraint_violations.weighted, qp->getExactConstraintViolations().weighted);
 }
 
+// Calling setup() again on an unchanged problem gives the same QP.
+TEST(QPProblemMerit, SecondSetupGivesTheSameQP)  // NOLINT
+{
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 0.5, 0.8, -0.3 }), toVectorXd({ 0.4, -0.6 }), toVectorXd({ 0.3, -0.1 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(
+          t.vars[0], "squared", trajopt_ifopt::Bounds(0.1, 0.1), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "equality", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 4.0, 5.0 }))));
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[2], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+  qp->convexify();
+  const Eigen::MatrixXd hessian = qp->getHessian().toDense();
+  const Eigen::MatrixXd constraint_matrix = qp->getConstraintMatrix().toDense();
+  const Eigen::VectorXd gradient = qp->getGradient();
+  const Eigen::VectorXd bounds_lower = qp->getBoundsLower();
+  const Eigen::VectorXd bounds_upper = qp->getBoundsUpper();
+
+  qp->setup();
+  qp->convexify();
+  EXPECT_EQ(qp->getHessian().toDense(), hessian);
+  EXPECT_EQ(qp->getConstraintMatrix().toDense(), constraint_matrix);
+  EXPECT_EQ(qp->getGradient(), gradient);
+  EXPECT_EQ(qp->getBoundsLower(), bounds_lower);
+  EXPECT_EQ(qp->getBoundsUpper(), bounds_upper);
+}
+
 // One entry per merit set: raw sums the row violations, weighted sums each times its row weight.
 TEST(QPProblemMerit, ExactViolationsAreSummedPerSetAndWeighted)  // NOLINT
 {

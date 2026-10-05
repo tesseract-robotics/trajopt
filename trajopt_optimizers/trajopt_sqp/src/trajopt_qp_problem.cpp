@@ -711,7 +711,8 @@ void TrajOptQPProblem::Implementation::setup()
     var_bounds_upper[i] = b.getUpper();
   }
 
-  // Update
+  // The infos above were cleared, so update() has to fill them for the fixed-size sets too
+  initialized = false;
   update();
 
   initialized = true;
