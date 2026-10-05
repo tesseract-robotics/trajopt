@@ -30,8 +30,9 @@ public:
   virtual void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) = 0;
 
   /**
-   * @brief Add a squared cost term to the problem.
-   * @param constraint_set The constraint set to be evaluated as a squared cost.
+   * @brief Add a cost term to the problem.
+   * @param constraint_set The constraint set whose rows are charged for violating their bounds.
+   * @param penalty_type The penalty charged for each row's violation.
    *
    * This function can be called multiple times if the constraint function is
    * composed of different cost terms. It makes sure the overall value and
@@ -66,7 +67,7 @@ public:
    * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
    * the problem and calculate their values manually.
    * @param var_vals Point at which the convex cost is calculated, size num_qp_vars. Only its NLP-variable block
-   * is read: a hinge or absolute cost reports its weighted violation on the linearized rows, whatever the slacks.
+   * is read: a row modelled with a slack reports its penalty on the linearized row, whatever the slacks.
    * @return Cost associated with each cost term in the problem (for debugging)
    */
   virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;

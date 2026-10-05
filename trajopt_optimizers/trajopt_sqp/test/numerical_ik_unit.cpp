@@ -172,8 +172,9 @@ void runNumericalIKTest(const Environment::Ptr& env)
   TESSERACT_LOG_DEBUG("Final Vars: {}", ss.str());
 }
 
+/** @brief Reach a pose whose position is toleranced and whose rotation is fixed, held as a constraint or as a cost */
 template <typename T>
-void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
+void runNumericalIKWithToleranceTest(const Environment::Ptr& env, bool as_squared_cost = false)
 {
   const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
@@ -217,7 +218,10 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
                                                                 "base_footprint",
                                                                 Eigen::Isometry3d::Identity(),
                                                                 target_pose);
-  qp_problem->addConstraintSet(cnt);
+  if (as_squared_cost)
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kSquared);
+  else
+    qp_problem->addConstraintSet(cnt);
 
   qp_problem->setup();
   qp_problem->print();
@@ -258,10 +262,16 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 
   Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
 
-  // Check translation
-  EXPECT_LE(std::abs(final_pose(0, 3) - target_pose(0, 3)), 0.01001);
-  EXPECT_LE(std::abs(final_pose(1, 3) - target_pose(1, 3)), 0.01001);
-  EXPECT_LE(std::abs(final_pose(2, 3) - target_pose(2, 3)), 0.01001);
+  // Check translation. A cost is soft: the solve stops once the squared violation left is negligible, which can
+  // be a little outside the tolerance.
+  const double position_tol = as_squared_cost ? 0.011 : 0.01001;
+  EXPECT_LE(std::abs(final_pose(0, 3) - target_pose(0, 3)), position_tol);
+  EXPECT_LE(std::abs(final_pose(1, 3) - target_pose(1, 3)), position_tol);
+  EXPECT_LE(std::abs(final_pose(2, 3) - target_pose(2, 3)), position_tol);
+  if (as_squared_cost)
+  {
+    EXPECT_LT(qp_problem->getTotalExactCost(), 1e-6);
+  }
 
   // Check rotation
   for (auto i = 0; i < 3; ++i)
@@ -285,6 +295,12 @@ TEST_F(NumericalIKTest, numerical_ik_with_tol_trajopt_problem)  // NOLINT
 {
   TESSERACT_LOG_DEBUG("PlanningTest, numerical_ik_with_tol_trajopt_problem");
   runNumericalIKWithToleranceTest<trajopt_sqp::TrajOptQPProblem>(env);
+}
+
+TEST_F(NumericalIKTest, numerical_ik_with_tol_cost_trajopt_problem)  // NOLINT
+{
+  TESSERACT_LOG_DEBUG("PlanningTest, numerical_ik_with_tol_cost_trajopt_problem");
+  runNumericalIKWithToleranceTest<trajopt_sqp::TrajOptQPProblem>(env, true);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_ifopt_problem)  // NOLINT
