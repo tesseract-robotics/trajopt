@@ -214,28 +214,29 @@ std::vector<Formulation> formulations()
                     return std::make_shared<trajopt_ifopt::CartAxisAlignConstraint>(var, m, TOOL, z, BASE, a);
                   } });
 
-  out.push_back({ "align: P v = 0, a.v >= 0",
-                  align,
-                  0.0,
-                  Role::kKnownDefect,
-                  [z](const VarPtr& var, const ManipPtr& m, const Eigen::Vector3d& a) {
-                    auto kin = std::make_shared<CartAxisKinematics>(m, TOOL, z, BASE);
-                    Eigen::Matrix3d basis;
-                    basis.row(0) = a.unitOrthogonal().transpose();
-                    basis.row(1) = a.cross(a.unitOrthogonal()).transpose();
-                    basis.row(2) = a.transpose();
-                    return std::make_shared<FunctionConstraint>(
-                        "HalfSpaceAlign",
-                        var,
-                        std::vector<Bounds>{ trajopt_ifopt::BoundZero, trajopt_ifopt::BoundZero, Bounds(0, INFINITY) },
-                        [kin, basis](const Eigen::VectorXd& q) -> Eigen::VectorXd { return basis * kin->calcAxis(q); },
-                        [kin, basis](const Eigen::VectorXd& q) -> Eigen::MatrixXd {
-                          Eigen::Vector3d v;
-                          Eigen::Matrix3Xd dv;
-                          kin->calcAxisAndJacobian(q, v, dv);
-                          return basis * dv;
-                        });
-                  } });
+  out.push_back(
+      { "align: P v = 0, a.v >= 0",
+        align,
+        0.0,
+        Role::kKnownDefect,
+        [z](const VarPtr& var, const ManipPtr& m, const Eigen::Vector3d& a) {
+          auto kin = std::make_shared<CartAxisKinematics>(m, TOOL, z, BASE);
+          Eigen::Matrix3d basis;
+          basis.row(0) = a.unitOrthogonal().transpose();
+          basis.row(1) = a.cross(a.unitOrthogonal()).transpose();
+          basis.row(2) = a.transpose();
+          return std::make_shared<FunctionConstraint>(
+              "HalfSpaceAlign",
+              var,
+              std::vector<Bounds>{ trajopt_ifopt::BoundZero, trajopt_ifopt::BoundZero, Bounds(0, double(INFINITY)) },
+              [kin, basis](const Eigen::VectorXd& q) -> Eigen::VectorXd { return basis * kin->calcAxis(q); },
+              [kin, basis](const Eigen::VectorXd& q) -> Eigen::MatrixXd {
+                Eigen::Vector3d v;
+                Eigen::Matrix3Xd dv;
+                kin->calcAxisAndJacobian(q, v, dv);
+                return basis * dv;
+              });
+        } });
 
   out.push_back({ "align: CartPos, r_z dropped",
                   align,
@@ -281,7 +282,7 @@ std::vector<Formulation> formulations()
                       return std::make_shared<FunctionConstraint>(
                           "AcosCone",
                           var,
-                          std::vector<Bounds>{ Bounds(-INFINITY, theta) },
+                          std::vector<Bounds>{ Bounds(-double(INFINITY), theta) },
                           value,
                           [value](const Eigen::VectorXd& q) { return forwardDifference(value, q); });
                     } });
@@ -295,7 +296,7 @@ std::vector<Formulation> formulations()
                       return std::make_shared<FunctionConstraint>(
                           "CosineCone",
                           var,
-                          std::vector<Bounds>{ Bounds(std::cos(theta), INFINITY) },
+                          std::vector<Bounds>{ Bounds(std::cos(theta), double(INFINITY)) },
                           [kin, a](const Eigen::VectorXd& q) -> Eigen::VectorXd {
                             return Eigen::VectorXd::Constant(1, a.dot(kin->calcAxis(q)));
                           },
@@ -344,7 +345,7 @@ struct Outcome
 class Sampler
 {
 public:
-  explicit Sampler(const tesseract::kinematics::JointGroup::ConstPtr& manip) : manip_(manip), rng_(SEED)
+  explicit Sampler(tesseract::kinematics::JointGroup::ConstPtr manip) : manip_(std::move(manip)), rng_(SEED)
   {
     const Eigen::MatrixX2d limits = manip_->getLimits().joint_limits;
     lower_ = limits.col(0).cwiseMax(-UNLIMITED_JOINT_RANGE);
@@ -464,12 +465,14 @@ TEST_F(CartAxisFormulationStudy, SuccessRatesPerFormulation)  // NOLINT
   for (const auto& [band, min_angle] : bands)
   {
     std::vector<Problem> problems;
+    problems.reserve(PROBLEMS_PER_BAND);
     for (int i = 0; i < PROBLEMS_PER_BAND; ++i)
       problems.push_back(sampler.sample(min_angle));
 
     for (const auto& form : forms)
     {
       std::vector<int> iterations;
+      iterations.reserve(problems.size());
       for (const auto& problem : problems)
       {
         const Outcome outcome = solve(manip, sampler, form, problem);
