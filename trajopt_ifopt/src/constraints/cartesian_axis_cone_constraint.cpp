@@ -49,7 +49,7 @@ CartAxisConeConstraint::CartAxisConeConstraint(std::shared_ptr<const Var> positi
   , half_angle_(half_angle)
 {
   // Written so NaN fails too. At theta = 0 the gradient vanishes on the feasible set; at theta >= pi nothing is cut.
-  if (!(half_angle > 0 && half_angle < M_PI))
+  if (!(half_angle > 0 && half_angle < EIGEN_PI))
     throw std::runtime_error("CartAxisConeConstraint: half angle must lie in (0, pi) rad, got " +
                              std::to_string(half_angle) + ". For theta = 0 use CartAxisAlignConstraint.");
 
