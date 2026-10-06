@@ -23,6 +23,10 @@
  */
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 #include <gtest/gtest.h>
 
 #include <OsqpEigen/OsqpEigen.h>
@@ -74,6 +78,7 @@ struct Solution
   Eigen::Isometry3d reference_pose;  // tool pose at the reference configuration, base coordinates
   Eigen::Vector3d target_axis;       // base coordinates
   Eigen::Isometry3d optimized_pose;  // tool pose at the solution, base coordinates
+  trajopt_sqp::SQPStatus status;
 };
 
 /**
@@ -130,10 +135,9 @@ Solution solve(const tesseract::environment::Environment::Ptr& env, AxisConstrai
   qp_problem->setup();
   solver.verbose = DEBUG;
   solver.solve(qp_problem);
-  EXPECT_EQ(solver.getStatus(), trajopt_sqp::SQPStatus::kConverged);
 
   const auto poses = manip->calcFwdKin(qp_problem->getVariableValues());
-  return { reference_pose, target_axis, poses.at(BASE).inverse() * poses.at(TOOL) };
+  return { reference_pose, target_axis, poses.at(BASE).inverse() * poses.at(TOOL), solver.getStatus() };
 }
 
 double angleBetween(const Eigen::Vector3d& a, const Eigen::Vector3d& b)
@@ -147,6 +151,7 @@ void runCone(const tesseract::environment::Environment::Ptr& env)
   constexpr double tilt = 0.6;
   constexpr double half_angle = 0.2;
   const Solution s = solve(env, AxisConstraint::kCone, tilt, half_angle);
+  ASSERT_EQ(s.status, trajopt_sqp::SQPStatus::kConverged);
 
   EXPECT_LT((s.optimized_pose.translation() - s.reference_pose.translation()).norm(), SOLVE_TOL);
   const double angle = angleBetween(s.optimized_pose.linear() * Eigen::Vector3d::UnitZ(), s.target_axis);
@@ -157,6 +162,7 @@ void runAlign(const tesseract::environment::Environment::Ptr& env)
 {
   constexpr double tilt = 0.6;
   const Solution s = solve(env, AxisConstraint::kAlign, tilt, 0.0);
+  ASSERT_EQ(s.status, trajopt_sqp::SQPStatus::kConverged);
 
   EXPECT_LT((s.optimized_pose.translation() - s.reference_pose.translation()).norm(), SOLVE_TOL);
   const double angle = angleBetween(s.optimized_pose.linear() * Eigen::Vector3d::UnitZ(), s.target_axis);

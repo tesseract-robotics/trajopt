@@ -26,6 +26,9 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <memory>
+#include <string>
+#include <vector>
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
 

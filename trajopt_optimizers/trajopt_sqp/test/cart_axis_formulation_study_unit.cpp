@@ -31,6 +31,11 @@
  */
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <filesystem>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 #include <algorithm>
 #include <cmath>
 #include <functional>
