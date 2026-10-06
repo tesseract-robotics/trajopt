@@ -115,6 +115,7 @@ public:
     , value_(std::move(value))
     , jacobian_(std::move(jacobian))
   {
+    non_zeros_ = rows_ * var_->value().size();
   }
 
   int update() override { return rows_; }

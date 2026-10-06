@@ -33,6 +33,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
+namespace
+{
+/** pi as a double. EIGEN_PI is a long double literal; on x86-64 it exceeds the double M_PI, so compare in double. */
+constexpr double PI = static_cast<double>(EIGEN_PI);
+}  // namespace
+
 CartAxisConeConstraint::CartAxisConeConstraint(std::shared_ptr<const Var> position_var,
                                                std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                                                tesseract::common::LinkId source_frame,
@@ -49,7 +55,7 @@ CartAxisConeConstraint::CartAxisConeConstraint(std::shared_ptr<const Var> positi
   , half_angle_(half_angle)
 {
   // At theta = 0 the gradient vanishes on the feasible set; at theta >= pi nothing is cut.
-  if (std::isnan(half_angle) || half_angle <= 0 || half_angle >= EIGEN_PI)
+  if (std::isnan(half_angle) || half_angle <= 0 || half_angle >= PI)
     throw std::runtime_error("CartAxisConeConstraint: half angle must lie in (0, pi) rad, got " +
                              std::to_string(half_angle) + ". For theta = 0 use CartAxisAlignConstraint.");
 
@@ -58,6 +64,7 @@ CartAxisConeConstraint::CartAxisConeConstraint(std::shared_ptr<const Var> positi
                              std::to_string(coeff) + ".");
 
   coeffs_ = Eigen::VectorXd::Constant(1, coeff);
+  non_zeros_ = kin_.numJoints();
   bounds_ = { Bounds(-double(INFINITY), half_angle_) };
 }
 
@@ -110,7 +117,7 @@ void CartAxisConeConstraint::calcJacobianBlock(Jacobian& jac_block,
 Jacobian CartAxisConeConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(kin_.numJoints());
+  jac.reserve(non_zeros_);
   calcJacobianBlock(jac, position_var_->value());  // NOLINT
   return jac;
 }

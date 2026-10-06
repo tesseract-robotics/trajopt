@@ -110,6 +110,7 @@ CartAxisAlignConstraint::CartAxisAlignConstraint(std::shared_ptr<const Var> posi
 
   setTargetAxis(target_axis);
   coeffs_ = Eigen::VectorXd::Constant(2, coeff);
+  non_zeros_ = 2 * kin_.numJoints();
   bounds_ = { BoundZero, BoundZero };
 }
 
@@ -159,7 +160,7 @@ void CartAxisAlignConstraint::calcJacobianBlock(Jacobian& jac_block,
 Jacobian CartAxisAlignConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(2 * kin_.numJoints());
+  jac.reserve(non_zeros_);
   calcJacobianBlock(jac, position_var_->value());  // NOLINT
   return jac;
 }

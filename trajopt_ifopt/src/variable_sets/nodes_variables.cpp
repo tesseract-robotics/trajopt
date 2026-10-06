@@ -58,7 +58,7 @@ NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Nod
 
   values_ = Eigen::Map<Eigen::VectorXd>(values.data(), static_cast<Eigen::Index>(values.size()));
   hash_ = trajopt_common::getHash(this, values_);
-  assert(values_.size() == bounds_.size());
+  assert(values_.size() == static_cast<Eigen::Index>(bounds_.size()));
 }
 
 void NodesVariables::addNode(std::unique_ptr<Node> node)

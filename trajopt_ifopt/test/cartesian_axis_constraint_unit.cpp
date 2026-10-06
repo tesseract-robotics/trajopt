@@ -216,6 +216,7 @@ TEST_F(CartesianAxisConstraintUnit, ConeBoundsCoefficientsAndValues)  // NOLINT
       var, kin_group, TOOL, Eigen::Vector3d(0, 0, 2), BASE, Eigen::Vector3d(1, 0, 0), 0.25, 3.5);
 
   EXPECT_EQ(cnt.getRows(), 1);
+  EXPECT_EQ(cnt.getNonZeros(), n_dof);
   const std::vector<Bounds> bounds = cnt.getBounds();
   ASSERT_EQ(bounds.size(), 1);
   EXPECT_EQ(bounds[0].getLower(), -INF);
@@ -467,6 +468,7 @@ TEST_F(CartesianAxisConstraintUnit, AlignBoundsCoefficientsAndValues)  // NOLINT
       var, kin_group, TOOL, Eigen::Vector3d(0, 0, 2), BASE, Eigen::Vector3d(0, -4, 0), 2.5);
 
   EXPECT_EQ(cnt.getRows(), 2);
+  EXPECT_EQ(cnt.getNonZeros(), 2 * n_dof);
   const std::vector<Bounds> bounds = cnt.getBounds();
   ASSERT_EQ(bounds.size(), 2);
   for (const auto& bound : bounds)

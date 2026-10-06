@@ -237,7 +237,7 @@ Jacobian ContinuousCollisionConstraint::getJacobian() const
 
 void ContinuousCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == rows_);
+  assert(bounds.size() == static_cast<std::size_t>(rows_));
   bounds_ = bounds;
 }
 
@@ -420,7 +420,7 @@ Eigen::VectorXd ContinuousCollisionConstraintD::getCoefficients() const { return
 
 void ContinuousCollisionConstraintD::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == rows_);
+  assert(bounds.size() == static_cast<std::size_t>(rows_));
   bounds_ = bounds;
 }
 
