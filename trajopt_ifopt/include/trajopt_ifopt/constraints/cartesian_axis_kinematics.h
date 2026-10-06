@@ -115,9 +115,9 @@ private:
   tesseract::common::LinkId source_frame_;
   tesseract::common::LinkId target_frame_;
   Eigen::Vector3d source_axis_;
-  bool source_active_;
-  bool target_active_;
-  Eigen::Index n_dof_;
+  bool source_active_{ false };
+  bool target_active_{ false };
+  Eigen::Index n_dof_{ 0 };
 
   /** @brief World orientations of the source and target links */
   void calcRotations(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,

@@ -127,7 +127,7 @@ private:
   std::shared_ptr<const Var> position_var_;
   CartAxisKinematics kin_;
   Eigen::Vector3d target_axis_;
-  double half_angle_;
+  double half_angle_{ 0 };
   Eigen::VectorXd coeffs_;
   std::vector<Bounds> bounds_;
 };

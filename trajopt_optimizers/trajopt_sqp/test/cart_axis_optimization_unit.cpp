@@ -78,7 +78,7 @@ struct Solution
   Eigen::Isometry3d reference_pose;  // tool pose at the reference configuration, base coordinates
   Eigen::Vector3d target_axis;       // base coordinates
   Eigen::Isometry3d optimized_pose;  // tool pose at the solution, base coordinates
-  trajopt_sqp::SQPStatus status;
+  trajopt_sqp::SQPStatus status{ trajopt_sqp::SQPStatus::kRunning };
 };
 
 /**

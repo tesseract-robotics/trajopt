@@ -70,7 +70,9 @@ const double NAN_D = std::numeric_limits<double>::quiet_NaN();
 /** Joint configurations away from singularities; values in rad within the right_arm limits. */
 std::vector<Eigen::VectorXd> testConfigurations()
 {
-  Eigen::VectorXd q0(7), q1(7), q2(7);
+  Eigen::VectorXd q0(7);
+  Eigen::VectorXd q1(7);
+  Eigen::VectorXd q2(7);
   q0 << 1.0, 0.2, 1.0, -1.0, 1.0, -1.0, 1.0;
   q1 << -0.5, 0.3, -1.2, -0.6, 2.0, -0.4, -2.5;
   q2 << 0.3, -0.2, 0.7, -1.5, -1.3, -1.1, 0.4;
@@ -351,7 +353,9 @@ TEST_F(CartesianAxisConstraintUnit, ConeRejectsInvalidArguments)  // NOLINT
   };
 
   for (const double bad : { 0.0, -0.1, M_PI, 4.0, INF, NAN_D })
+  {
     EXPECT_THROW(make(TOOL, z, BASE, z, bad, 1.0), std::runtime_error) << "half angle " << bad;
+  }
 
   for (const Eigen::Vector3d& bad :
        { Eigen::Vector3d::Zero().eval(), Eigen::Vector3d(NAN_D, 0, 1), Eigen::Vector3d(INF, 0, 0) })
@@ -361,7 +365,9 @@ TEST_F(CartesianAxisConstraintUnit, ConeRejectsInvalidArguments)  // NOLINT
   }
 
   for (const double bad : { -1.0, INF, NAN_D })
+  {
     EXPECT_THROW(make(TOOL, z, BASE, z, 0.1, bad), std::runtime_error) << "coeff " << bad;
+  }
 
   EXPECT_THROW(make("no_such_link", z, BASE, z, 0.1, 1.0), std::runtime_error);
   EXPECT_THROW(make(TOOL, z, "no_such_link", z, 0.1, 1.0), std::runtime_error);
@@ -389,9 +395,9 @@ TEST_F(CartesianAxisConstraintUnit, ConeIsRoundWhereCartPosBoxIsSquare)  // NOLI
   struct Case
   {
     Eigen::Vector3d tilt_axis;  // in tool coordinates, perpendicular to the tool z axis
-    double tilt;                // [rad]
-    bool in_cone;
-    double box_half_width;  // [rad]
+    double tilt{ 0 };           // [rad]
+    bool in_cone{ false };
+    double box_half_width{ 0 };  // [rad]
   };
   const std::vector<Case> cases{
     { Eigen::Vector3d::UnitX(), 0.35, true, theta / std::sqrt(2.0) },  // inscribed box rejects
@@ -579,7 +585,9 @@ TEST_F(CartesianAxisConstraintUnit, AlignRejectsInvalidArguments)  // NOLINT
   }
 
   for (const double bad : { -1.0, INF, NAN_D })
+  {
     EXPECT_THROW(make(TOOL, z, BASE, z, bad), std::runtime_error) << "coeff " << bad;
+  }
 
   EXPECT_THROW(make("no_such_link", z, BASE, z, 1.0), std::runtime_error);
   EXPECT_THROW(make(TOOL, z, "no_such_link", z, 1.0), std::runtime_error);

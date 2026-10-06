@@ -188,8 +188,8 @@ struct Formulation
   /** Formulations in one group solve the same task: "align", or "cone" at one half angle */
   std::string group;
   /** The task is solved when the true axis angle is at most this [rad] */
-  double bound;
-  Role role;
+  double bound{ 0 };
+  Role role{ Role::kDifferentSet };
   /** Builds the constraint for target axis a (base coordinates) on the position variable */
   std::function<std::shared_ptr<trajopt_ifopt::ConstraintSet>(const std::shared_ptr<const trajopt_ifopt::Var>&,
                                                               const tesseract::kinematics::JointGroup::ConstPtr&,
@@ -336,8 +336,8 @@ struct Problem
 
 struct Outcome
 {
-  bool success;
-  int iterations;
+  bool success{ false };
+  int iterations{ 0 };
 };
 
 class Sampler
@@ -504,7 +504,9 @@ TEST_F(CartAxisFormulationStudy, SuccessRatesPerFormulation)  // NOLINT
     for (const auto& form : forms)
     {
       if (form.role == Role::kKnownDefect && min_angle > 0)
+      {
         EXPECT_LT(successes[band][form.name], PROBLEMS_PER_BAND / 2) << band << ": " << form.name;
+      }
 
       if (form.role != Role::kNew)
         continue;
@@ -512,8 +514,10 @@ TEST_F(CartAxisFormulationStudy, SuccessRatesPerFormulation)  // NOLINT
       for (const auto& baseline : forms)
       {
         if (baseline.role == Role::kSameSet && baseline.group == form.group)
+        {
           EXPECT_GE(successes[band][form.name] + PARITY_SLACK, successes[band][baseline.name])
               << band << ": " << form.name << " vs " << baseline.name;
+        }
       }
     }
   }
