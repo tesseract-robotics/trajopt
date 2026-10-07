@@ -231,7 +231,7 @@ bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
 {
-  gradient_ = (gradient.array().abs() < 1e-7).select(0.0, gradient.array());
+  gradient_ = gradient;
 
   if (solver_->isInitialized())
     return solver_->updateGradient(gradient_);
