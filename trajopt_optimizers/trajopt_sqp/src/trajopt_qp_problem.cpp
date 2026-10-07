@@ -87,6 +87,25 @@ void reduceSetViolation(ConstraintViolations& out,
   out.raw(idx) = (w.array() != 0.0).select(err.array(), 0.0).sum();
   out.weighted(idx) = weightedSum(err.array(), w);
 }
+
+/** @brief Entries of a linearized row up to this magnitude are treated as zero, as trajopt_sco's cleanupAff does. */
+constexpr double SMALL_ENTRY_THRESHOLD = 1e-7;
+
+/**
+ * @brief Set the entries of @p jac up to the small-entry threshold to zero.
+ * @details The entries stay stored, so the sparsity pattern of this problem's matrices does not depend on their values.
+ */
+void zeroSmallEntries(trajopt_ifopt::Jacobian& jac)
+{
+  for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
+  {
+    for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
+    {
+      if (std::abs(it.value()) <= SMALL_ENTRY_THRESHOLD)
+        it.valueRef() = 0.0;
+    }
+  }
+}
 }  // namespace
 
 enum class ComponentInfoType : std::uint8_t
@@ -801,7 +820,7 @@ void TrajOptQPProblem::Implementation::convexify()
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
       {
         // Originally it pruned these but it changes sparsity so we now set to zero
-        if (std::abs(it.value()) < 1e-7)
+        if (std::abs(it.value()) < SMALL_ENTRY_THRESHOLD)
           cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), 0.0);
         else
           cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
@@ -911,6 +930,8 @@ void TrajOptQPProblem::Implementation::convexify()
 
       // This should be correct now
       cache_aff_expr.create(obj->getValues(), obj->getJacobian(), x_initial);
+      // Filter the linearized rows and not their square: a product of retained entries may itself be small.
+      zeroSmallEntries(cache_aff_expr.linear_coeffs);
       cache_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cache_aff_expr.constants);
       cache_aff_expr.linear_coeffs *= -1;
       cache_aff_expr.square(cache_quad_expr, obj->getCoefficients());
@@ -965,13 +986,7 @@ void TrajOptQPProblem::Implementation::convexify()
         // RowMajor Q: r == it.row(), col is sorted, perfect for insertBack
         for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, r); it;
              ++it)
-        {
-          // Originally it pruned these but it changes sparsity so we now set to zero
-          if (std::abs(it.value()) < 1e-7)
-            cvp.hessian.insertBack(r, it.col()) = 0.0;
-          else
-            cvp.hessian.insertBack(r, it.col()) = it.value();
-        }
+          cvp.hessian.insertBack(r, it.col()) = it.value();
       }
       cvp.hessian.finalize();
       cvp.hessian.makeCompressed();

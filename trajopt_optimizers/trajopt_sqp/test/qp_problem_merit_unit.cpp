@@ -128,6 +128,58 @@ public:
   trajopt_ifopt::Jacobian getJacobian() const override { return { 0, variables_->getRows() }; }
 };
 
+/**
+ * @brief Constraint set with value M * x over its variable block and Jacobian M.
+ * @details Every entry of M is stored in the Jacobian, whatever its magnitude. Every row shares one bound.
+ */
+class MatrixTestSet : public trajopt_ifopt::ConstraintSet
+{
+public:
+  MatrixTestSet(std::shared_ptr<const trajopt_ifopt::Var> var,
+                std::string name,
+                Eigen::MatrixXd matrix,
+                trajopt_ifopt::Bounds bound,
+                Eigen::VectorXd weights)
+    : ConstraintSet(std::move(name), static_cast<int>(matrix.rows()))
+    , var_(std::move(var))
+    , matrix_(std::move(matrix))
+    , bound_(bound)
+    , weights_(std::move(weights))
+  {
+    non_zeros_ = matrix_.size();
+  }
+
+  int update() override { return rows_; }
+
+  Eigen::VectorXd getValues() const override { return matrix_ * var_->value(); }
+  Eigen::VectorXd getCoefficients() const override { return weights_; }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const override
+  {
+    std::vector<trajopt_ifopt::Bounds> bounds(static_cast<std::size_t>(matrix_.rows()), bound_);
+    return bounds;
+  }
+
+  trajopt_ifopt::Jacobian getJacobian() const override
+  {
+    trajopt_ifopt::Jacobian jac(static_cast<int>(matrix_.rows()), variables_->getRows());
+    jac.reserve(matrix_.size());
+    for (Eigen::Index r = 0; r < matrix_.rows(); ++r)
+    {
+      jac.startVec(static_cast<int>(r));
+      for (Eigen::Index c = 0; c < matrix_.cols(); ++c)
+        jac.insertBack(static_cast<int>(r), var_->getIndex() + c) = matrix_(r, c);
+    }
+    jac.finalize();
+    return jac;
+  }
+
+private:
+  std::shared_ptr<const trajopt_ifopt::Var> var_;
+  Eigen::MatrixXd matrix_;
+  trajopt_ifopt::Bounds bound_;
+  Eigen::VectorXd weights_;
+};
+
 struct TestVariables
 {
   std::shared_ptr<trajopt_ifopt::NodesVariables> variables;
@@ -480,4 +532,67 @@ TEST(QPProblemMerit, SeedMeritWeightsConstraintViolations)  // NOLINT
   expectVectorNear(results.best_constraint_violations.weighted, toVectorXd({ 5.1 }));
   // Hinge cost 2*0.5 + 3*0.8 = 3.4, plus the initial merit coefficient times the weighted violation.
   EXPECT_NEAR(results.best_exact_merit, 3.4 + (solver.params.initial_merit_error_coeff * 5.1), 1e-12);
+}
+
+// A squared cost keeps its curvature when the products of its Jacobian entries are small: only the linearized
+// rows are filtered, never their square. The objective handed to the solver is the model the cost is scored with.
+TEST(QPProblemMerit, SquaredCostKeepsCurvatureOfSmallProducts)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.2 }) });
+  Eigen::MatrixXd m(1, 2);
+  m << 2e-4, 3e-4;
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<MatrixTestSet>(t.vars[0], "squared", m, trajopt_ifopt::Bounds(0.0, 0.0), toVectorXd({ 1.0 })),
+      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  const Eigen::MatrixXd hessian = qp->getHessian().toDense();
+  const Eigen::MatrixXd expected = m.transpose() * m;
+  ASSERT_EQ(hessian.rows(), 2);
+  ASSERT_EQ(hessian.cols(), 2);
+  for (Eigen::Index r = 0; r < 2; ++r)
+    for (Eigen::Index c = 0; c < 2; ++c)
+      EXPECT_NEAR(hessian(r, c), expected(r, c), 1e-20) << "at (" << r << ", " << c << ")";
+
+  // The QP minimizes x'Hx + g'x, which differs from the scored model by a constant only.
+  const Eigen::VectorXd gradient = qp->getGradient();
+  const auto objective = [&](const Eigen::VectorXd& x) { return x.dot(hessian * x) + gradient.dot(x); };
+  const Eigen::VectorXd xa = toVectorXd({ 0.5, -0.2 });
+  const Eigen::VectorXd xb = toVectorXd({ 10.0, 10.0 });
+  EXPECT_NEAR(
+      qp->evaluateConvexCosts(xb).sum() - qp->evaluateConvexCosts(xa).sum(), objective(xb) - objective(xa), 1e-15);
+}
+
+// Entries at or below 1e-7 in a squared cost's linearized rows are treated as zero before the rows are squared, as
+// trajopt_sco does, so they reach neither the Hessian nor the gradient. They stay in the sparsity pattern.
+TEST(QPProblemMerit, SquaredCostDropsSmallJacobianEntriesBeforeSquaring)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.2, 0.3 }) });
+  Eigen::MatrixXd m(2, 3);
+  m.row(0) << 1.0, 1e-7, -5e-8;   // one retained entry beside one at the threshold and a smaller one
+  m.row(1) << 3e-8, -2e-8, 4e-8;  // every entry small
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<MatrixTestSet>(
+                     t.vars[0], "squared", m, trajopt_ifopt::Bounds(0.1, 0.1), toVectorXd({ 100.0, 100.0 })),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  // What remains is 100 * (b - x_0)^2 with b within 1e-7 of the bound 0.1: Hessian 100 at (0, 0), gradient about
+  // -20 at 0.
+  const Eigen::MatrixXd hessian = qp->getHessian().toDense();
+  ASSERT_EQ(hessian.rows(), 3);
+  ASSERT_EQ(hessian.cols(), 3);
+  EXPECT_NEAR(hessian(0, 0), 100.0, 1e-9);
+  EXPECT_EQ((hessian.array() != 0.0).count(), 1) << hessian;
+
+  const Eigen::VectorXd& gradient = qp->getGradient();
+  ASSERT_EQ(gradient.size(), 3);
+  EXPECT_NEAR(gradient(0), -20.0, 1e-4);
+  EXPECT_EQ(gradient(1), 0.0);
+  EXPECT_EQ(gradient(2), 0.0);
+
+  EXPECT_EQ(qp->getHessian().nonZeros(), 9);
 }
