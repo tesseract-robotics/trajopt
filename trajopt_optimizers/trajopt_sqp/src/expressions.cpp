@@ -29,6 +29,13 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
   const Eigen::Index m = constants.rows();
   const Eigen::Index n = linear_coeffs.cols();
 
+  assert(linear_coeffs.rows() == m);
+  assert(weights.size() == m);
+
+  // A negative weight has no square root and an infinite one overflows: either would put NaN or
+  // infinity into the objective Hessian and into that expression's quadratic row.
+  assert(weights.allFinite() && (weights.array() >= 0.0).all());
+
   quad_expr.linear_coeffs = linear_coeffs;
 
   if (static_cast<Eigen::Index>(quad_expr.quadratic_coeffs.size()) != m)
@@ -50,15 +57,10 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
     }
   }
 
-  // ----------------------------
-  // NEW: Avoid forming Q_i = w_i * b_i b_i^T (O(k^2)).
-  //
-  // Store each Q_i as a 1×n sparse row vector q_i = sqrt(w_i) * b_i.
-  // Then x^T (w_i b b^T) x == ( (sqrt(w_i) b)^T x )^2 == (q_i * x)^2.
-  //
-  // Also build objective_quadratic via sparse multiply:
+  // Q_i is kept in factored form instead of the materialized rank-one w_i * b_i b_i^T, which would
+  // cost O(k^2) per expression: quadratic_coeffs[i] holds the 1×n row q_i = sqrt(w_i) * b_i, so
+  // x^T (w_i b b^T) x == (q_i * x)^2. The aggregate objective quadratic comes from the same factor,
   // H = (diag(sqrt(w)) B)^T (diag(sqrt(w)) B).
-  // ----------------------------
 
   // Bw = diag(sqrt(w)) * B: copy B, then scale row r by sqrt(w_r).
   scratch_bw_ = linear_coeffs;

@@ -111,28 +111,39 @@ struct AffExprs : Exprs
               const Eigen::Ref<const Eigen::VectorXd>& x);
 
   /**
-   * @brief Construct a quadratic representation for the element-wise square of affine expressions.
-   *    * Given an affine expression
-   *    *   f_i(x) = a_i + b_i^T x,
-   *    * for each row i in @p aff_expr, this function builds a quadratic model
-   *    *   g_i(x) = f_i(x)^2
-   *          = (a_i + b_i^T x)^2
-   *          = a_i^2 + 2 a_i b_i^T x + x^T (b_i b_i^T) x.
-   *    * In the returned @ref QuadExprs this corresponds to:
-   *    * - `constants(i)`              = a_i²
-   * - `linear_coeffs.row(i)`      = 2 a_i b_i^T
-   * - `quadratic_coeffs[i]`       = b_i b_i^T
-   *    * Additionally, this function accumulates the per-equation contributions into an
-   * aggregate quadratic objective of the form
-   *    *   J(x) = sum_i g_i(x) = sum_i f_i(x)^2,
-   *    * by setting:
-   *    * - `objective_linear_coeffs`   = ∑_i (linear_coeffs.row(i))^T
-   * - `objective_quadratic_coeffs`= ∑_i quadratic_coeffs[i]
-   *    * This is useful when you want to convert a sum-of-squares objective based on
-   * affine residuals into a single quadratic form suitable for QP solvers.
-   *    * @param quad_expr A @ref QuadExprs encoding g(x) = f(x) ∘ f(x) (element-wise square),
-   *         along with the aggregated quadratic objective coefficients.
-   * @param aff_expr Affine expressions f(x) = a + Bx to be squared element-wise.
+   * @brief Construct a quadratic model for the weighted element-wise square of the affine
+   * expressions.
+   *
+   * Given affine expressions \f$f_i(x) = a_i + b_i^\top x\f$ and per-expression weights
+   * \f$w_i \ge 0\f$, this builds
+   *
+   * \f[
+   *   g_i(x) = w_i f_i(x)^2
+   *          = w_i a_i^2 + 2 a_i w_i b_i^\top x + x^\top (w_i b_i b_i^\top) x.
+   * \f]
+   *
+   * In @p quad_expr this corresponds to:
+   * - `constants(i)`              = \f$w_i a_i^2\f$
+   * - `linear_coeffs.row(i)`      = \f$2 a_i w_i b_i^\top\f$
+   * - `quadratic_coeffs[i]`       = \f$q_i^\top = \sqrt{w_i}\, b_i^\top\f$, a 1×n row
+   *
+   * The quadratic term is stored in factored form,
+   * \f$x^\top (w_i b_i b_i^\top) x = (q_i^\top x)^2\f$, rather than as the rank-one matrix. An
+   * expression whose row of @ref linear_coeffs is empty gets an empty (0×0) entry. See
+   * @ref QuadExprs::quadratic_coeffs.
+   *
+   * The aggregate objective \f$J(x) = \sum_i g_i(x)\f$ is accumulated into:
+   * - `objective_linear_coeffs`    = \f$\sum_i 2 a_i w_i b_i\f$
+   * - `objective_quadratic_coeffs` = \f$\sum_i w_i b_i b_i^\top\f$
+   *
+   * Note that `objective_quadratic_coeffs` sums the rank-one matrices that the
+   * `quadratic_coeffs` rows factor; it is not the sum of those rows.
+   *
+   * This is useful when converting a weighted sum-of-squares objective over affine residuals into
+   * a single quadratic form suitable for QP solvers.
+   *
+   * @param quad_expr Output quadratic model of the weighted element-wise square.
+   * @param weights Weights \f$w_i\f$, one per expression. Must be finite and non-negative.
    */
   void square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::VectorXd>& weights) const;
 
@@ -151,9 +162,10 @@ private:
  * \f]
  *
  * where:
- *  - @ref constants(i) stores \f$c_i\f
- *  - @ref linear_coeffs.row(i) stores \f$a_i^\top\f
- *  - @ref quadratic_coeffs[i] stores the sparse matrix \f$Q_i\f.
+ *  - @ref constants(i) stores \f$c_i\f$
+ *  - @ref linear_coeffs.row(i) stores \f$a_i^\top\f$
+ *  - @ref quadratic_coeffs[i] stores the quadratic term, in one of the two forms described on
+ *    that member.
  *
  * In addition, @ref objective_linear_coeffs and @ref objective_quadratic_coeffs may be
  * used to accumulate the sum of all expressions into a single quadratic objective.
@@ -195,10 +207,18 @@ struct QuadExprs : Exprs
   trajopt_ifopt::Jacobian linear_coeffs;
 
   /**
-   * @brief Quadratic coefficient matrices \f$Q_i\f for each expression.
-   * @details Entry @c quadratic_coeffs[i] is the sparse matrix \f$Q_i\f for
-   *          expression \f$f_i(x)\f. If a given expression is purely affine,
-   *          the corresponding matrix may be empty (zero non-zeros).
+   * @brief Quadratic coefficients for each expression, in one of two forms.
+   * @details Entry @c quadratic_coeffs[i] carries the quadratic term of expression
+   *          \f$f_i(x)\f$ in one of two representations, distinguished by its row count:
+   *          - An n×n matrix \f$Q_i\f$ contributing \f$x^\top Q_i x\f$, produced by @ref create.
+   *          - A 1×n row \f$q_i^\top\f$ contributing \f$(q_i^\top x)^2\f$, the factored form
+   *            produced by @ref AffExprs::square.
+   *
+   *          An empty (0×0) entry means the expression is purely affine.
+   *
+   * @warning The two forms are distinguished by @c rows(), so they are ambiguous when there is
+   *          exactly one decision variable: a genuine 1×1 \f$Q_i\f$ cannot be told apart from a
+   *          factored 1×1 \f$q_i^\top\f$ and is decoded as the latter.
    */
   std::vector<trajopt_ifopt::Jacobian> quadratic_coeffs;
 
