@@ -131,6 +131,11 @@ public:
    */
   std::vector<Bounds> getBounds() const override;
 
+  /**
+   * @brief Set the bounds of this constraint
+   * @param bounds One bound for each row of the constraint
+   * @throws std::runtime_error If the number of bounds differs from the number of rows
+   */
   void setBounds(const std::vector<Bounds>& bounds);
 
   /**
