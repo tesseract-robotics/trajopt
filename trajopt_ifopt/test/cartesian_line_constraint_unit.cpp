@@ -296,47 +296,59 @@ TEST_F(CartesianLineConstraintUnit, GetValueSlantedLine)  // NOLINT
   }
 }
 
-///** @brief Checks that the FillJacobian function is correct */
+/** @brief Check that the FillJacobian function is correct for full, reordered and shortened lists of rows */
 TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
 {
   TESSERACT_LOG_DEBUG("CartesianPositionConstraintUnit, FillJacobian");
 
-  // Run FK to get target pose
-  const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d source_tf = manip->calcFwdKin(joint_position).at("r_gripper_tool_frame");
-
-  // Set the line endpoints st the target pose is on the line
-  const Eigen::Isometry3d start_pose_mod = source_tf.translate(Eigen::Vector3d(-1.0, 0, 0));
-  const Eigen::Isometry3d end_pose_mod = source_tf.translate(Eigen::Vector3d(1.0, 0, 0));
-
-  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
-  const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-  constraint->linkWithVariables(variables);
-
-  // below here should match cartesian
-  // Modify one joint at a time
-  for (Eigen::Index i = 0; i < n_dof; i++)
+  for (const auto& target_frame : { "imu_link", "r_upper_arm_roll_link" })
   {
-    // Set the joints
-    Eigen::VectorXd joint_position_mod = joint_position;
-    joint_position_mod[i] = 2.0;
-    variables->setVariables(joint_position_mod);
-
-    // Calculate jacobian numerically
-    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
-    const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
-
-    // Compare to constraint jacobian
+    int beside{ 0 };
+    int before{ 0 };
+    int past{ 0 };
+    for (const Eigen::VectorXi& indices : index_lists)
     {
-      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->calcJacobianBlock(jac_block, joint_position_mod);  // NOLINT
-      EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
+      info = slantedLineInfo(target_frame, 0.3, indices);
+      auto constraint = std::make_shared<CartLineConstraint>(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+      constraint->linkWithVariables(variables);
+
+      for (const Eigen::VectorXd& joint_position : jointPositions())
+      {
+        variables->setVariables(joint_position);
+
+        const auto transforms = manip->calcFwdKin(joint_position);
+        const Eigen::Isometry3d source = transforms.at(info.source_frame) * info.source_frame_offset;
+        const Eigen::Isometry3d start = transforms.at(info.target_frame) * info.target_frame_offset1;
+        const Eigen::Isometry3d end = transforms.at(info.target_frame) * info.target_frame_offset2;
+        const double fraction = nearestFraction(source.translation(), start.translation(), end.translation());
+        beside += static_cast<int>(fraction > 0.0 && fraction < 1.0);
+        before += static_cast<int>(fraction == 0.0);
+        past += static_cast<int>(fraction == 1.0);
+
+        // Calculate jacobian numerically
+        auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
+        const Eigen::MatrixXd num_jac_block = calcForwardNumJac(error_calculator, joint_position, 1e-7).toDense();
+        ASSERT_EQ(num_jac_block.rows(), indices.size());
+
+        // Compare to constraint jacobian
+        {
+          Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+          constraint->calcJacobianBlock(jac_block, joint_position);  // NOLINT
+          EXPECT_LT((jac_block.toDense() - num_jac_block).cwiseAbs().maxCoeff(), 1e-4)
+              << target_frame << ", indices " << indices.transpose();
+        }
+        {
+          const Jacobian jac_block = constraint->getJacobian();
+          EXPECT_LT((jac_block.toDense() - num_jac_block).cwiseAbs().maxCoeff(), 1e-4)
+              << target_frame << ", indices " << indices.transpose();
+        }
+      }
     }
-    {
-      Jacobian jac_block = constraint->getJacobian();
-      EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
-    }
+
+    // The joint positions cover the three places the tool can be along the line
+    EXPECT_GT(beside, 0) << target_frame;
+    EXPECT_GT(before, 0) << target_frame;
+    EXPECT_GT(past, 0) << target_frame;
   }
 }
 
