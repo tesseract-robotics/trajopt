@@ -149,6 +149,8 @@ const BasicTrustRegionSQPParameters& BasicTrustRegionSQP::getParameters() const 
 BasicTrustRegionSQPParameters& BasicTrustRegionSQP::getParameters() { return param_; }
 void BasicTrustRegionSQP::ctor(const OptProb::Ptr& prob)
 {
+  if (!prob)
+    PRINT_AND_THROW("the optimization problem is null");
   Optimizer::setProblem(prob);
   model_ = prob->getModel();
 }
@@ -705,6 +707,11 @@ void BasicTrustRegionSQPResults::printRaw() const
 
 OptStatus BasicTrustRegionSQP::optimize()
 {
+  if (!prob_)
+    PRINT_AND_THROW("you forgot to set the optimization problem");
+  if (results_.x.empty())
+    PRINT_AND_THROW("you forgot to initialize!");
+
   const std::vector<std::string> var_names = getVarNames(prob_->getVars());
   const std::vector<std::string> cost_names = getCostNames(prob_->getCosts());
   const std::vector<Constraint::Ptr> constraints = prob_->getConstraints();
@@ -723,11 +730,6 @@ OptStatus BasicTrustRegionSQP::optimize()
     log_costs_stream.reset(std::fopen((param_.log_dir + "/trajopt_costs.log").c_str(), "w"));
     log_constraints_stream.reset(std::fopen((param_.log_dir + "/trajopt_constraints.log").c_str(), "w"));
   }
-
-  if (results_.x.empty())
-    PRINT_AND_THROW("you forgot to initialize!");
-  if (!prob_)
-    PRINT_AND_THROW("you forgot to set the optimization problem");
 
   results_.x = prob_->getClosestFeasiblePoint(results_.x);
 
