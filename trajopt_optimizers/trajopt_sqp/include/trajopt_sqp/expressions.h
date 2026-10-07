@@ -145,9 +145,6 @@ private:
 
   // Reusable sparse buffer for Bw = diag(sqrt(w)) * B
   mutable trajopt_ifopt::Jacobian scratch_bw_;
-
-  // Triplets to build each 1×n row-vector Qi
-  mutable std::vector<Eigen::Triplet<double>> scratch_qi_trips_;
 };
 
 /**
