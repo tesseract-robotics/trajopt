@@ -596,3 +596,61 @@ TEST(QPProblemMerit, SquaredCostDropsSmallJacobianEntriesBeforeSquaring)  // NOL
 
   EXPECT_EQ(qp->getHessian().nonZeros(), 9);
 }
+
+// The convex model of a squared cost reproduces the exact cost at the point it was linearized at, also when that
+// point is far from the origin and the Jacobian has an entry that is filtered out.
+TEST(QPProblemMerit, SquaredCostModelIsExactAtConvexifyPoint)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 1000.0 }) });
+  Eigen::MatrixXd m(1, 2);
+  m << 1.0, 5e-8;
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<MatrixTestSet>(t.vars[0], "squared", m, trajopt_ifopt::Bounds(0.0, 0.0), toVectorXd({ 1.0 })),
+      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  qp->convexify();
+
+  // The row's value is 0.5 + 1000 * 5e-8 = 0.50005.
+  expectVectorNear(qp->getExactCosts(), toVectorXd({ 0.2500500025 }));
+  expectVectorNear(qp->evaluateConvexCosts(qp->getVariableValues()), qp->getExactCosts());
+}
+
+// The convex model of the rows that enter the QP as constraints (hinge costs and merit constraints) reproduces
+// their exact values at the point it was linearized at. Their Jacobian entries below 1e-7 are zero in the
+// constraint matrix and stay in its sparsity pattern.
+TEST(QPProblemMerit, ConstraintRowModelIsExactAtConvexifyPoint)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 1000.0 }), toVectorXd({ 0.5, 1000.0 }) });
+  Eigen::MatrixXd m(1, 2);
+  m << 1.0, 5e-8;
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<MatrixTestSet>(t.vars[0], "hinge", m, trajopt_ifopt::BoundSmallerZero, toVectorXd({ 2.0 })),
+      trajopt_sqp::CostPenaltyType::kHinge);
+  qp->addConstraintSet(
+      std::make_shared<MatrixTestSet>(t.vars[1], "equality", m, trajopt_ifopt::Bounds(0.0, 0.0), toVectorXd({ 3.0 })));
+  qp->setup();
+  qp->convexify();
+
+  // The hinge row has one slack and the equality row two, followed by one identity row per QP variable.
+  const trajopt_ifopt::Jacobian& constraint_matrix = qp->getConstraintMatrix();
+  EXPECT_EQ(constraint_matrix.coeff(0, 0), 1.0);
+  EXPECT_EQ(constraint_matrix.coeff(0, 1), 0.0);
+  EXPECT_EQ(constraint_matrix.coeff(1, 2), 1.0);
+  EXPECT_EQ(constraint_matrix.coeff(1, 3), 0.0);
+  EXPECT_EQ(constraint_matrix.nonZeros(), 14);
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(4) = qp->getVariableValues();
+
+  // Each row's value is 0.50005: the hinge cost is twice that, the equality is violated by that.
+  expectVectorNear(qp->getExactCosts(), toVectorXd({ 1.0001 }));
+  expectVectorNear(qp->evaluateConvexCosts(qp_vals), qp->getExactCosts());
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  const trajopt_sqp::ConstraintViolations convex = qp->evaluateConvexConstraintViolations(qp_vals);
+  expectVectorNear(exact.raw, toVectorXd({ 0.50005 }));
+  expectVectorNear(convex.raw, exact.raw);
+  expectVectorNear(convex.weighted, exact.weighted);
+}
