@@ -35,6 +35,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/common/utils.h>
+#include <algorithm>
 #include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -261,42 +262,25 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> CartLineConstraint::getLine() co
 
 const CartLineInfo& CartLineConstraint::getInfo() const { return info_; }
 
-// this has to be const because it is used in const functions, it would be nicer if this could store a member
 Eigen::Isometry3d CartLineConstraint::getLinePoint(const Eigen::Isometry3d& source_tf,
                                                    const Eigen::Isometry3d& target_tf1,
-                                                   const Eigen::Isometry3d& target_tf2) const
+                                                   const Eigen::Isometry3d& target_tf2)
 {
-  // distance 1; distance from new pose to first point on line
-  const Eigen::Vector3d d1 = (source_tf.translation() - target_tf1.translation()).array().abs();
-
-  // Get the line
   const Eigen::Vector3d line = target_tf2.translation() - target_tf1.translation();
+  const double length_squared = line.squaredNorm();
 
-  // Point D, the nearest point on line AB to point C, can be found with:
-  // (AC - (AC * AB)) * AB
-  Eigen::Isometry3d line_point;
-  const Eigen::Vector3d line_norm = line.normalized();
-  const double mag = d1.dot(line_norm);
+  // The fraction of the line at the point nearest the source; a line of zero length has only its start
+  double fraction = 0.0;
+  if (length_squared > 0.0)
+    fraction = std::clamp((source_tf.translation() - target_tf1.translation()).dot(line) / length_squared, 0.0, 1.0);
 
-  // If point C is not between the line endpoints, set nearest point to endpoint
-  if (mag > 1.0)
-  {
-    line_point.translation() = info_.target_frame_offset2.translation();
-  }
-  else if (mag < 0)
-  {
-    line_point.translation() = info_.target_frame_offset1.translation();
-  }
-  else
-  {
-    line_point.translation() = info_.target_frame_offset1.translation() + mag * line_norm;
-  }
+  Eigen::Isometry3d line_point = Eigen::Isometry3d::Identity();
+  line_point.translation() = target_tf1.translation() + fraction * line;
 
   // The orientation of the line_point is found using quaternion SLERP
   const Eigen::Quaterniond quat_a(target_tf1.rotation());
   const Eigen::Quaterniond quat_b(target_tf2.rotation());
-  const Eigen::Quaterniond slerp = quat_a.slerp(mag, quat_b);
-  line_point.linear() = slerp.toRotationMatrix();
+  line_point.linear() = quat_a.slerp(fraction, quat_b).toRotationMatrix();
 
   return line_point;
 }
