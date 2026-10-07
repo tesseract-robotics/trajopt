@@ -795,8 +795,10 @@ void TrajOptQPProblem::Implementation::convexify()
     // Weights are read at the linearization point, so the model agrees with the exact merit there.
     info.coeffs = cnt->getCoefficients();
 
-    // Linearize Constraints
-    const trajopt_ifopt::Jacobian jac = cnt->getJacobian();
+    // Linearize Constraints. Small entries are zeroed before the constant below is taken from the rows, so the
+    // linear model reproduces the constraint values at x_initial.
+    trajopt_ifopt::Jacobian jac = cnt->getJacobian();
+    zeroSmallEntries(jac);
 
     // In the case of a QP problem the costs and constraints are represented as
     // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -818,13 +820,7 @@ void TrajOptQPProblem::Implementation::convexify()
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-      {
-        // Originally it pruned these but it changes sparsity so we now set to zero
-        if (std::abs(it.value()) < SMALL_ENTRY_THRESHOLD)
-          cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), 0.0);
-        else
-          cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
-      }
+        cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
 
       ///////////////////////////////
       // Update NLP Constraint Bounds
@@ -929,9 +925,11 @@ void TrajOptQPProblem::Implementation::convexify()
       //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
 
       // This should be correct now
-      cache_aff_expr.create(obj->getValues(), obj->getJacobian(), x_initial);
+      trajopt_ifopt::Jacobian jac = obj->getJacobian();
       // Filter the linearized rows and not their square: a product of retained entries may itself be small.
-      zeroSmallEntries(cache_aff_expr.linear_coeffs);
+      // The rows are filtered before the affine model is built, so it reproduces the cost values at x_initial.
+      zeroSmallEntries(jac);
+      cache_aff_expr.create(obj->getValues(), jac, x_initial);
       cache_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cache_aff_expr.constants);
       cache_aff_expr.linear_coeffs *= -1;
       cache_aff_expr.square(cache_quad_expr, obj->getCoefficients());
