@@ -1,5 +1,6 @@
 #include <trajopt_sqp/expressions.h>
 #include <cassert>
+#include <cmath>
 
 namespace trajopt_sqp
 {
@@ -28,7 +29,6 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
   const Eigen::Index m = constants.rows();
   const Eigen::Index n = linear_coeffs.cols();
 
-  quad_expr.constants.resize(m);
   quad_expr.linear_coeffs = linear_coeffs;
 
   if (static_cast<Eigen::Index>(quad_expr.quadratic_coeffs.size()) != m)
@@ -37,24 +37,18 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
   // constants: a_i^2 * w_i
   quad_expr.constants = constants.array().square() * weights.array();
 
-  // s_i = 2 * a_i * w_i (scratch)
-  scratch_row_scale_.resize(m);
-  scratch_row_scale_ = (2.0 * (constants.array() * weights.array())).matrix();
-
-  // linear: scale each row by s_i
+  // Scale row i of the linear coefficients by 2 * a_i * w_i, accumulating the column sums as
+  // they are produced; those sums are the aggregate objective's linear coefficients.
+  quad_expr.objective_linear_coeffs.setZero(n);
   for (Eigen::Index r = 0; r < quad_expr.linear_coeffs.outerSize(); ++r)
   {
-    const double sr = scratch_row_scale_[r];
+    const double sr = 2.0 * (constants[r] * weights[r]);
     for (trajopt_ifopt::Jacobian::InnerIterator it(quad_expr.linear_coeffs, static_cast<int>(r)); it; ++it)
+    {
       it.valueRef() *= sr;
-  }
-
-  // objective_linear = column sums of A
-  quad_expr.objective_linear_coeffs.resize(n);
-  quad_expr.objective_linear_coeffs.setZero();
-  for (int r = 0; r < quad_expr.linear_coeffs.outerSize(); ++r)
-    for (trajopt_ifopt::Jacobian::InnerIterator it(quad_expr.linear_coeffs, r); it; ++it)
       quad_expr.objective_linear_coeffs[it.col()] += it.value();
+    }
+  }
 
   // ----------------------------
   // NEW: Avoid forming Q_i = w_i * b_i b_i^T (O(k^2)).
@@ -66,16 +60,11 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
   // H = (diag(sqrt(w)) B)^T (diag(sqrt(w)) B).
   // ----------------------------
 
-  // Build Bw = diag(sqrt(w)) * B by copying and scaling each row
-  scratch_bw_ = linear_coeffs;  // one copy, O(nnz)
-
-  // scale rows of Bw by sqrt(w)
-  scratch_sqrtw_.resize(m);  // reuse scratch_ for sqrt(w)
-  scratch_sqrtw_ = weights.array().sqrt().matrix();
-
+  // Bw = diag(sqrt(w)) * B: copy B, then scale row r by sqrt(w_r).
+  scratch_bw_ = linear_coeffs;
   for (Eigen::Index r = 0; r < scratch_bw_.outerSize(); ++r)
   {
-    const double sr = scratch_sqrtw_[r];
+    const double sr = std::sqrt(weights[r]);
     for (trajopt_ifopt::Jacobian::InnerIterator it(scratch_bw_, static_cast<int>(r)); it; ++it)
       it.valueRef() *= sr;
   }

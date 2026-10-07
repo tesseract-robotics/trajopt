@@ -137,12 +137,6 @@ struct AffExprs : Exprs
   void square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::VectorXd>& weights) const;
 
 private:
-  // Used for row scaling (size m)
-  mutable Eigen::VectorXd scratch_row_scale_;
-
-  // Used for sqrt(weights) (size m)
-  mutable Eigen::VectorXd scratch_sqrtw_;
-
   // Reusable sparse buffer for Bw = diag(sqrt(w)) * B
   mutable trajopt_ifopt::Jacobian scratch_bw_;
 };
