@@ -889,10 +889,11 @@ OptStatus BasicTrustRegionSQP::optimize()
           goto penaltyadjustment;
         }
 
-        if (iteration_results.approx_merit_improve / iteration_results.old_merit < param_.min_approx_improve_frac)
+        const double merit_denom = std::max(std::abs(iteration_results.old_merit), 1e-12);
+        if (iteration_results.approx_merit_improve / merit_denom < param_.min_approx_improve_frac)
         {
           TESSERACT_LOG_INFO("converged because improvement ratio was small ({:.3e} < {:.3e})",
-                             iteration_results.approx_merit_improve / iteration_results.old_merit,
+                             iteration_results.approx_merit_improve / merit_denom,
                              param_.min_approx_improve_frac);
           retval = OPT_CONVERGED;
           goto penaltyadjustment;
