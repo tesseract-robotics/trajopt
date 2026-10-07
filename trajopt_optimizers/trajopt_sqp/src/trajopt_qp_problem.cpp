@@ -939,7 +939,7 @@ void TrajOptQPProblem::Implementation::convexify()
       }
 
       // Store individual equations quadratic coefficients
-      assert(cache_quad_expr.quadratic_coeffs.size() == obj->getRows());
+      assert(cache_quad_expr.quadratic_coeffs.size() == static_cast<std::size_t>(obj->getRows()));
       for (std::size_t j = 0; j < cache_quad_expr.quadratic_coeffs.size(); ++j)
         cvp.squared_objective_nlp.quadratic_coeffs[static_cast<std::size_t>(row) + j] =
             cache_quad_expr.quadratic_coeffs[j];
@@ -1085,7 +1085,7 @@ void TrajOptQPProblem::Implementation::setBoxSize(const Eigen::Ref<const Eigen::
 
 void TrajOptQPProblem::Implementation::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff)
 {
-  assert(merit_coeff.size() == constraints.size() + dyn_constraint.size());
+  assert(merit_coeff.size() == static_cast<Eigen::Index>(constraints.size() + dyn_constraint.size()));
   constraint_merit_coeff = merit_coeff;
 }
 

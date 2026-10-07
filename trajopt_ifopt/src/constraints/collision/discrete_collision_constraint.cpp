@@ -142,7 +142,7 @@ Jacobian DiscreteCollisionConstraint::getJacobian() const
 
 void DiscreteCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == rows_);
+  assert(bounds.size() == static_cast<std::size_t>(rows_));
   bounds_ = bounds;
 }
 
@@ -284,7 +284,7 @@ Jacobian DiscreteCollisionConstraintD::getJacobian() const
 
 void DiscreteCollisionConstraintD::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == rows_);
+  assert(bounds.size() == static_cast<std::size_t>(rows_));
   bounds_ = bounds;
 }
 
