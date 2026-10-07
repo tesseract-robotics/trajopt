@@ -26,6 +26,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <limits>
 #include <vector>
+#include <OsqpEigen/OsqpEigen.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/eigen_types.h>
@@ -56,4 +57,20 @@ TEST(OSQPEigenSolverUnit, SuccessfulSolveClearsFailure)  // NOLINT
   solver.updateBounds(Eigen::Vector2d(-inf, -inf), Eigen::Vector2d(inf, 1.0));
   ASSERT_TRUE(solver.solve());
   EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kInitialized);
+}
+
+TEST(OSQPEigenSolverUnit, SmallGradientEntriesReachTheSolver)  // NOLINT
+{
+  // The solver takes the QP as given: a gradient entry of 5e-8 is not dropped
+  OSQPEigenSolver solver;
+  trajopt_ifopt::Jacobian A(1, 1);
+  A.insert(0, 0) = 1.0;
+  trajopt_ifopt::Jacobian hessian(1, 1);
+  hessian.insert(0, 0) = 1.0;
+  solver.init(1, 1);
+  solver.updateHessianMatrix(hessian);
+  solver.updateGradient(Eigen::VectorXd::Constant(1, 5e-8));
+  solver.updateLinearConstraintsMatrix(A);
+  solver.updateBounds(Eigen::VectorXd::Constant(1, -1.0), Eigen::VectorXd::Constant(1, 1.0));
+  EXPECT_DOUBLE_EQ(solver.solver_->data()->getData()->q[0], 5e-8);
 }
