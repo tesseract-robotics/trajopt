@@ -5,6 +5,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <chrono>
 #include <cstdio>
+#include <memory>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
@@ -55,6 +56,12 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 
 namespace
 {
+struct FileCloser
+{
+  void operator()(std::FILE* stream) const { std::fclose(stream); }
+};
+using FilePtr = std::unique_ptr<std::FILE, FileCloser>;
+
 // todo: use different coeffs for each constraint
 std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraints::Ptr>& cnts,
                                               const std::vector<double>& err_coeffs,
@@ -705,16 +712,16 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::vector<double> merit_error_coeffs(constraints.size(), param_.initial_merit_error_coeff);
   BasicTrustRegionSQPResults iteration_results(var_names, cost_names, cnt_names, *this);
 
-  std::FILE* log_solver_stream = nullptr;
-  std::FILE* log_vars_stream = nullptr;
-  std::FILE* log_costs_stream = nullptr;
-  std::FILE* log_constraints_stream = nullptr;
+  FilePtr log_solver_stream;
+  FilePtr log_vars_stream;
+  FilePtr log_costs_stream;
+  FilePtr log_constraints_stream;
   if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
   {
-    log_solver_stream = std::fopen((param_.log_dir + "/trajopt_solver.log").c_str(), "w");
-    log_vars_stream = std::fopen((param_.log_dir + "/trajopt_vars.log").c_str(), "w");
-    log_costs_stream = std::fopen((param_.log_dir + "/trajopt_costs.log").c_str(), "w");
-    log_constraints_stream = std::fopen((param_.log_dir + "/trajopt_constraints.log").c_str(), "w");
+    log_solver_stream.reset(std::fopen((param_.log_dir + "/trajopt_solver.log").c_str(), "w"));
+    log_vars_stream.reset(std::fopen((param_.log_dir + "/trajopt_vars.log").c_str(), "w"));
+    log_costs_stream.reset(std::fopen((param_.log_dir + "/trajopt_costs.log").c_str(), "w"));
+    log_constraints_stream.reset(std::fopen((param_.log_dir + "/trajopt_constraints.log").c_str(), "w"));
   }
 
   if (results_.x.empty())
@@ -850,16 +857,16 @@ OptStatus BasicTrustRegionSQP::optimize()
         if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
         {
           if (log_solver_stream != nullptr)
-            iteration_results.writeSolver(log_solver_stream, results_.n_func_evals == 1);
+            iteration_results.writeSolver(log_solver_stream.get(), results_.n_func_evals == 1);
 
           if (log_vars_stream != nullptr)
-            iteration_results.writeVars(log_vars_stream, results_.n_func_evals == 1);
+            iteration_results.writeVars(log_vars_stream.get(), results_.n_func_evals == 1);
 
           if (log_costs_stream != nullptr)
-            iteration_results.writeCosts(log_costs_stream, results_.n_func_evals == 1);
+            iteration_results.writeCosts(log_costs_stream.get(), results_.n_func_evals == 1);
 
           if (log_constraints_stream != nullptr)
-            iteration_results.writeConstraints(log_constraints_stream, results_.n_func_evals == 1);
+            iteration_results.writeConstraints(log_constraints_stream.get(), results_.n_func_evals == 1);
         }
 
         ++results_.n_func_evals;
@@ -971,16 +978,6 @@ cleanup:
   if (tesseract::common::isLogLevelEnabled(spdlog::level::info))
     TESSERACT_LOG_INFO("\n==================\n{}==================", CSTR(results_));
   callCallbacks();
-
-  // NOLINTBEGIN(clang-analyzer-core.NonNullParamChecker)
-  if (param_.log_results || tesseract::common::isLogLevelEnabled(spdlog::level::debug))
-  {
-    std::fclose(log_solver_stream);
-    std::fclose(log_vars_stream);
-    std::fclose(log_costs_stream);
-    std::fclose(log_constraints_stream);
-  }
-  // NOLINTEND(clang-analyzer-core.NonNullParamChecker)
 
   return retval;
 }
