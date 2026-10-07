@@ -84,30 +84,32 @@ void AffExprs::square(QuadExprs& quad_expr, const Eigen::Ref<const Eigen::Vector
   quad_expr.objective_quadratic_coeffs = scratch_bw_.transpose() * scratch_bw_;
   quad_expr.objective_quadratic_coeffs.makeCompressed();
 
-  // Per-expression "quadratic_coeffs[i]" now stores q_i as a 1×n sparse row vector.
-  // Use the already-scaled Bw row i directly.
-  scratch_qi_trips_.clear();
-
+  // Copy row i of Bw into quadratic_coeffs[i].
   for (Eigen::Index i = 0; i < m; ++i)
   {
     auto& Qi = quad_expr.quadratic_coeffs[static_cast<std::size_t>(i)];
+    const Eigen::Index nnz = scratch_bw_.innerVector(i).nonZeros();
 
-    // Build Qi as a 1×n sparse row: Qi(0, col) = Bw(i, col)
-    scratch_qi_trips_.clear();
-
-    // Iterate Bw row i (RowMajor outer index is the row)
-    for (trajopt_ifopt::Jacobian::InnerIterator it(scratch_bw_, static_cast<int>(i)); it; ++it)
-      scratch_qi_trips_.emplace_back(0, it.col(), it.value());
-
-    if (scratch_qi_trips_.empty())
+    if (nnz == 0)
     {
-      Qi.resize(0, 0);
+      // An entry that is already empty needs no reset, and Eigen 3.4 reallocates the outer index of
+      // an empty matrix on every resize.
+      if (Qi.rows() != 0)
+        Qi.resize(0, 0);
       continue;
     }
 
+    // resize() clears the outer index, which startVec() requires; it must run on every call
+    // because Qi may still hold the row an earlier call built.
     Qi.resize(1, n);
-    Qi.setFromTriplets(scratch_qi_trips_.begin(), scratch_qi_trips_.end());
-    Qi.makeCompressed();
+    Qi.reserve(nnz);
+    Qi.startVec(0);
+
+    // Row i of Bw is visited in strictly increasing column order, which insertBack() requires.
+    for (trajopt_ifopt::Jacobian::InnerIterator it(scratch_bw_, static_cast<int>(i)); it; ++it)
+      Qi.insertBack(0, it.col()) = it.value();
+
+    Qi.finalize();
   }
 }
 
