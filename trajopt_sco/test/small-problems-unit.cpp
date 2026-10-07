@@ -81,6 +81,23 @@ TEST_P(SQP, QuadraticNonseparable)  // NOLINT
   expectAllNear(solver.x(), { 1, 7, 2 }, .01);
   // todo: checks on number of iterations and function evaluates
 }
+double f_NegativeOffset(const VectorXd& x) { return sq(x(0) - 3) - 100; }
+TEST_P(SQP, ImprovementRatioUsesMeritMagnitude)  // NOLINT
+{
+  // an improving step from a negative merit must not read as a negative ratio and end the run at the start
+  OptProb::Ptr prob;
+  setupProblem(prob, 1, GetParam());
+  prob->addCost(std::make_shared<CostFromFunc>(ScalarOfVector::construct(&f_NegativeOffset), prob->getVars(), "f"));
+  BasicTrustRegionSQP solver(prob);
+  BasicTrustRegionSQPParameters& params = solver.getParameters();
+  params.min_approx_improve_frac = 1e-3;
+  params.trust_box_size = 1;
+  const DblVec x = { 0 };
+  solver.initialize(x);
+  const OptStatus status = solver.optimize();
+  ASSERT_EQ(status, OPT_CONVERGED);
+  expectAllNear(solver.x(), { 3 }, .01);
+}
 
 void testProblem(ScalarOfVector::Ptr f,
                  VectorOfVector::Ptr g,
