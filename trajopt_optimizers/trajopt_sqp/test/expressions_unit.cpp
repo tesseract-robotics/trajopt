@@ -26,6 +26,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <trajopt_sqp/expressions.h>
 #include <tesseract/common/logging.h>
+#include <cmath>
 TRAJOPT_IGNORE_WARNINGS_POP
 using trajopt_sqp::AffExprs;
 using trajopt_sqp::QuadExprs;
@@ -201,6 +202,427 @@ TEST(ExpressionsTest, squareAffExprs2)  // NOLINT
 
   quad_exprs.values(results, x);
   EXPECT_NEAR(results(0), std::pow(e(0), 2.0), 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsMultiRowWeighted)  // NOLINT
+{
+  // Three weighted affine expressions over three variables, the last with no linear terms:
+  //   f0(x) =  1 + ( 2*x0 - 1*x1 )   w0 = 0.5
+  //   f1(x) = -2 + ( 3*x1 + 1*x2 )   w1 = 2.0
+  //   f2(x) =  4                     w2 = 3.0  (empty Jacobian row)
+  const Eigen::Index m = 3;
+  const Eigen::Index n = 3;
+
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(m);
+  aff_exprs.constants << 1.0, -2.0, 4.0;
+
+  Eigen::MatrixXd B(m, n);
+  B << 2.0, -1.0, 0.0, 0.0, 3.0, 1.0, 0.0, 0.0, 0.0;
+  aff_exprs.linear_coeffs = B.sparseView();
+
+  Eigen::VectorXd w(m);
+  w << 0.5, 2.0, 3.0;
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w);
+
+  // constants(i) = w_i * a_i^2
+  EXPECT_NEAR(quad_exprs.constants(0), 0.5, 1e-8);
+  EXPECT_NEAR(quad_exprs.constants(1), 8.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.constants(2), 48.0, 1e-8);
+
+  // linear_coeffs.row(i) = 2 * a_i * w_i * b_i
+  EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 0), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 1), -1.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(1, 1), -24.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(1, 2), -8.0, 1e-8);
+
+  // objective_linear_coeffs = column sums of the scaled linear coefficients
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(0), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(1), -25.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(2), -8.0, 1e-8);
+
+  // quadratic_coeffs[i] = sqrt(w_i) * b_i, stored as a 1 x n row; an expression with no
+  // linear terms yields an empty entry.
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 3);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].cols(), n);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), std::sqrt(0.5) * 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), std::sqrt(0.5) * -1.0, 1e-8);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[1].rows(), 1);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 1), std::sqrt(2.0) * 3.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 2), std::sqrt(2.0) * 1.0, 1e-8);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[1].nonZeros(), 2);
+
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[2].rows(), 0);
+
+  // objective_quadratic_coeffs = sum_i w_i * b_i * b_i^T
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 0), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 1), -1.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 0), -1.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 1), 18.5, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 2), 6.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(2, 1), 6.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(2, 2), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 2), 0.0, 1e-8);
+
+  // The model is exact for a squared affine function, so values(x) == w_i * f_i(x)^2 at any x.
+  Eigen::VectorXd results(m);
+  Eigen::VectorXd x(n);
+
+  x << 1.0, 2.0, 3.0;
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), 0.5, 1e-8);
+  EXPECT_NEAR(results(1), 98.0, 1e-8);
+  EXPECT_NEAR(results(2), 48.0, 1e-8);
+
+  x << -2.0, 0.5, 1.0;
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), 6.125, 1e-8);
+  EXPECT_NEAR(results(1), 0.5, 1e-8);
+  EXPECT_NEAR(results(2), 48.0, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsReuseAcrossRowCounts)  // NOLINT
+{
+  const Eigen::Index n = 3;
+
+  // First expression set: 3 rows, matching squareAffExprsMultiRowWeighted.
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(3);
+  aff_exprs.constants << 1.0, -2.0, 4.0;
+
+  Eigen::MatrixXd B_a(3, n);
+  B_a << 2.0, -1.0, 0.0, 0.0, 3.0, 1.0, 0.0, 0.0, 0.0;
+  aff_exprs.linear_coeffs = B_a.sparseView();
+
+  Eigen::VectorXd w_a(3);
+  w_a << 0.5, 2.0, 3.0;
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w_a);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 3);
+
+  // Second expression set: 2 rows, different sparsity, into the same AffExprs and QuadExprs.
+  //   g0(x) =  3 + ( 5*x2 )          v0 = 1.0
+  //   g1(x) = -1 + (-2*x0 + 1*x1 )   v1 = 4.0
+  aff_exprs.constants.resize(2);
+  aff_exprs.constants << 3.0, -1.0;
+
+  Eigen::MatrixXd B_b(2, n);
+  B_b << 0.0, 0.0, 5.0, -2.0, 1.0, 0.0;
+  aff_exprs.linear_coeffs = B_b.sparseView();
+
+  Eigen::VectorXd v(2);
+  v << 1.0, 4.0;
+
+  aff_exprs.square(quad_exprs, v);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 1);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 2), 5.0, 1e-8);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[1].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[1].nonZeros(), 2);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 0), -4.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 1), 2.0, 1e-8);
+
+  Eigen::VectorXd results_b(2);
+  Eigen::VectorXd x(n);
+  x << 1.0, 2.0, 3.0;
+  quad_exprs.values(results_b, x);
+  EXPECT_NEAR(results_b(0), 324.0, 1e-8);
+  EXPECT_NEAR(results_b(1), 4.0, 1e-8);
+
+  // Back to the 3-row set in the same objects; results must match the first squaring.
+  aff_exprs.constants.resize(3);
+  aff_exprs.constants << 1.0, -2.0, 4.0;
+  aff_exprs.linear_coeffs = B_a.sparseView();
+
+  aff_exprs.square(quad_exprs, w_a);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 3);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), std::sqrt(0.5) * 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), std::sqrt(0.5) * -1.0, 1e-8);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[2].rows(), 0);
+
+  Eigen::VectorXd results_a(3);
+  quad_exprs.values(results_a, x);
+  EXPECT_NEAR(results_a(0), 0.5, 1e-8);
+  EXPECT_NEAR(results_a(1), 98.0, 1e-8);
+  EXPECT_NEAR(results_a(2), 48.0, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsReuseSameRowCountDifferentPattern)  // NOLINT
+{
+  // Two consecutive squarings with the same row count but different sparsity. Because the row
+  // count is unchanged, quadratic_coeffs is not resized, so every Qi is reused while still
+  // holding the previous pattern.
+  const Eigen::Index m = 2;
+  const Eigen::Index n = 3;
+
+  // First set:
+  //   f0(x) =  1 + ( 2*x0 - 1*x1 )   w0 = 1.0   (2 nonzeros, columns 0 and 1)
+  //   f1(x) = -1 + ( 4*x2 )          w1 = 1.0   (1 nonzero,  column 2)
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(m);
+  aff_exprs.constants << 1.0, -1.0;
+
+  Eigen::MatrixXd B_first(m, n);
+  B_first << 2.0, -1.0, 0.0, 0.0, 0.0, 4.0;
+  aff_exprs.linear_coeffs = B_first.sparseView();
+
+  Eigen::VectorXd w_first(m);
+  w_first << 1.0, 1.0;
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w_first);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[1].nonZeros(), 1);
+
+  // Second set, same row count and inverted shape: row 0 shrinks to a single nonzero in a column
+  // it did not previously occupy, row 1 grows to three.
+  //   g0(x) = 2   + ( 3*x2 )                 v0 = 4.0
+  //   g1(x) = 0.5 + (-1*x0 + 2*x1 + 1*x2 )   v1 = 1.0
+  aff_exprs.constants << 2.0, 0.5;
+
+  Eigen::MatrixXd B_second(m, n);
+  B_second << 0.0, 0.0, 3.0, -1.0, 2.0, 1.0;
+  aff_exprs.linear_coeffs = B_second.sparseView();
+
+  Eigen::VectorXd v(m);
+  v << 4.0, 1.0;
+
+  aff_exprs.square(quad_exprs, v);
+
+  // Row count unchanged, so the container was reused rather than resized.
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+
+  // constants(i) = v_i * a_i^2
+  EXPECT_NEAR(quad_exprs.constants(0), 16.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.constants(1), 0.25, 1e-8);
+
+  // objective_linear_coeffs = sum_i 2 * a_i * v_i * b_i, column-summed across both rows.
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(0), -1.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(1), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(2), 49.0, 1e-8);
+
+  // q_0 = sqrt(4) * [0, 0, 3]; nothing of the previous pattern survives.
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 1);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 2), 6.0, 1e-8);
+
+  // q_1 = sqrt(1) * [-1, 2, 1]
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[1].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[1].nonZeros(), 3);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 0), -1.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 1), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 2), 1.0, 1e-8);
+
+  Eigen::VectorXd results(m);
+  Eigen::VectorXd x(n);
+  x << 1.0, 2.0, 3.0;
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), 484.0, 1e-8);
+  EXPECT_NEAR(results(1), 42.25, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsReuseRowLosesAndRegainsTerms)  // NOLINT
+{
+  // A reused entry whose expression loses its linear terms becomes empty, stays empty when squared
+  // again, and takes terms back afterwards.
+  const Eigen::Index m = 2;
+  const Eigen::Index n = 3;
+
+  // With terms in both rows:
+  //   f0(x) = 1 + ( 2*x0 - 1*x1 )   w0 = 4.0
+  //   f1(x) = 2 + ( 3*x2 )          w1 = 1.0
+  Eigen::MatrixXd B_full(m, n);
+  B_full << 2.0, -1.0, 0.0, 0.0, 0.0, 3.0;
+
+  // Without terms in row 0:
+  //   g0(x) = 5                     w0 = 4.0
+  //   g1(x) = 2 + ( 3*x2 )          w1 = 1.0
+  Eigen::MatrixXd B_partial(m, n);
+  B_partial << 0.0, 0.0, 0.0, 0.0, 0.0, 3.0;
+
+  Eigen::VectorXd w(m);
+  w << 4.0, 1.0;
+
+  Eigen::VectorXd results(m);
+  Eigen::VectorXd x(n);
+  x << 2.0, 1.0, 3.0;
+
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(m);
+  aff_exprs.constants << 1.0, 2.0;
+  aff_exprs.linear_coeffs = B_full.sparseView();
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+
+  // Row 0 loses its terms. Squared twice, so its entry is also visited while already empty.
+  for (int pass = 0; pass < 2; ++pass)
+  {
+    aff_exprs.constants << 5.0, 2.0;
+    aff_exprs.linear_coeffs = B_partial.sparseView();
+
+    aff_exprs.square(quad_exprs, w);
+
+    ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+    EXPECT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 0);
+    ASSERT_EQ(quad_exprs.quadratic_coeffs[1].rows(), 1);
+    EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 2), 3.0, 1e-8);
+
+    quad_exprs.values(results, x);
+    EXPECT_NEAR(results(0), 100.0, 1e-8);
+    EXPECT_NEAR(results(1), 121.0, 1e-8);
+  }
+
+  // Row 0 takes its terms back.
+  aff_exprs.constants << 1.0, 2.0;
+  aff_exprs.linear_coeffs = B_full.sparseView();
+
+  aff_exprs.square(quad_exprs, w);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].cols(), n);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), 4.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), -2.0, 1e-8);
+
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), 64.0, 1e-8);
+  EXPECT_NEAR(results(1), 121.0, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsZeroWeightRow)  // NOLINT
+{
+  // A weight of exactly zero disables its expression: every term it contributes is zero.
+  //   f0(x) = 3 + ( 2*x0 - 1*x1 )   w0 = 0.0
+  //   f1(x) = 1 + ( 1*x1 + 4*x2 )   w1 = 2.0
+  const Eigen::Index m = 2;
+  const Eigen::Index n = 3;
+
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(m);
+  aff_exprs.constants << 3.0, 1.0;
+
+  Eigen::MatrixXd B(m, n);
+  B << 2.0, -1.0, 0.0, 0.0, 1.0, 4.0;
+  aff_exprs.linear_coeffs = B.sparseView();
+
+  Eigen::VectorXd w(m);
+  w << 0.0, 2.0;
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w);
+
+  EXPECT_EQ(quad_exprs.constants(0), 0.0);
+  EXPECT_EQ(quad_exprs.linear_coeffs.coeff(0, 0), 0.0);
+  EXPECT_EQ(quad_exprs.linear_coeffs.coeff(0, 1), 0.0);
+  EXPECT_NEAR(quad_exprs.constants(1), 2.0, 1e-8);
+
+  // Only the weighted expression reaches the aggregate objective.
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(0), 0.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(1), 4.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_linear_coeffs(2), 16.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 0), 0.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 1), 0.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 1), 2.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 2), 8.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(2, 2), 32.0, 1e-8);
+
+  Eigen::VectorXd results(m);
+  Eigen::VectorXd x(n);
+  x << 1.0, 2.0, 3.0;
+  quad_exprs.values(results, x);
+  EXPECT_EQ(results(0), 0.0);
+  EXPECT_NEAR(results(1), 450.0, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsUncompressedInput)  // NOLINT
+{
+  // linear_coeffs filled entry by entry and never compressed squares like its compressed equal.
+  //   f0(x) =  1 + ( 2*x1 + 1*x3 )   w0 = 4.0
+  //   f1(x) = -2 + (-1*x2 )          w1 = 1.0
+  const Eigen::Index m = 2;
+  const Eigen::Index n = 4;
+
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(m);
+  aff_exprs.constants << 1.0, -2.0;
+
+  aff_exprs.linear_coeffs.resize(m, n);
+  aff_exprs.linear_coeffs.reserve(Eigen::VectorXi::Constant(m, 3));
+  aff_exprs.linear_coeffs.insert(0, 3) = 1.0;
+  aff_exprs.linear_coeffs.insert(0, 1) = 2.0;
+  aff_exprs.linear_coeffs.insert(1, 2) = -1.0;
+  ASSERT_FALSE(aff_exprs.linear_coeffs.isCompressed());
+
+  Eigen::VectorXd w(m);
+  w << 4.0, 1.0;
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, w);
+
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].nonZeros(), 2);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), 4.0, 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 3), 2.0, 1e-8);
+  ASSERT_EQ(quad_exprs.quadratic_coeffs[1].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[1].nonZeros(), 1);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[1].coeff(0, 2), -1.0, 1e-8);
+
+  Eigen::VectorXd results(m);
+  Eigen::VectorXd x(n);
+  x << 1.0, 2.0, 3.0, 4.0;
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), 324.0, 1e-8);
+  EXPECT_NEAR(results(1), 25.0, 1e-8);
+}
+
+TEST(ExpressionsTest, squareAffExprsNoExpressions)  // NOLINT
+{
+  // A set with no expressions squares to an empty model over the same variables, also into a
+  // QuadExprs that held expressions before.
+  const Eigen::Index n = 3;
+
+  AffExprs aff_exprs;
+  aff_exprs.constants.resize(2);
+  aff_exprs.constants << 1.0, -1.0;
+
+  Eigen::MatrixXd B(2, n);
+  B << 2.0, 0.0, 0.0, 0.0, 0.0, 4.0;
+  aff_exprs.linear_coeffs = B.sparseView();
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, Eigen::VectorXd::Ones(2));
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 2);
+
+  aff_exprs.constants.resize(0);
+  aff_exprs.linear_coeffs.resize(0, n);
+  aff_exprs.square(quad_exprs, Eigen::VectorXd(0));
+
+  EXPECT_EQ(quad_exprs.constants.size(), 0);
+  EXPECT_EQ(quad_exprs.linear_coeffs.rows(), 0);
+  EXPECT_TRUE(quad_exprs.quadratic_coeffs.empty());
+  ASSERT_EQ(quad_exprs.objective_linear_coeffs.size(), n);
+  EXPECT_TRUE(quad_exprs.objective_linear_coeffs.isZero());
+  EXPECT_EQ(quad_exprs.objective_quadratic_coeffs.rows(), n);
+  EXPECT_EQ(quad_exprs.objective_quadratic_coeffs.cols(), n);
+  EXPECT_EQ(quad_exprs.objective_quadratic_coeffs.nonZeros(), 0);
 }
 
 int main(int argc, char** argv)
