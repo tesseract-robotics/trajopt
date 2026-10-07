@@ -152,7 +152,9 @@ std::vector<Bounds> CartLineConstraint::getBounds() const { return bounds_; }
 
 void CartLineConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == 6);
+  if (bounds.size() != static_cast<std::size_t>(rows_))
+    throw std::runtime_error("CartLineConstraint: The number of bounds does not match the number of constraints.");
+
   bounds_ = bounds;
 }
 

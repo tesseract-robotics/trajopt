@@ -377,6 +377,43 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
   }
 }
 
+/** @brief Check that the number of bounds must match the number of rows */
+TEST_F(CartesianLineConstraintUnit, SetBoundsSize)  // NOLINT
+{
+  info = CartLineInfo(manip,
+                      "r_gripper_tool_frame",
+                      "base_link",
+                      line_start_pose,
+                      line_end_pose,
+                      Eigen::Isometry3d::Identity(),
+                      (Eigen::VectorXi(3) << 0, 1, 2).finished());
+  CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+
+  const Bounds bounds(-0.1234, 0.5678);
+
+  // Too many bounds and too few are refused, and leave the bounds as they were
+  for (const std::size_t size : { 6U, 2U })
+  {
+    EXPECT_THROW(constraint.setBounds(std::vector<Bounds>(size, bounds)), std::runtime_error);
+    const std::vector<Bounds> unchanged = constraint.getBounds();
+    ASSERT_EQ(unchanged.size(), 3U);
+    for (const Bounds& bound : unchanged)
+    {
+      EXPECT_EQ(bound.getLower(), BoundZero.getLower());
+      EXPECT_EQ(bound.getUpper(), BoundZero.getUpper());
+    }
+  }
+
+  constraint.setBounds(std::vector<Bounds>(3, bounds));
+  const std::vector<Bounds> results_vec = constraint.getBounds();
+  ASSERT_EQ(results_vec.size(), 3U);
+  for (const Bounds& result : results_vec)
+  {
+    EXPECT_EQ(result.getLower(), bounds.getLower());
+    EXPECT_EQ(result.getUpper(), bounds.getUpper());
+  }
+}
+
 ////////////////////////////////////////////////////////////////////
 
 /** @brief Coefficients must be finite and non-negative */
