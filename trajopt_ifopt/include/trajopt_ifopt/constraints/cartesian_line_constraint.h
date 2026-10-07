@@ -165,6 +165,9 @@ public:
   /**
    * @brief GetLinePoint Finds the nearest point on the line between Isometry a,b
    * to a test point
+   *
+   * The three poses must be expressed in the same frame. The nearest point never leaves the line between its start
+   * and its end; a line of zero length yields the pose of its start.
    * @param source_tf input location, orientation to compare to the line
    * note that only cartesian proximity is used to determine nearness;
    * LinePoint orientation is determined by a SLERP between Isometry a, b
@@ -172,9 +175,9 @@ public:
    * @param target_tf2 The location of the end of the line
    * @return The nearest point on the line to the source_tf
    */
-  Eigen::Isometry3d getLinePoint(const Eigen::Isometry3d& source_tf,
-                                 const Eigen::Isometry3d& target_tf1,
-                                 const Eigen::Isometry3d& target_tf2) const;
+  static Eigen::Isometry3d getLinePoint(const Eigen::Isometry3d& source_tf,
+                                        const Eigen::Isometry3d& target_tf1,
+                                        const Eigen::Isometry3d& target_tf2);
 
 private:
   /** @brief The number of joints in a single JointPosition */
