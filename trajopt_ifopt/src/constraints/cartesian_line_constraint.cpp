@@ -181,14 +181,15 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
       dof_vals_pert(i) = joint_vals(i);
     }
 
-    for (int i = 0; i < 6; i++)
+    // The rows of jac0 already follow the indices
+    for (int i = 0; i < info_.indices.size(); i++)
     {
       jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0.coeffRef(info_.indices[i], j);
+        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
       }
     }
   }
@@ -230,7 +231,7 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
     // TODO: Make this more efficient. This does not work.
     //    Jacobian jac_block = jac0.sparseView();
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < info_.indices.size(); i++)
     {
       jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)

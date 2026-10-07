@@ -112,8 +112,7 @@ public:
   /**
    * @brief CalcValues Calculates the values associated with the constraint
    * @param joint_vals Input joint values for which FK is solved
-   * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and are currently
-   * the only values honored for the linear model
+   * @return Error of FK solution from the nearest point on the line, one term for each of the indices
    * */
   Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
