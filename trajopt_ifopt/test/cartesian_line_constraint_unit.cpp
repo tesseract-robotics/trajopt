@@ -1,8 +1,12 @@
 ﻿#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <algorithm>
+#include <cmath>
 #include <ctime>
+#include <iomanip>
 #include <limits>
+#include <sstream>
+#include <string>
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include <tesseract/common/logging.h>
@@ -20,6 +24,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
+
+#include "trajopt_ifopt_test_utils.h"
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -72,11 +78,15 @@ public:
 
   Eigen::Index n_dof{ 0 };
 
-  /** @brief Every row, every row in another order, the position rows only, and two rows in another order */
+  /**
+   * @brief Every row, every row in another order, the position rows only, two rows in another order, and one rotation
+   * row
+   */
   const std::vector<Eigen::VectorXi> index_lists{ (Eigen::VectorXi(6) << 0, 1, 2, 3, 4, 5).finished(),
                                                   (Eigen::VectorXi(6) << 3, 4, 5, 0, 1, 2).finished(),
                                                   (Eigen::VectorXi(3) << 0, 1, 2).finished(),
-                                                  (Eigen::VectorXi(2) << 4, 0).finished() };
+                                                  (Eigen::VectorXi(2) << 4, 0).finished(),
+                                                  (Eigen::VectorXi(1) << 3).finished() };
 
   void SetUp() override
   {
@@ -87,8 +97,14 @@ public:
     const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
+    useGroup("right_arm");
+  }
+
+  /** @brief Take the joints of a group as the variables, and place the tool and the lines for it */
+  void useGroup(const std::string& group)
+  {
     // Extract necessary kinematic information
-    manip = env->getJointGroup("right_arm");
+    manip = env->getJointGroup(group);
     n_dof = manip->numJoints();
 
     std::vector<Bounds> bounds(static_cast<std::size_t>(manip->numJoints()), NoBound);
@@ -120,32 +136,34 @@ public:
   }
 
   /**
-   * @brief Describe a slanted line near the tool, fixed to the target link, with a tool offset on the source
+   * @brief Describe a slanted line near the tool, fixed to the target link, with a source offset from the tool
    *
-   * The line turns by SLANTED_LINE_ANGLE about SLANTED_LINE_AXIS from its start to its end.
+   * The line turns by SLANTED_LINE_ANGLE about SLANTED_LINE_AXIS from its start to its end. A source on a link other
+   * than the tool coincides, at reference_position, with the source on the tool.
    */
   CartLineInfo slantedLineInfo(const tesseract::common::LinkId& target_frame,
                                double length,
-                               const Eigen::VectorXi& indices) const
+                               const Eigen::VectorXi& indices,
+                               const tesseract::common::LinkId& source_frame = "r_gripper_tool_frame") const
   {
     Eigen::Isometry3d start = source_tf * Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ());
     start.translation() = source_tf.translation() + Eigen::Vector3d(-0.02, 0.18, -0.07);
     Eigen::Isometry3d end = start * Eigen::AngleAxisd(SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
     end.translation() = start.translation() + length * Eigen::Vector3d(2.0, -1.0, 2.0) / 3.0;
 
-    const Eigen::Isometry3d source_frame_offset =
-        Eigen::Translation3d(0.05, 0.1, -0.2) * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitY());
+    const Eigen::Isometry3d source =
+        source_tf * Eigen::Translation3d(0.05, 0.1, -0.2) * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitY());
 
     return { manip,
-             "r_gripper_tool_frame",
+             source_frame,
              target_frame,
              inLinkFrame(target_frame, start),
              inLinkFrame(target_frame, end),
-             source_frame_offset,
+             inLinkFrame(source_frame, source),
              indices };
   }
 
-  /** @brief Joint positions that put the tool beside the slanted line, before its start and past its end */
+  /** @brief Joint positions that put the source beside the slanted line, before its start and past its end */
   std::vector<Eigen::VectorXd> jointPositions() const
   {
     std::vector<Eigen::VectorXd> joint_positions{ reference_position };
@@ -156,6 +174,72 @@ public:
     }
     return joint_positions;
   }
+
+  /**
+   * @brief Compare the jacobian with a central difference of the values, for numeric and for analytic differentiation
+   *
+   * The analytic jacobian is exact. A numeric one is as good as its one-sided step.
+   * With the source at an end of the line the values have no derivative, and the comparison is counted in
+   * comparisons_at_line_end. The analytic jacobian is then compared with the central difference of the values of
+   * at_end, a constraint whose values do have the derivative the jacobian is to be. A numeric one lies between the
+   * differences to either side.
+   */
+  void expectJacobian(CartLineConstraint& constraint,
+                      const Eigen::VectorXd& joint_position,
+                      const std::string& label,
+                      const CartLineConstraint* at_end = nullptr)
+  {
+    variables->setVariables(joint_position);
+
+    // The fraction of the line at the point nearest the source, not kept between its ends. A line of zero length has
+    // no ends for the source to be at.
+    const CartLineInfo& line = constraint.getInfo();
+    const auto transforms = manip->calcFwdKin(joint_position);
+    const Eigen::Vector3d source = (transforms.at(line.source_frame) * line.source_frame_offset).translation();
+    const Eigen::Vector3d start = (transforms.at(line.target_frame) * line.target_frame_offset1).translation();
+    const Eigen::Vector3d end = (transforms.at(line.target_frame) * line.target_frame_offset2).translation();
+    const double length_squared = (end - start).squaredNorm();
+    const double fraction = (length_squared > 0.0) ? ((source - start).dot(end - start) / length_squared) : 0.5;
+    const bool at_line_end = std::abs(fraction) < 1e-3 || std::abs(fraction - 1.0) < 1e-3;
+    comparisons_at_line_end += static_cast<int>(at_line_end);
+    ASSERT_TRUE(!at_line_end || at_end != nullptr) << label;
+
+    // Calculate jacobian numerically
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint.calcValues(x); };
+    auto at_end_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return at_end->calcValues(x); };
+    const Eigen::MatrixXd num_jac_block = at_line_end ? calcCentralNumJac(at_end_calculator, joint_position) :
+                                                        calcCentralNumJac(error_calculator, joint_position);
+    ASSERT_EQ(num_jac_block.rows(), line.indices.size());
+    const Eigen::MatrixXd forward = calcForwardNumJac(error_calculator, joint_position, 1e-5).toDense();
+    const Eigen::MatrixXd backward = calcForwardNumJac(error_calculator, joint_position, -1e-5).toDense();
+
+    // Compare to constraint jacobian
+    for (const bool numeric : { true, false })
+    {
+      constraint.use_numeric_differentiation = numeric;
+
+      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      constraint.calcJacobianBlock(jac_block, joint_position);  // NOLINT
+      for (const Eigen::MatrixXd& jac :
+           { Eigen::MatrixXd(jac_block.toDense()), Eigen::MatrixXd(constraint.getJacobian().toDense()) })
+      {
+        if (at_line_end && numeric)
+        {
+          EXPECT_TRUE((jac.array() >= forward.cwiseMin(backward).array() - 2e-5).all() &&
+                      (jac.array() <= forward.cwiseMax(backward).array() + 2e-5).all())
+              << label << ", numeric";
+        }
+        else
+        {
+          EXPECT_LT(maxDifference(jac, num_jac_block), numeric ? 2e-5 : 1e-9)
+              << label << (numeric ? ", numeric" : ", analytic");
+        }
+      }
+    }
+  }
+
+  /** @brief The number of comparisons expectJacobian made with the source at an end of the line */
+  int comparisons_at_line_end{ 0 };
 };
 
 /** @brief Checks that the GetValue function is correct */
@@ -296,26 +380,69 @@ TEST_F(CartesianLineConstraintUnit, GetValueSlantedLine)  // NOLINT
   }
 }
 
-/** @brief Check that the FillJacobian function is correct for full, reordered and shortened lists of rows */
+/**
+ * @brief Check that a line whose ends are half a turn apart turns the same way at every joint position
+ *
+ * The source and the line are on one link, so the values are the same wherever the joints put that link. Rounding
+ * decides which way such a line turns, so several are checked.
+ */
+TEST_F(CartesianLineConstraintUnit, GetValueLineHalfTurn)  // NOLINT
+{
+  const tesseract::common::LinkId frame{ "r_upper_arm_roll_link" };
+  ASSERT_TRUE(manip->isActiveLinkId(frame));
+
+  for (int i = 0; i < 12; ++i)
+  {
+    Eigen::Isometry3d start =
+        Eigen::Translation3d(0.1, 0.2, -0.3) * Eigen::AngleAxisd(0.25 * i, Eigen::Vector3d(2.0, 2.0, -1.0) / 3.0);
+    Eigen::Isometry3d end = start * Eigen::AngleAxisd(M_PI, SLANTED_LINE_AXIS);
+    end.translation() = start.translation() + Eigen::Vector3d(0.4, -0.2, 0.4);
+
+    // The source is beside the line, where the way the line turns shows in the values
+    const Eigen::Isometry3d source =
+        Eigen::Translation3d(0.3, 0.2, -0.1) * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitY());
+    const double fraction = nearestFraction(source.translation(), start.translation(), end.translation());
+    ASSERT_GT(fraction, 0.2);
+    ASSERT_LT(fraction, 0.8);
+
+    info = CartLineInfo(manip, frame, frame, start, end, source);
+    const CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+
+    const Eigen::VectorXd expected = constraint.calcValues(reference_position);
+    for (const Eigen::VectorXd& joint_position : jointPositions())
+      EXPECT_LT((constraint.calcValues(joint_position) - expected).norm(), 1e-9) << "line " << i;
+  }
+}
+
+/**
+ * @brief Check that the FillJacobian function is correct for full, reordered and shortened lists of rows, with numeric
+ * and with analytic differentiation
+ */
 TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
 {
   TESSERACT_LOG_DEBUG("CartesianPositionConstraintUnit, FillJacobian");
 
-  for (const auto& target_frame : { "imu_link", "r_upper_arm_roll_link" })
+  // The source on the tool, with the line on a link that stays where it is and on a link only some of the joints
+  // move; then the source and the line exchanged
+  const std::vector<std::pair<const char*, const char*>> frames{ { "r_gripper_tool_frame", "imu_link" },
+                                                                 { "r_gripper_tool_frame", "r_upper_arm_roll_link" },
+                                                                 { "imu_link", "r_gripper_tool_frame" },
+                                                                 { "r_upper_arm_roll_link", "r_gripper_tool_frame" } };
+  for (const auto& [source_frame, target_frame] : frames)
   {
+    const std::string frames_label = std::string("source ") + source_frame + ", line on " + target_frame;
+
     int beside{ 0 };
     int before{ 0 };
     int past{ 0 };
     for (const Eigen::VectorXi& indices : index_lists)
     {
-      info = slantedLineInfo(target_frame, 0.3, indices);
+      info = slantedLineInfo(target_frame, 0.3, indices, source_frame);
       auto constraint = std::make_shared<CartLineConstraint>(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
       constraint->linkWithVariables(variables);
 
       for (const Eigen::VectorXd& joint_position : jointPositions())
       {
-        variables->setVariables(joint_position);
-
         const auto transforms = manip->calcFwdKin(joint_position);
         const Eigen::Isometry3d source = transforms.at(info.source_frame) * info.source_frame_offset;
         const Eigen::Isometry3d start = transforms.at(info.target_frame) * info.target_frame_offset1;
@@ -325,30 +452,177 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
         before += static_cast<int>(fraction == 0.0);
         past += static_cast<int>(fraction == 1.0);
 
-        // Calculate jacobian numerically
-        auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
-        const Eigen::MatrixXd num_jac_block = calcForwardNumJac(error_calculator, joint_position, 1e-7).toDense();
-        ASSERT_EQ(num_jac_block.rows(), indices.size());
-
-        // Compare to constraint jacobian
-        {
-          Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-          constraint->calcJacobianBlock(jac_block, joint_position);  // NOLINT
-          EXPECT_LT((jac_block.toDense() - num_jac_block).cwiseAbs().maxCoeff(), 1e-4)
-              << target_frame << ", indices " << indices.transpose();
-        }
-        {
-          const Jacobian jac_block = constraint->getJacobian();
-          EXPECT_LT((jac_block.toDense() - num_jac_block).cwiseAbs().maxCoeff(), 1e-4)
-              << target_frame << ", indices " << indices.transpose();
-        }
+        std::stringstream label;
+        label << frames_label << ", indices " << indices.transpose();
+        expectJacobian(*constraint, joint_position, label.str());
       }
     }
 
-    // The joint positions cover the three places the tool can be along the line
-    EXPECT_GT(beside, 0) << target_frame;
-    EXPECT_GT(before, 0) << target_frame;
-    EXPECT_GT(past, 0) << target_frame;
+    // The joint positions cover the three places the source can be along the line
+    EXPECT_GT(beside, 0) << frames_label;
+    EXPECT_GT(before, 0) << frames_label;
+    EXPECT_GT(past, 0) << frames_label;
+  }
+}
+
+/** @brief Check that the jacobian is zero with the source and the line on links that stay where they are */
+TEST_F(CartesianLineConstraintUnit, FillJacobianStaticFrames)  // NOLINT
+{
+  ASSERT_FALSE(manip->isActiveLinkId("imu_link"));
+  ASSERT_FALSE(manip->isActiveLinkId("base_link"));
+
+  info = slantedLineInfo("base_link", 0.3, index_lists.front(), "imu_link");
+  CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+  constraint.linkWithVariables(variables);
+
+  for (const Eigen::VectorXd& joint_position : jointPositions())
+    expectJacobian(constraint, joint_position, "static frames");
+}
+
+/**
+ * @brief Check the jacobian for a group with a linear joint and joints that leave the tool where it is, with the line
+ * on a link that stays where it is and on the tool of the other arm
+ */
+TEST_F(CartesianLineConstraintUnit, FillJacobianFullBody)  // NOLINT
+{
+  useGroup("full_body");
+  ASSERT_FALSE(manip->isActiveLinkId("base_footprint"));
+
+  int linear{ 0 };
+  int idle{ 0 };
+  const Eigen::MatrixXd twists = manip->calcJacobian(reference_position, "r_gripper_tool_frame");
+  for (Eigen::Index c = 0; c < twists.cols(); ++c)
+  {
+    linear += static_cast<int>(!twists.col(c).head(3).isZero() && twists.col(c).tail(3).isZero());
+    idle += static_cast<int>(twists.col(c).isZero());
+  }
+  EXPECT_GT(linear, 0);
+  EXPECT_GT(idle, 0);
+
+  ASSERT_TRUE(manip->isActiveLinkId("l_gripper_tool_frame"));
+  for (const auto& target_frame : { "base_footprint", "l_gripper_tool_frame" })
+  {
+    info = slantedLineInfo(target_frame, 0.3, index_lists.front());
+    CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+    constraint.linkWithVariables(variables);
+
+    for (const Eigen::VectorXd& joint_position : jointPositions())
+      expectJacobian(constraint, joint_position, std::string("full body, line on ") + target_frame);
+  }
+}
+
+/** @brief Check the jacobian for a line of zero length, which has only its start, on a fixed and on a moving link */
+TEST_F(CartesianLineConstraintUnit, FillJacobianLineOfZeroLength)  // NOLINT
+{
+  for (const auto& target_frame : { "imu_link", "r_upper_arm_roll_link" })
+  {
+    info = slantedLineInfo(target_frame, 0.0, index_lists.front());
+    ASSERT_TRUE(info.target_frame_offset1.translation() == info.target_frame_offset2.translation());
+    CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+    constraint.linkWithVariables(variables);
+
+    for (const Eigen::VectorXd& joint_position : jointPositions())
+      expectJacobian(constraint, joint_position, std::string("line of zero length on ") + target_frame);
+  }
+}
+
+/**
+ * @brief Check the jacobian for lines whose ends have one orientation, and for lines whose ends are half a turn apart,
+ * on a fixed and on a moving link
+ *
+ * Rounding decides which way a line turns between ends half a turn apart, so several are checked.
+ */
+TEST_F(CartesianLineConstraintUnit, FillJacobianLineTurn)  // NOLINT
+{
+  for (const auto& target_frame : { "imu_link", "r_upper_arm_roll_link" })
+  {
+    for (const double turn : { 0.0, M_PI })
+    {
+      for (int i = 0; i < 12; ++i)
+      {
+        // The line has the orientation of the slanted line half way, there turned about another axis each time
+        info = slantedLineInfo(target_frame, 2.4, index_lists.front());
+        const Eigen::Matrix3d half_way =
+            info.target_frame_offset1.linear() * Eigen::AngleAxisd(0.25 * i, Eigen::Vector3d(2.0, 2.0, -1.0) / 3.0);
+        info.target_frame_offset1.linear() = half_way * Eigen::AngleAxisd(-0.5 * turn, SLANTED_LINE_AXIS);
+        info.target_frame_offset2.linear() =
+            info.target_frame_offset1.linear() * Eigen::AngleAxisd(turn, SLANTED_LINE_AXIS);
+        CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+        constraint.linkWithVariables(variables);
+
+        std::stringstream label;
+        label << "line on " << target_frame << ", turn " << turn << ", line " << i;
+        for (const Eigen::VectorXd& joint_position : jointPositions())
+          expectJacobian(constraint, joint_position, label.str());
+      }
+    }
+  }
+}
+
+/**
+ * @brief Check the jacobian where the error is zero or next to it: with the tool on the line, and at, just before and
+ * just past each of its ends
+ *
+ * A tool within a billionth of the length of the line of an end has the jacobian of a tool beside the line: that of
+ * the same line carried on past that end. A tool further past an end has that of a line that stops there.
+ */
+TEST_F(CartesianLineConstraintUnit, FillJacobianOnTheLine)  // NOLINT
+{
+  // The fraction of the line, half a metre along the x axis of base_link at reference_position, at which the tool sits
+  const Eigen::Vector3d line(0.5, 0.0, 0.0);
+  for (const auto& target_frame : { "base_link", "r_upper_arm_roll_link" })
+  {
+    for (const double fraction : { 0.5, 0.0, -1e-12, 1e-12, -1e-8, 1.0, 1.0 - 1e-12, 1.0 + 1e-12, 1.0 + 1e-8 })
+    {
+      // The line turns from its start to its end, and has the orientation of the tool where the tool sits
+      const double nearest = std::clamp(fraction, 0.0, 1.0);
+      Eigen::Isometry3d start = source_tf * Eigen::AngleAxisd(-nearest * SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
+      start.translation() = source_tf.translation() - fraction * line;
+      Eigen::Isometry3d end = start * Eigen::AngleAxisd(SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
+      end.translation() = start.translation() + line;
+
+      info = CartLineInfo(manip,
+                          "r_gripper_tool_frame",
+                          target_frame,
+                          inLinkFrame(target_frame, start),
+                          inLinkFrame(target_frame, end));
+      CartLineConstraint constraint(info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+      constraint.linkWithVariables(variables);
+
+      // The same line carried on by its length past either end, turning as much over that length
+      Eigen::Isometry3d carried_on_start = start * Eigen::AngleAxisd(-SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
+      carried_on_start.translation() = start.translation() - line;
+      Eigen::Isometry3d carried_on_end = end * Eigen::AngleAxisd(SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
+      carried_on_end.translation() = end.translation() + line;
+      const CartLineInfo carried_on_info(manip,
+                                         "r_gripper_tool_frame",
+                                         target_frame,
+                                         inLinkFrame(target_frame, carried_on_start),
+                                         inLinkFrame(target_frame, carried_on_end));
+      const CartLineConstraint carried_on(carried_on_info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+
+      // A line of zero length at the end nearest the tool
+      const Eigen::Isometry3d stopped_start = (fraction < 0.5) ? start : end;
+      const Eigen::Isometry3d stopped_end = stopped_start * Eigen::AngleAxisd(SLANTED_LINE_ANGLE, SLANTED_LINE_AXIS);
+      const CartLineInfo stopped_info(manip,
+                                      "r_gripper_tool_frame",
+                                      target_frame,
+                                      inLinkFrame(target_frame, stopped_start),
+                                      inLinkFrame(target_frame, stopped_end));
+      const CartLineConstraint stopped(stopped_info, var, Eigen::VectorXd::Ones(info.indices.rows()));
+      const bool past_an_end = fraction < -1e-9 || fraction > 1.0 + 1e-9;
+
+      std::stringstream label;
+      label << "line on " << target_frame << ", tool at fraction " << std::setprecision(17) << fraction;
+      EXPECT_LT(constraint.calcValues(reference_position).norm(), 1e-8) << label.str();
+
+      comparisons_at_line_end = 0;
+      for (const Eigen::VectorXd& joint_position : jointPositions())
+        expectJacobian(constraint, joint_position, label.str(), past_an_end ? &stopped : &carried_on);
+
+      // The tool is at an end of the line for some joint positions, and only if the line ends at the tool
+      EXPECT_EQ(comparisons_at_line_end > 0, fraction != 0.5) << label.str();
+    }
   }
 }
 
