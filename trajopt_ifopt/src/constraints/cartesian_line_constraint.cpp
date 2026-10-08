@@ -248,10 +248,12 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
   // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
   const Eigen::Isometry3d target_tf = nearestLinePoint(info_, target_link_tf, source_tf);
 
-  constexpr double eps{ 1e-5 };
+  // The rows of the jacobian the indices name
+  Eigen::MatrixXd jac0(info_.indices.size(), n_dof_);
+
   if (use_numeric_differentiation)
   {
-    Eigen::MatrixXd jac0(info_.indices.size(), joint_vals.size());
+    constexpr double eps{ 1e-5 };
     Eigen::VectorXd dof_vals_pert = joint_vals;
     for (int i = 0; i < joint_vals.size(); ++i)
     {
@@ -259,18 +261,6 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
       const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache_);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
-    }
-
-    // The rows of jac0 already follow the indices
-    for (int i = 0; i < info_.indices.size(); i++)
-    {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
-      }
     }
   }
   else
@@ -322,8 +312,6 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
     if (rotation_rows_)
       rate_map = trajopt_common::calcAngleAxisRateMap(tesseract::common::calcRotationalError(error_tf.linear()));
 
-    // The rows of the jacobian the indices name
-    Eigen::MatrixXd jac0(info_.indices.size(), n_dof_);
     for (Eigen::Index j = 0; j < n_dof_; ++j)
     {
       const Eigen::Vector3d linear = twists.col(j).head<3>();
@@ -338,20 +326,17 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
       for (int i = 0; i < info_.indices.size(); ++i)
         jac0(i, j) = rate[info_.indices[i]];
     }
+  }
 
-    // Convert to a sparse matrix and set the jacobian
-    // TODO: Make this more efficient. This does not work.
-    //    Jacobian jac_block = jac0.sparseView();
-
-    for (int i = 0; i < info_.indices.size(); i++)
+  // Convert to a sparse matrix and set the jacobian
+  for (int i = 0; i < info_.indices.size(); i++)
+  {
+    jac_block.startVec(i);
+    for (int j = 0; j < n_dof_; j++)
     {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
-      }
+      // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
+      // correct timestep for this variable
+      jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
     }
   }
   jac_block.finalize();  // NOLINT

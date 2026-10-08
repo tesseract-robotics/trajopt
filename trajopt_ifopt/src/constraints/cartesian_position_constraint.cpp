@@ -291,10 +291,12 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
   const Eigen::Isometry3d target_link_tf = transforms_cache_.at(target_frame_);
   const Eigen::Isometry3d target_tf = target_link_tf * target_frame_offset_;
 
-  constexpr double eps{ 1e-5 };
+  // The rows of the jacobian the indices name
+  Eigen::MatrixXd jac0(indices_.size(), n_dof_);
+
   if (use_numeric_differentiation)
   {
-    Eigen::MatrixXd jac0(indices_.size(), joint_vals.size());
+    constexpr double eps{ 1e-5 };
     Eigen::VectorXd dof_vals_pert = joint_vals;
     for (int i = 0; i < joint_vals.size(); ++i)
     {
@@ -302,17 +304,6 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
       const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache_);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
-    }
-
-    for (int i = 0; i < indices_.size(); ++i)
-    {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
-      }
     }
   }
   else
@@ -349,8 +340,6 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
       rate_map = trajopt_common::calcAngleAxisRateMap(rotation_error);
     }
 
-    // The rows of the jacobian the indices name
-    Eigen::MatrixXd jac0(indices_.size(), n_dof_);
     for (Eigen::Index j = 0; j < n_dof_; ++j)
     {
       Eigen::Matrix<double, 6, 1> rate = twists.col(j);
@@ -358,17 +347,17 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
       for (int i = 0; i < indices_.size(); ++i)
         jac0(i, j) = rate[indices_[i]];
     }
+  }
 
-    // Convert to a sparse matrix and set the jacobian
-    for (int i = 0; i < indices_.size(); ++i)
+  // Convert to a sparse matrix and set the jacobian
+  for (int i = 0; i < indices_.size(); ++i)
+  {
+    jac_block.startVec(i);
+    for (int j = 0; j < n_dof_; j++)
     {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
-      }
+      // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
+      // correct timestep for this variable
+      jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
     }
   }
   jac_block.finalize();  // NOLINT
