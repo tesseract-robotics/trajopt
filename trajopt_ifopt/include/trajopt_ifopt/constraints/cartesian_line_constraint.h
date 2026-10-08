@@ -72,7 +72,12 @@ struct CartLineInfo
   /** @brief Static transform applied to the source_frame location */
   Eigen::Isometry3d source_frame_offset;
 
-  /** @brief Static transform applied to the target_frame location defining the starting point of the line */
+  /**
+   * @brief Static transform applied to the target_frame location defining the starting point of the line
+   *
+   * The orientation along the line turns the shorter way from that of its start to that of its end. Between ends half
+   * a turn apart it turns the same way at every joint position.
+   */
   Eigen::Isometry3d target_frame_offset1;
 
   /** @brief Static transform applied to the target_frame location defining the ending point of the line */
@@ -159,10 +164,12 @@ public:
    */
   const CartLineInfo& getInfo() const;
 
-  /** @brief If true, numeric differentiation will be used. Default: true
+  /**
+   * @brief If true, find the jacobian by perturbing each joint; if false, from the jacobian of the kinematics.
+   * Default: true
    *
-   * Note: While the logic for using the jacobian from KDL will be used if set to false, this has been buggy. Set this
-   * to false at your own risk.
+   * With the source at an end of the line the error has no derivative. At an end, and within a billionth of the
+   * length of the line of it, the jacobian found from the kinematics is that of a source beside the line.
    */
   bool use_numeric_differentiation{ true };
 
@@ -171,7 +178,8 @@ public:
    * to a test point
    *
    * The three poses must be expressed in the same frame. The nearest point never leaves the line between its start
-   * and its end; a line of zero length yields the pose of its start.
+   * and its end; a line of zero length yields the pose of its start. Between ends whose orientations are half a turn
+   * apart, the way the orientation turns depends on that frame.
    * @param source_tf input location, orientation to compare to the line
    * note that only cartesian proximity is used to determine nearness;
    * LinePoint orientation is determined by a SLERP between Isometry a, b
@@ -198,6 +206,21 @@ private:
 
   /** @brief The cartesian line information used when calculating error */
   CartLineInfo info_;
+
+  /** @brief True if the joints move the link the source is fixed to */
+  bool source_active_{ false };
+
+  /** @brief True if the joints move the link the line is fixed to */
+  bool target_active_{ false };
+
+  /** @brief The vector from the start of the line to its end, in the frame of the link of the line */
+  Eigen::Vector3d link_line_;
+
+  /** @brief The turn of the line from its start to its end, as an angle axis vector */
+  Eigen::Vector3d line_turn_;
+
+  /** @brief True if the indices name a rotation row */
+  bool rotation_rows_{ false };
 
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
