@@ -29,6 +29,17 @@ std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
 Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
                            const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
                            double dt);
+
+/**
+ * @brief Calculate the matrix that maps an angular velocity to the rate of the angle axis vector of the rotation it
+ * turns
+ * @details A geometric jacobian gives angular velocities; the derivative of an angle axis error is this matrix times
+ * them. See
+ * https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
+ * @param angle_axis The angle axis vector of the rotation, its angle less than a full turn
+ * @return The matrix, for an angular velocity w given in the frame the rotation R maps to: dR/dt = [w]x R
+ */
+Eigen::Matrix3d calcAngleAxisRateMap(const Eigen::Ref<const Eigen::Vector3d>& angle_axis);
 }  // namespace trajopt_common
 
 #endif  // TRAJOPT_COMMON_UTILS_HPP
