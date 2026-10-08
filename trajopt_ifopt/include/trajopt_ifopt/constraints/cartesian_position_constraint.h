@@ -124,10 +124,9 @@ public:
    */
   Eigen::Isometry3d getCurrentPose() const;
 
-  /** @brief If true, numeric differentiation will be used. Default: true
-   *
-   * Note: While the logic for using the jacobian from KDL will be used if set to false, this has been buggy. Set this
-   * to false at your own risk.
+  /**
+   * @brief If true, find the jacobian by perturbing each joint; if false, from the jacobian of the kinematics.
+   * Default: true
    */
   bool use_numeric_differentiation{ true };
 
@@ -179,6 +178,9 @@ private:
    * If you only care about rotation error around x, y and z, this is {3, 4, 5}
    */
   Eigen::VectorXi indices_;
+
+  /** @brief True if the indices name a rotation row */
+  bool rotation_rows_{ false };
 
   /** @brief Error function for calculating the error in the position given the source and target positions */
   ErrorFunctionType error_function_{ nullptr };
