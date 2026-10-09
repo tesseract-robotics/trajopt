@@ -1256,6 +1256,8 @@ TrajOptQPProblem::TrajOptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> var
 }
 
 TrajOptQPProblem::~TrajOptQPProblem() = default;
+TrajOptQPProblem::TrajOptQPProblem(TrajOptQPProblem&&) = default;
+TrajOptQPProblem& TrajOptQPProblem::operator=(TrajOptQPProblem&&) = default;
 
 void TrajOptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
