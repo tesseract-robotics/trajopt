@@ -27,6 +27,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <piqp/piqp.hpp>
+#include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/qp_solver.h>
@@ -39,6 +40,9 @@ namespace trajopt_sqp
  * Constraint rows are passed to PIQP by kind: rows with equal bounds as equalities, rows with a single nonzero
  * coefficient as variable bounds, and the remaining rows as two-sided inequalities. Rows unbounded on both sides are
  * dropped. The partition is rebuilt on every solve, so any change to the problem data is supported.
+ *
+ * A solve that follows a change of bounds alone keeps PIQP's setup and passes it only the bounds, provided the same
+ * rows are equalities and the same rows are inequalities as at the setup. Any other change sets PIQP up again.
  */
 class PIQPSolver : public QPSolver
 {
@@ -81,10 +85,21 @@ public:
 
   QPSolverStatus getSolverStatus() const override { return solver_status_; }
 
-  /** @brief The underlying solver, whose result info reports iterations and timings of the last solve */
+  /**
+   * @brief The underlying solver, whose result info reports iterations and timings of the last solve
+   * @details After a solve that kept the setup, setup_time is still that of the setup; update_time and run_time are
+   * those of the last solve.
+   */
   const piqp::SparseSolver<double>& solver() const { return solver_; }
 
-  /** @brief Settings applied at every solve. The KKT solver must be a sparse one. */
+  /** @brief Whether the last solve kept PIQP's setup and passed it only the bounds; false when PIQP did not run */
+  bool reusedSetup() const { return reused_setup_; }
+
+  /**
+   * @brief Settings applied at every solve. The KKT solver must be a sparse one.
+   * @details PIQP reads kkt_solver, preconditioner_iter and preconditioner_scale_cost only when it is set up, so a
+   * change to these takes effect at the next solve that does not keep the setup.
+   */
   piqp::Settings<double> settings;
 
 private:
@@ -98,6 +113,14 @@ private:
   Eigen::VectorXd bounds_upper_;
   Eigen::Index num_vars_{ 0 };
   Eigen::Index num_cnts_{ 0 };
+
+  /** @brief The rows PIQP was last set up with as equalities */
+  std::vector<Eigen::Index> eq_rows_;
+  /** @brief The rows PIQP was last set up with as inequalities */
+  std::vector<Eigen::Index> ineq_rows_;
+  /** @brief Whether the next solve must set PIQP up: anything but the bounds changed, or PIQP did not run */
+  bool setup_needed_{ true };
+  bool reused_setup_{ false };
 
   QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
 };

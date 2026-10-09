@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <tesseract/common/logging.h>
+#include <utility>
 #include <vector>
 
 namespace trajopt_sqp
@@ -73,6 +74,7 @@ bool PIQPSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 {
   num_vars_ = num_vars;
   num_cnts_ = num_cnts;
+  setup_needed_ = true;
   solver_status_ = QPSolverStatus::kInitialized;
   return true;
 }
@@ -86,6 +88,7 @@ bool PIQPSolver::clear()
   constraint_matrix_.resize(0, 0);
   bounds_lower_.resize(0);
   bounds_upper_.resize(0);
+  setup_needed_ = true;
   solver_status_ = QPSolverStatus::kUninitialized;
   return true;
 }
@@ -95,8 +98,11 @@ bool PIQPSolver::solve()
   const double inf = PIQP_INF;
   Eigen::VectorXd x_lower = Eigen::VectorXd::Constant(num_vars_, -inf);
   Eigen::VectorXd x_upper = Eigen::VectorXd::Constant(num_vars_, inf);
+  // The partition rarely differs from that of the last setup
   std::vector<Eigen::Index> eq_rows;
   std::vector<Eigen::Index> ineq_rows;
+  eq_rows.reserve(eq_rows_.size());
+  ineq_rows.reserve(ineq_rows_.size());
   for (Eigen::Index r = 0; r < num_cnts_; ++r)
   {
     const double lower = bounds_lower_[r];
@@ -126,20 +132,47 @@ bool PIQPSolver::solve()
   {
     TESSERACT_LOG_DEBUG("PIQP not called: bound rows on one variable have disjoint ranges");
     solver_status_ = QPSolverStatus::kFailed;
+    reused_setup_ = false;
     return false;
   }
 
-  const SparseMatrix eq_matrix = selectRows(constraint_matrix_, eq_rows);
-  const SparseMatrix ineq_matrix = selectRows(constraint_matrix_, ineq_rows);
   const Eigen::VectorXd eq_values = bounds_lower_(eq_rows);
   const Eigen::VectorXd ineq_lower = bounds_lower_(ineq_rows);
   const Eigen::VectorXd ineq_upper = bounds_upper_(ineq_rows);
 
   solver_.settings() = settings;
   solver_.settings().verbose = settings.verbose || verbosity > 0;
-  solver_.setup(hessian_, gradient_, eq_matrix, eq_values, ineq_matrix, ineq_lower, ineq_upper, x_lower, x_upper);
+
+  // PIQP's update leaves the data unscaled when a vector has another size than at setup, which equal row lists and an
+  // unchanged variable count rule out
+  reused_setup_ = !setup_needed_ && eq_rows == eq_rows_ && ineq_rows == ineq_rows_;
+  if (reused_setup_)
+  {
+    solver_.update(piqp::nullopt,
+                   piqp::nullopt,
+                   piqp::nullopt,
+                   eq_values,
+                   piqp::nullopt,
+                   ineq_lower,
+                   ineq_upper,
+                   x_lower,
+                   x_upper);
+  }
+  else
+  {
+    const SparseMatrix eq_matrix = selectRows(constraint_matrix_, eq_rows);
+    const SparseMatrix ineq_matrix = selectRows(constraint_matrix_, ineq_rows);
+    solver_.setup(hessian_, gradient_, eq_matrix, eq_values, ineq_matrix, ineq_lower, ineq_upper, x_lower, x_upper);
+    eq_rows_ = std::move(eq_rows);
+    ineq_rows_ = std::move(ineq_rows);
+  }
 
   const piqp::Status status = solver_.solve();
+
+  // PIQP did not run on these two; any other failure leaves its setup usable
+  const bool not_run = status == piqp::Status::PIQP_UNSOLVED || status == piqp::Status::PIQP_INVALID_SETTINGS;
+  setup_needed_ = not_run;
+  reused_setup_ = reused_setup_ && !not_run;
   if (status == piqp::Status::PIQP_SOLVED)
   {
     solver_status_ = QPSolverStatus::kInitialized;
@@ -147,7 +180,7 @@ bool PIQPSolver::solve()
   }
 
   // PIQP reports rejected settings, such as a KKT solver the sparse backend lacks, only on stderr
-  if (status == piqp::Status::PIQP_UNSOLVED || status == piqp::Status::PIQP_INVALID_SETTINGS)
+  if (not_run)
     TESSERACT_LOG_ERROR("PIQP setup failed with status {} (kkt_solver {})",
                         piqp::status_to_string(status),
                         piqp::kkt_solver_to_string(solver_.settings().kkt_solver));
@@ -163,12 +196,14 @@ bool PIQPSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
   // PIQP minimizes 0.5 * x' * P * x, so P is twice the QP Hessian; it reads only the upper triangle
   hessian_ = hessian.triangularView<Eigen::Upper>();
   hessian_ *= 2.0;
+  setup_needed_ = true;
   return true;
 }
 
 bool PIQPSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
 {
   gradient_ = gradient;
+  setup_needed_ = true;
   return true;
 }
 
@@ -198,6 +233,7 @@ bool PIQPSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& li
   // Drop stored zeros so a row with a single nonzero coefficient is passed as a variable bound
   constraint_matrix_ = linearConstraintsMatrix;
   constraint_matrix_.prune([](Eigen::Index, Eigen::Index, double value) { return value != 0.0; });
+  setup_needed_ = true;
   return true;
 }
 
