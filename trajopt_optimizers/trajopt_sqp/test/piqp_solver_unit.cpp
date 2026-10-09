@@ -1,6 +1,6 @@
 /**
  * @file piqp_solver_unit.cpp
- * @brief Tests the row partition and status handling of PIQPSolver
+ * @brief Tests the row partition, setup reuse and status handling of PIQPSolver
  *
  * @author Roelof Oomen
  * @date September 24, 2026
@@ -73,6 +73,15 @@ bool solveQP(PIQPSolver& solver,
   const bool solved = solver.solve();
   x = solver.getSolution();
   return solved;
+}
+
+/** @brief Minimize (x0 - 2)^2 + (x1 - 2)^2 subject to x0 + x1 <= 1, which is solved by (0.5, 0.5) */
+bool solveSumBoundedQP(PIQPSolver& solver)
+{
+  const auto A = makeMatrix(1, 2, { { 0, 0, 1.0 }, { 0, 1, 1.0 } });
+  Eigen::VectorXd x;
+  return solveQP(
+      solver, Eigen::Vector2d(-4.0, -4.0), A, Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(1.0), x);
 }
 }  // namespace
 
@@ -166,7 +175,72 @@ TEST(PIQPSolverUnit, ResolveAfterBoundsChange)  // NOLINT
   // Loosen the bound row and turn the second row into an equality
   solver.updateBounds(Eigen::Vector2d(-kInf, 2.5), Eigen::Vector2d(1.5, 2.5));
   ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
   EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.25, 1.25), kTol));
+
+  // The bound row becomes an equality too; no row enters or leaves the inequalities
+  solver.updateBounds(Eigen::Vector2d(0.5, 2.5), Eigen::Vector2d(0.5, 2.5));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(0.5, 2.0), kTol));
+}
+
+TEST(PIQPSolverUnit, BoundsOnlyChangeKeepsTheSetup)  // NOLINT
+{
+  // A bound row on x0, a two-sided row on x0 + x1 and an equality on x2
+  PIQPSolver solver;
+  const auto A = makeMatrix(3, 3, { { 0, 0, 1.0 }, { 1, 0, 1.0 }, { 1, 1, 1.0 }, { 2, 2, 1.0 } });
+  Eigen::VectorXd x;
+  ASSERT_TRUE(solveQP(solver,
+                      Eigen::Vector3d(-4.0, -4.0, 0.0),
+                      A,
+                      Eigen::Vector3d(-kInf, -kInf, 1.0),
+                      Eigen::Vector3d(1.0, 3.0, 1.0),
+                      x));
+  EXPECT_TRUE(x.isApprox(Eigen::Vector3d(1.0, 2.0, 1.0), kTol));
+  EXPECT_FALSE(solver.reusedSetup());
+
+  // Every row keeps its kind
+  solver.updateBounds(Eigen::Vector3d(-kInf, -kInf, 2.0), Eigen::Vector3d(0.5, 2.0, 2.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector3d(0.5, 1.5, 2.0), kTol));
+}
+
+TEST(PIQPSolverUnit, NewGradientSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+
+  // Unconstrained optimum (2, 0) violates x0 + x1 <= 1
+  solver.updateGradient(Eigen::Vector2d(-4.0, 0.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.5, -0.5), kTol));
+}
+
+TEST(PIQPSolverUnit, NewHessianSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+
+  // Minimize x0^2 + 3 x1^2 - 4 x0 - 4 x1
+  solver.updateHessianMatrix(makeMatrix(2, 2, { { 0, 0, 1.0 }, { 1, 1, 3.0 } }));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(0.75, 0.25), kTol));
+}
+
+TEST(PIQPSolverUnit, NewConstraintMatrixSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+
+  // x0 + 2 x1 <= 1
+  solver.updateLinearConstraintsMatrix(makeMatrix(1, 2, { { 0, 0, 1.0 }, { 0, 1, 2.0 } }));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.0, 0.0), kTol));
 }
 
 TEST(PIQPSolverUnit, InfeasibleProblemFails)  // NOLINT
@@ -177,9 +251,10 @@ TEST(PIQPSolverUnit, InfeasibleProblemFails)  // NOLINT
   EXPECT_FALSE(solveQP(solver, Eigen::Vector2d::Zero(), A, Eigen::Vector2d(3.0, -kInf), Eigen::Vector2d(kInf, 1.0), x));
   EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kFailed);
 
-  // A later successful solve clears the failure
+  // A later successful solve clears the failure; the first row is now free
   solver.updateBounds(Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(kInf, 1.0));
   ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
   EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kInitialized);
 }
 
@@ -193,4 +268,105 @@ TEST(PIQPSolverUnit, DenseKKTSolverFails)  // NOLINT
   EXPECT_FALSE(solveQP(
       solver, Eigen::Vector2d::Zero(), A, Eigen::Matrix<double, 1, 1>(2.0), Eigen::Matrix<double, 1, 1>(2.0), x));
   EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kFailed);
+
+  // Only the settings and the bounds change
+  solver.settings.kkt_solver = piqp::KKTSolver::sparse_ldlt;
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(4.0), Eigen::Matrix<double, 1, 1>(4.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(2.0, 2.0), kTol));
+}
+
+TEST(PIQPSolverUnit, FailedSolveKeepsTheSetup)  // NOLINT
+{
+  // x0 + x1 >= 3 contradicts x0 + x1 <= 1
+  PIQPSolver solver;
+  const auto A = makeMatrix(2, 2, { { 0, 0, 1.0 }, { 0, 1, 1.0 }, { 1, 0, 1.0 }, { 1, 1, 1.0 } });
+  Eigen::VectorXd x;
+  ASSERT_FALSE(
+      solveQP(solver, Eigen::Vector2d(-4.0, -4.0), A, Eigen::Vector2d(3.0, -kInf), Eigen::Vector2d(kInf, 1.0), x));
+
+  // Loosen the first row without changing its kind
+  solver.updateBounds(Eigen::Vector2d(0.0, -kInf), Eigen::Vector2d(kInf, 1.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
+}
+
+TEST(PIQPSolverUnit, KeptSetupFollowsBoundsBecomingFiniteOrInfinite)  // NOLINT
+{
+  // Bound rows on x0 and x1 around a row on x0 + x1; the unconstrained optimum is (2, 2)
+  PIQPSolver solver;
+  const auto A = makeMatrix(3, 2, { { 0, 0, 1.0 }, { 1, 0, 1.0 }, { 1, 1, 1.0 }, { 2, 1, 1.0 } });
+  Eigen::VectorXd x;
+  ASSERT_TRUE(solveQP(solver,
+                      Eigen::Vector2d(-4.0, -4.0),
+                      A,
+                      Eigen::Vector3d(-kInf, -10.0, -kInf),
+                      Eigen::Vector3d(1.0, kInf, kInf),
+                      x));
+  EXPECT_TRUE(x.isApprox(Eigen::Vector2d(1.0, 2.0), kTol));
+
+  // x0 swaps its upper bound for a lower one and the middle row gains an upper bound
+  solver.updateBounds(Eigen::Vector3d(3.0, -10.0, -kInf), Eigen::Vector3d(kInf, 3.2, kInf));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(3.0, 0.2), kTol));
+
+  // x0 becomes free, the middle row loses its lower bound and x1 gains an upper bound
+  solver.updateBounds(Eigen::Vector3d(-kInf, -kInf, -kInf), Eigen::Vector3d(kInf, 3.2, 0.5));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(2.0, 0.5), kTol));
+}
+
+TEST(PIQPSolverUnit, InitSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+
+  solver.init(2, 1);
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(2.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.0, 1.0), kTol));
+}
+
+TEST(PIQPSolverUnit, DisjointBoundRowsLeaveTheSetupUsable)  // NOLINT
+{
+  // -x0 <= 2 and x0 <= 1; the unconstrained optimum is 2
+  PIQPSolver solver;
+  const auto A = makeMatrix(2, 1, { { 0, 0, -1.0 }, { 1, 0, 1.0 } });
+  Eigen::VectorXd x;
+  ASSERT_TRUE(solveQP(
+      solver, Eigen::Matrix<double, 1, 1>(-4.0), A, Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(2.0, 1.0), x));
+  solver.updateBounds(Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(2.0, 0.5));
+  ASSERT_TRUE(solver.solve());
+  ASSERT_TRUE(solver.reusedSetup());
+
+  // x0 >= 2 and x0 <= 1
+  solver.updateBounds(Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(-2.0, 1.0));
+  EXPECT_FALSE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+
+  solver.updateBounds(Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(2.0, 1.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_NEAR(solver.getSolution()[0], 1.0, kTol);
+}
+
+TEST(PIQPSolverUnit, SolveAfterRejectedSettingsSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+
+  solver.settings.max_iter = 0;
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(2.0));
+  ASSERT_FALSE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+
+  solver.settings.max_iter = 250;
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.0, 1.0), kTol));
 }
