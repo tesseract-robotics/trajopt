@@ -30,6 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <memory>
 #include <functional>
 #include <unordered_set>
+#include <utility>
 #include <tesseract/collision/types.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/eigen_types.h>
@@ -265,6 +266,12 @@ struct LinkMaxError
   double getMaxErrorWithBuffer() const;
 };
 
+/**
+ * @brief Per link, the (shape_id, subshape_id) of a contact: identifies a shape pair within a link pair
+ * @details The links are ordered by link id, not by the order the contact reports them
+ */
+using ShapePairKey = std::pair<std::pair<int, int>, std::pair<int, int>>;
+
 /** @brief A set of gradient results */
 struct GradientResultsSet
 {
@@ -274,8 +281,11 @@ struct GradientResultsSet
   /** @brief The map key from contact results map */
   tesseract::common::LinkIdPair key;
 
-  /** @brief For the link pair this is the subshap pair key */
-  std::pair<std::size_t, std::size_t> shape_key;
+  /**
+   * @brief The shape pair, within the link pair, that this set's contacts belong to
+   * @details Its link order is independent of the order of the per-link data in results and max_error
+   */
+  ShapePairKey shape_key;
 
   /** @brief The pair coeff */
   double coeff{ 1 };

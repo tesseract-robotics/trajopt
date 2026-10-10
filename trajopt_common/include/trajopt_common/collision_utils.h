@@ -27,21 +27,74 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>
+#include <map>
+#include <utility>
+#include <vector>
 #include <tesseract/collision/types.h>
 #include <tesseract/kinematics/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_common/collision_types.h>
+
 namespace trajopt_common
 {
-struct GradientResults;
-
 std::size_t getHash(const void* parent, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
 std::size_t getHash(const void* parent,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-// If this works we will store the shape hash with the shape so it is not calculated everytime
-std::size_t cantorHash(int shape_id, int subshape_id);
+/**
+ * @brief Get the key that groups the contacts of a link pair by shape pair.
+ * Contacts share a key exactly when they are on the same shape and subshape of each link, whichever link the
+ * contact reports first.
+ * @param contact The contact to get the key for
+ * @return The shape pair key
+ */
+ShapePairKey getShapePairKey(const tesseract::collision::ContactResult& contact);
+
+/**
+ * @brief Group the contacts of a link pair by shape pair and append one gradient results set per group.
+ * @param sets The sets to append to. The new sets are appended in shape pair key order.
+ * @param link_pair The link pair the contacts belong to
+ * @param contacts The contacts of the link pair
+ * @param coeff The collision coeff of the link pair
+ * @param is_continuous Indicate if the contacts are from a continuous contact checker
+ * @param calc_gradient Called as calc_gradient(GradientResults&, const ContactResult&) to fill in the gradient
+ * results of a contact
+ */
+template <typename CalcGradientFn>
+void appendGradientResultsSets(std::vector<GradientResultsSet>& sets,
+                               const tesseract::common::LinkIdPair& link_pair,
+                               const tesseract::collision::ContactResultVector& contacts,
+                               double coeff,
+                               bool is_continuous,
+                               const CalcGradientFn& calc_gradient)
+{
+  std::map<ShapePairKey, GradientResultsSet> shape_grs;
+  for (const tesseract::collision::ContactResult& contact : contacts)
+  {
+    const ShapePairKey shape_key = getShapePairKey(contact);
+
+    auto [it, inserted] = shape_grs.try_emplace(shape_key);
+    GradientResultsSet& grs = it->second;
+
+    if (inserted)
+    {
+      grs.key = link_pair;
+      grs.shape_key = shape_key;
+      grs.coeff = coeff;
+      grs.is_continuous = is_continuous;
+      grs.results.reserve(contacts.size());
+    }
+
+    GradientResults grad;
+    calc_gradient(grad, contact);
+    grs.add(std::move(grad));
+  }
+
+  for (auto& kv : shape_grs)
+    sets.emplace_back(std::move(kv.second));
+}
 
 /**
  * @brief Remove any results that are invalid.

@@ -111,39 +111,18 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
   collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
   for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeKey = std::pair<std::size_t, std::size_t>;
-    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
-    ShapeGrsMap shape_grs;
-
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
     const double margin = margin_data_.getCollisionMargin(pair.first);
-    const auto& results = pair.second;
 
-    for (const tesseract::collision::ContactResult& dist_result : results)
-    {
-      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      ShapeKey shape_key{ shape_hash0, shape_hash1 };
-
-      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
-      auto& grs = it_shape->second;
-
-      if (inserted)
-      {
-        grs.key = pair.first;
-        grs.shape_key = shape_key;
-        grs.coeff = coeff;
-        grs.is_continuous = true;
-        grs.results.reserve(results.size());
-      }
-
-      trajopt_common::GradientResults grad;
-      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
-      grs.add(std::move(grad));
-    }
-
-    for (auto& kv : shape_grs)
-      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
+    trajopt_common::appendGradientResultsSets(
+        collision_data.gradient_results_sets,
+        pair.first,
+        pair.second,
+        coeff,
+        /*is_continuous=*/true,
+        [&](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& dist_result) {
+          trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+        });
   }
 
   if (collision_data.gradient_results_sets.size() > max_allowed)
@@ -330,39 +309,18 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
   collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
   for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeKey = std::pair<std::size_t, std::size_t>;
-    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
-    ShapeGrsMap shape_grs;
-
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
     const double margin = margin_data_.getCollisionMargin(pair.first);
-    const auto& results = pair.second;
 
-    for (const tesseract::collision::ContactResult& dist_result : results)
-    {
-      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      ShapeKey shape_key{ shape_hash0, shape_hash1 };
-
-      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
-      auto& grs = it_shape->second;
-
-      if (inserted)
-      {
-        grs.key = pair.first;
-        grs.shape_key = shape_key;
-        grs.coeff = coeff;
-        grs.is_continuous = true;
-        grs.results.reserve(results.size());
-      }
-
-      trajopt_common::GradientResults grad;
-      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
-      grs.add(std::move(grad));
-    }
-
-    for (auto& kv : shape_grs)
-      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
+    trajopt_common::appendGradientResultsSets(
+        collision_data.gradient_results_sets,
+        pair.first,
+        pair.second,
+        coeff,
+        /*is_continuous=*/true,
+        [&](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& dist_result) {
+          trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+        });
   }
 
   if (collision_data.gradient_results_sets.size() > max_allowed)
