@@ -134,6 +134,7 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
 
   indices_ = Eigen::Map<Eigen::VectorXi>(local_indices.data(), static_cast<Eigen::Index>(local_indices.size()));
   coeffs_ = Eigen::Map<Eigen::VectorXd>(local_coeffs.data(), static_cast<Eigen::Index>(local_coeffs.size()));
+  rotation_rows_ = (indices_.array() >= 3).any();
   rows_ = static_cast<int>(indices_.rows());
   non_zeros_ = n_dof_ * indices_.rows();
 
@@ -285,13 +286,17 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
 {
   transforms_cache_.clear();
   manip_->calcFwdKin(transforms_cache_, joint_vals);
-  const Eigen::Isometry3d source_tf = transforms_cache_.at(source_frame_) * source_frame_offset_;
-  const Eigen::Isometry3d target_tf = transforms_cache_.at(target_frame_) * target_frame_offset_;
+  const Eigen::Isometry3d source_link_tf = transforms_cache_.at(source_frame_);
+  const Eigen::Isometry3d source_tf = source_link_tf * source_frame_offset_;
+  const Eigen::Isometry3d target_link_tf = transforms_cache_.at(target_frame_);
+  const Eigen::Isometry3d target_tf = target_link_tf * target_frame_offset_;
 
-  constexpr double eps{ 1e-5 };
-  if (use_numeric_differentiation || type_ == Type::kBothActive)
+  // The rows of the jacobian the indices name
+  Eigen::MatrixXd jac0(indices_.size(), n_dof_);
+
+  if (use_numeric_differentiation)
   {
-    Eigen::MatrixXd jac0(indices_.size(), joint_vals.size());
+    constexpr double eps{ 1e-5 };
     Eigen::VectorXd dof_vals_pert = joint_vals;
     for (int i = 0; i < joint_vals.size(); ++i)
     {
@@ -300,75 +305,59 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }
-
-    for (int i = 0; i < indices_.size(); ++i)
-    {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
-      }
-    }
   }
   else
   {
-    // Paper:
-    // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
-    // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
-    // joint space to time derivatives of the end-effector configuration representation. It does not
-    // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
-    // to generalized coordinates. Since the geometric jacobian is unique there exists a linear mapping
-    // between velocities and the derivatives of the representation.
-    //
-    // The approach in the paper was tried but it was having issues with getting correct jacobian.
-    // Must of had an error in the implementation so should revisit at another time but the approach
-    // below should be sufficient and faster than numerical calculations using the err function.
+    // The geometric jacobian of the kinematics maps joint velocities to the twist of the moving frame. Rotated into
+    // the other frame, its translation rows are the derivative of the position error. Its rotation rows are an angular
+    // velocity, which is not the derivative of the angle axis error, and are mapped to it. With both frames moving,
+    // the source is the moving frame and its twist is taken relative to the link of the target. The kinematics give
+    // the twist of the origin of a link, which is moved to the moving frame.
+    const bool target_moves = type_ == Type::kTargetActive;
+    const Eigen::Isometry3d& fixed_tf = target_moves ? source_tf : target_tf;
+    const Eigen::Isometry3d& moving_tf = target_moves ? target_tf : source_tf;
+    const Eigen::Isometry3d& moving_link_tf = target_moves ? target_link_tf : source_link_tf;
+    const tesseract::common::LinkId& moving_frame = target_moves ? target_frame_ : source_frame_;
+    Eigen::MatrixXd twists = manip_->calcJacobian(joint_vals, moving_frame);
+    tesseract::common::jacobianChangeRefPoint(twists, moving_tf.translation() - moving_link_tf.translation());
 
-    // The approach below leverages the geometric jacobian and a small step in time to approximate
-    // the partial derivative of the error function. Note that the rotational portion is the only part
-    // that is required to be modified per the paper.
-
-    // Calculate the jacobian
-    Eigen::MatrixXd jac0;
-    if (type_ == Type::kTargetActive)
+    // Subtract the twist of the point of the link of the target that coincides with the source
+    if (type_ == Type::kBothActive)
     {
-      jac0 = manip_->calcJacobian(joint_vals, target_frame_, target_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, source_tf.inverse());
-
-      for (int c = 0; c < jac0.cols(); ++c)
-      {
-        auto perturbed_target_tf = trajopt_common::addTwist(target_tf, jac0.col(c), eps);
-        const Eigen::VectorXd error_diff =
-            tesseract::common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
-        jac0.col(c).tail(3) = (error_diff / eps);
-      }
-    }
-    else
-    {
-      jac0 = manip_->calcJacobian(joint_vals, source_frame_, source_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, target_tf.inverse());
-
-      for (int c = 0; c < jac0.cols(); ++c)
-      {
-        auto perturbed_source_tf = trajopt_common::addTwist(source_tf, jac0.col(c), eps);
-        const Eigen::VectorXd error_diff =
-            tesseract::common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
-        jac0.col(c).tail(3) = (error_diff / eps);
-      }
+      Eigen::MatrixXd target_twists = manip_->calcJacobian(joint_vals, target_frame_);
+      tesseract::common::jacobianChangeRefPoint(target_twists, source_tf.translation() - target_link_tf.translation());
+      twists -= target_twists;
     }
 
-    // Convert to a sparse matrix and set the jacobian
-    for (int i = 0; i < indices_.size(); ++i)
+    tesseract::common::jacobianChangeBase(twists, fixed_tf.inverse());
+
+    // Without a rotation row among those the indices name, the rotation error is not needed
+    Eigen::Matrix3d rate_map = Eigen::Matrix3d::Identity();
+    if (rotation_rows_)
     {
-      jac_block.startVec(i);
-      for (int j = 0; j < n_dof_; j++)
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
-        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(indices_[i], j);
-      }
+      const Eigen::Vector3d rotation_error =
+          tesseract::common::calcRotationalError(fixed_tf.linear().transpose() * moving_tf.linear());
+      rate_map = trajopt_common::calcAngleAxisRateMap(rotation_error);
+    }
+
+    for (Eigen::Index j = 0; j < n_dof_; ++j)
+    {
+      Eigen::Matrix<double, 6, 1> rate = twists.col(j);
+      rate.tail<3>() = rate_map * twists.col(j).tail<3>();
+      for (int i = 0; i < indices_.size(); ++i)
+        jac0(i, j) = rate[indices_[i]];
+    }
+  }
+
+  // Convert to a sparse matrix and set the jacobian
+  for (int i = 0; i < indices_.size(); ++i)
+  {
+    jac_block.startVec(i);
+    for (int j = 0; j < n_dof_; j++)
+    {
+      // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
+      // correct timestep for this variable
+      jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
     }
   }
   jac_block.finalize();  // NOLINT
