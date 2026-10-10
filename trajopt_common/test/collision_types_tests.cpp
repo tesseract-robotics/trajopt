@@ -2,8 +2,10 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <trajopt_common/cereal_serialization.h>
 #include <trajopt_common/collision_types.h>
+#include <trajopt_common/collision_utils.h>
 #include <tesseract/common/serialization.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/unit_test_utils.h>
@@ -65,6 +67,52 @@ TEST(CollisionCoeffDataUnit, SerializationRejectsInvalidCoefficients)  // NOLINT
     EXPECT_THROW(Serialization::fromArchiveStringJSON<trajopt_common::CollisionCoeffData>(bad_archive),
                  std::runtime_error);
   }
+}
+
+namespace
+{
+/** @brief The key of a contact between two links, optionally reported from the other link */
+trajopt_common::ShapePairKey
+shapePairKey(int shape_id0, int subshape_id0, int shape_id1, int subshape_id1, bool reversed = false)
+{
+  tesseract::collision::ContactResult contact;
+  contact.link_ids = { tesseract::common::LinkId("link_a"), tesseract::common::LinkId("link_b") };
+  contact.shape_id = { shape_id0, shape_id1 };
+  contact.subshape_id = { subshape_id0, subshape_id1 };
+  if (reversed)
+  {
+    std::swap(contact.link_ids[0], contact.link_ids[1]);
+    std::swap(contact.shape_id[0], contact.shape_id[1]);
+    std::swap(contact.subshape_id[0], contact.subshape_id[1]);
+  }
+  return trajopt_common::getShapePairKey(contact);
+}
+}  // namespace
+
+TEST(ShapePairKeyUnit, DistinguishesShapes)  // NOLINT
+{
+  // A shape without subshapes against a subshape of another shape, on either link
+  EXPECT_NE(shapePairKey(0, 1, 0, -1), shapePairKey(2, -1, 0, -1));
+  EXPECT_NE(shapePairKey(0, -1, 0, 1), shapePairKey(0, -1, 2, -1));
+
+  // Neighbouring shapes with large subshape ids
+  EXPECT_NE(shapePairKey(1, 135000000, 0, -1), shapePairKey(0, 135000001, 0, -1));
+
+  // Every id takes part in the key
+  const trajopt_common::ShapePairKey key = shapePairKey(1, 2, 3, 4);
+  EXPECT_NE(key, shapePairKey(0, 2, 3, 4));
+  EXPECT_NE(key, shapePairKey(1, 0, 3, 4));
+  EXPECT_NE(key, shapePairKey(1, 2, 0, 4));
+  EXPECT_NE(key, shapePairKey(1, 2, 3, 0));
+}
+
+TEST(ShapePairKeyUnit, IndependentOfReportedLinkOrder)  // NOLINT
+{
+  // The same shape pair, reported from either link
+  EXPECT_EQ(shapePairKey(1, 2, 3, 4), shapePairKey(1, 2, 3, 4, true));
+
+  // Mirrored shape pairs, each reported from a different link
+  EXPECT_NE(shapePairKey(1, -1, 0, -1), shapePairKey(0, -1, 1, -1, true));
 }
 
 int main(int argc, char** argv)

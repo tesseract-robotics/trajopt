@@ -31,17 +31,23 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_common/collision_types.h>
+
 namespace trajopt_common
 {
-struct GradientResults;
-
 std::size_t getHash(const void* parent, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
 std::size_t getHash(const void* parent,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-// If this works we will store the shape hash with the shape so it is not calculated everytime
-std::size_t cantorHash(int shape_id, int subshape_id);
+/**
+ * @brief Get the key that groups the contacts of a link pair by shape pair.
+ * Contacts share a key exactly when they are on the same shape and subshape of each link, whichever link the
+ * contact reports first.
+ * @param contact The contact to get the key for
+ * @return The shape pair key
+ */
+ShapePairKey getShapePairKey(const tesseract::collision::ContactResult& contact);
 
 /**
  * @brief Remove any results that are invalid.
