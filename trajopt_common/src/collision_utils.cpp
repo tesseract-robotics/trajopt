@@ -60,13 +60,13 @@ std::size_t getHash(const void* parent,
   return seed;
 }
 
-std::size_t cantorHash(int shape_id, int subshape_id)
+ShapePairKey getShapePairKey(const tesseract::collision::ContactResult& contact)
 {
-  assert(shape_id >= 0);
-  if (subshape_id < 0)
-    return static_cast<std::size_t>(shape_id);
-
-  return static_cast<std::size_t>(1 / 2.0 * (shape_id + subshape_id) * (shape_id + subshape_id + 1) + subshape_id);
+  // Order by link id so the key does not depend on which link the contact reports first
+  const std::size_t first = (contact.link_ids[1] < contact.link_ids[0]) ? 1 : 0;
+  const std::size_t second = 1 - first;
+  return { { contact.shape_id[first], contact.subshape_id[first] },
+           { contact.shape_id[second], contact.subshape_id[second] } };
 }
 
 void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results,
