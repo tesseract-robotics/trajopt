@@ -18,8 +18,8 @@ public:
   ~TrajOptQPProblem() override;
   TrajOptQPProblem(const TrajOptQPProblem&) = delete;
   TrajOptQPProblem& operator=(const TrajOptQPProblem&) = delete;
-  TrajOptQPProblem(TrajOptQPProblem&&) = default;
-  TrajOptQPProblem& operator=(TrajOptQPProblem&&) = default;
+  TrajOptQPProblem(TrajOptQPProblem&&) noexcept;
+  TrajOptQPProblem& operator=(TrajOptQPProblem&&) noexcept;
 
   /**
    * @brief Add a constraint set whose every row is an equality or bounded on one side.
