@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 #include <limits>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 #include <trajopt_common/cereal_serialization.h>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
@@ -71,9 +73,9 @@ TEST(CollisionCoeffDataUnit, SerializationRejectsInvalidCoefficients)  // NOLINT
 
 namespace
 {
-/** @brief The key of a contact between two links, optionally reported from the other link */
-trajopt_common::ShapePairKey
-shapePairKey(int shape_id0, int subshape_id0, int shape_id1, int subshape_id1, bool reversed = false)
+/** @brief A contact between two links, optionally reported from the other link */
+tesseract::collision::ContactResult
+makeContact(int shape_id0, int subshape_id0, int shape_id1, int subshape_id1, bool reversed = false)
 {
   tesseract::collision::ContactResult contact;
   contact.link_ids = { tesseract::common::LinkId("link_a"), tesseract::common::LinkId("link_b") };
@@ -85,7 +87,13 @@ shapePairKey(int shape_id0, int subshape_id0, int shape_id1, int subshape_id1, b
     std::swap(contact.shape_id[0], contact.shape_id[1]);
     std::swap(contact.subshape_id[0], contact.subshape_id[1]);
   }
-  return trajopt_common::getShapePairKey(contact);
+  return contact;
+}
+
+trajopt_common::ShapePairKey
+shapePairKey(int shape_id0, int subshape_id0, int shape_id1, int subshape_id1, bool reversed = false)
+{
+  return trajopt_common::getShapePairKey(makeContact(shape_id0, subshape_id0, shape_id1, subshape_id1, reversed));
 }
 }  // namespace
 
@@ -113,6 +121,54 @@ TEST(ShapePairKeyUnit, IndependentOfReportedLinkOrder)  // NOLINT
 
   // Mirrored shape pairs, each reported from a different link
   EXPECT_NE(shapePairKey(1, -1, 0, -1), shapePairKey(0, -1, 1, -1, true));
+}
+
+TEST(GradientResultsSetsUnit, GroupsContactsByShapePair)  // NOLINT
+{
+  const tesseract::common::LinkIdPair link_pair(tesseract::common::LinkId("link_a"),
+                                                tesseract::common::LinkId("link_b"));
+
+  tesseract::collision::ContactResultVector contacts;
+  // One shape pair, reported from either link
+  contacts.push_back(makeContact(1, 2, 3, 4));
+  contacts.push_back(makeContact(1, 2, 3, 4, true));
+  // Its mirror, reported from the other link
+  contacts.push_back(makeContact(3, 4, 1, 2, true));
+  // A subshape of one shape and another shape without subshapes
+  contacts.push_back(makeContact(0, 1, 0, -1));
+  contacts.push_back(makeContact(2, -1, 0, -1));
+
+  // Tag each gradient result with the index of its contact
+  for (std::size_t i = 0; i < contacts.size(); ++i)
+    contacts[i].distance = static_cast<double>(i);
+
+  std::vector<trajopt_common::GradientResultsSet> sets;
+  trajopt_common::appendGradientResultsSets(
+      sets,
+      link_pair,
+      contacts,
+      /*coeff=*/5.0,
+      /*is_continuous=*/true,
+      [](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& contact) {
+        grad.error = contact.distance;
+      });
+
+  std::map<trajopt_common::ShapePairKey, std::vector<double>> members;
+  for (const auto& set : sets)
+  {
+    EXPECT_EQ(set.key, link_pair);
+    EXPECT_DOUBLE_EQ(set.coeff, 5.0);
+    EXPECT_TRUE(set.is_continuous);
+    EXPECT_TRUE(members.find(set.shape_key) == members.end());
+    for (const auto& result : set.results)
+      members[set.shape_key].push_back(result.error);
+  }
+
+  ASSERT_EQ(sets.size(), 4);
+  EXPECT_EQ(members.at(trajopt_common::getShapePairKey(contacts[0])), (std::vector<double>{ 0, 1 }));
+  EXPECT_EQ(members.at(trajopt_common::getShapePairKey(contacts[2])), (std::vector<double>{ 2 }));
+  EXPECT_EQ(members.at(trajopt_common::getShapePairKey(contacts[3])), (std::vector<double>{ 3 }));
+  EXPECT_EQ(members.at(trajopt_common::getShapePairKey(contacts[4])), (std::vector<double>{ 4 }));
 }
 
 int main(int argc, char** argv)
