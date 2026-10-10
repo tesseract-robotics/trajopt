@@ -36,7 +36,7 @@ namespace trajopt_ifopt
 class Var;
 
 /**
- * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
+ * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint acceleration
  *
  * Joint acceleration is calculated as a = th_2 - 2th_1 + th_0
  */
@@ -52,8 +52,9 @@ public:
    * @brief Constructs a acceleration contraint from these variables, setting the bounds to the target
    * @param targets Joint Acceleration targets (length should be n_dof). Upper and lower bounds are set to this value
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
-   * order.
+   * order. At least three are required.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every row is weighted 1.
    * @param name Name of the constraint
    */
   JointAccelConstraint(const Eigen::VectorXd& targets,
@@ -76,7 +77,7 @@ public:
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint acceleration.
-   * @return Returns jointAcceleration. Length is n_dof_ * n_vars
+   * @return Returns jointAcceleration. Length is n_dof_ * (n_vars - 2)
    */
   Eigen::VectorXd getValues() const override;
 
@@ -102,7 +103,7 @@ private:
   /** @brief The coeff to apply to error and gradient */
   Eigen::VectorXd coeffs_;
 
-  /** @brief Bounds on the velocities of each joint */
+  /** @brief Bounds on the accelerations of each joint */
   std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */

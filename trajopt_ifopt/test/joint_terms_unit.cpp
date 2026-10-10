@@ -26,6 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <limits>
+#include <Eigen/LU>
 #include <gtest/gtest.h>
 #include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -40,6 +41,40 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace trajopt_ifopt;
 using namespace std;
+
+/**
+ * @brief Check that every row gets its joint's target and weight
+ * @details Per-joint targets and coeffs repeat once per row block. A single coeff weights every row, and the empty
+ * form weights every row 1.
+ */
+template <typename ConstraintT>
+void expectOneTargetAndWeightPerRow(const std::vector<std::shared_ptr<const Var>>& position_vars)
+{
+  const Eigen::Index n_dof = position_vars.front()->size();
+  const Eigen::VectorXd targets = Eigen::VectorXd::LinSpaced(n_dof, 0.5, 1.5);
+  const std::vector<Eigen::VectorXd> coeff_forms{ Eigen::VectorXd(),
+                                                  Eigen::VectorXd::Constant(1, 3.0),
+                                                  Eigen::VectorXd::LinSpaced(n_dof, 2.0, 3.0) };
+  for (const Eigen::VectorXd& form : coeff_forms)
+  {
+    const ConstraintT cnt(targets, position_vars, form);
+    const Eigen::VectorXd weights = cnt.getCoefficients();
+    ASSERT_EQ(weights.size(), cnt.getRows());
+    Eigen::VectorXd expected = Eigen::VectorXd::Ones(weights.size());
+    if (form.size() != 0)
+      expected = form.replicate(weights.size() / form.size(), 1);
+    EXPECT_TRUE(weights.isApprox(expected));
+
+    const std::vector<Bounds> bounds = cnt.getBounds();
+    ASSERT_EQ(bounds.size(), static_cast<std::size_t>(cnt.getRows()));
+    for (std::size_t row = 0; row < bounds.size(); ++row)
+    {
+      const double target = targets(static_cast<Eigen::Index>(row) % n_dof);
+      EXPECT_DOUBLE_EQ(bounds[row].getLower(), target);
+      EXPECT_DOUBLE_EQ(bounds[row].getUpper(), target);
+    }
+  }
+}
 
 /** @brief Tests the Joint Position Constraint */
 TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
@@ -273,12 +308,14 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  // One row per DOF for each of the n - 2 second differences
+  const Eigen::Index n_rows = targets.size() * static_cast<Eigen::Index>(position_vars.size() - 2);
+  EXPECT_EQ(accel_cnt.getRows(), n_rows);
   EXPECT_EQ(accel_cnt.getName(), name);
-  EXPECT_EQ(accel_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getBounds().size(), n_rows);
 
   Eigen::VectorXd accel_vals = accel_cnt.getValues();
-  EXPECT_EQ(accel_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_vals.size(), n_rows);
 
   // Test forward diff
   for (std::size_t i = 0; i < x_vals.size() - 2; ++i)
@@ -290,29 +327,24 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     }
   }
 
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = (f(x_vals[i]) - (2.0 * f(x_vals[i - 1])) + f(x_vals[i - 2]));
-      EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
   Jacobian jac = accel_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
+  EXPECT_EQ(jac.rows(), n_rows);
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
+  // No row is a combination of the others
+  EXPECT_EQ(jac.toDense().fullPivLu().rank(), jac.rows());
+
+  for (Eigen::Index i = 0; i < jac.rows(); ++i)
   {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
+    for (Eigen::Index j = 0; j < jac.cols(); ++j)
     {
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  expectOneTargetAndWeightPerRow<JointAccelConstraint>(position_vars);
 }
 
 /** @brief Tests the Joint Acceleration Constraint */
@@ -325,11 +357,11 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
 
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
-  position_vars.reserve(4);
+  position_vars.reserve(3);
 
   std::vector<int> x_vals;
-  x_vals.reserve(4);
-  for (int i = -13; i < -9; ++i)
+  x_vals.reserve(3);
+  for (int i = -13; i < -10; ++i)
   {
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
@@ -354,12 +386,14 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  // One row per DOF for each of the n - 2 second differences
+  const Eigen::Index n_rows = targets.size() * static_cast<Eigen::Index>(position_vars.size() - 2);
+  EXPECT_EQ(accel_cnt.getRows(), n_rows);
   EXPECT_EQ(accel_cnt.getName(), name);
-  EXPECT_EQ(accel_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getBounds().size(), n_rows);
 
   Eigen::VectorXd accel_vals = accel_cnt.getValues();
-  EXPECT_EQ(accel_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_vals.size(), n_rows);
 
   // Test forward diff
   for (std::size_t i = 0; i < x_vals.size() - 2; ++i)
@@ -371,29 +405,25 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = (f(x_vals[i]) - (2.0 * f(x_vals[i - 1])) + f(x_vals[i - 2]));
-      EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
   Jacobian jac = accel_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
+  EXPECT_EQ(jac.rows(), n_rows);
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
+  for (Eigen::Index i = 0; i < jac.rows(); ++i)
   {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
+    for (Eigen::Index j = 0; j < jac.cols(); ++j)
     {
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  // Fewer waypoints than the stencil spans are rejected
+  const std::vector<std::shared_ptr<const Var>> too_few(position_vars.begin(), position_vars.end() - 1);
+  const std::vector<std::shared_ptr<const Var>> none;
+  EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, too_few, coeffs, name), std::runtime_error);
+  EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, none, coeffs, name), std::runtime_error);
 }
 
 /** @brief Tests the Joint Jerk Constraint */
@@ -435,12 +465,14 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  // One row per DOF for each of the n - 3 third differences
+  const Eigen::Index n_rows = targets.size() * static_cast<Eigen::Index>(position_vars.size() - 3);
+  EXPECT_EQ(jerk_cnt.getRows(), n_rows);
   EXPECT_EQ(jerk_cnt.getName(), name);
-  EXPECT_EQ(jerk_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getBounds().size(), n_rows);
 
   Eigen::VectorXd jerk_vals = jerk_cnt.getValues();
-  EXPECT_EQ(jerk_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_vals.size(), n_rows);
 
   // Test forward diff
   for (std::size_t i = 0; i < x_vals.size() - 3; ++i)
@@ -453,29 +485,24 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     }
   }
 
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 3; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = f(x_vals[i]) - (3.0 * f(x_vals[i - 1])) + (3.0 * f(x_vals[i - 2])) - f(x_vals[i - 3]);
-      EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
   Jacobian jac = jerk_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
+  EXPECT_EQ(jac.rows(), n_rows);
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
+  // No row is a combination of the others
+  EXPECT_EQ(jac.toDense().fullPivLu().rank(), jac.rows());
+
+  for (Eigen::Index i = 0; i < jac.rows(); ++i)
   {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
+    for (Eigen::Index j = 0; j < jac.cols(); ++j)
     {
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  expectOneTargetAndWeightPerRow<JointJerkConstraint>(position_vars);
 }
 
 /** @brief Tests the Joint Jerk Constraint */
@@ -488,11 +515,11 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
 
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
-  position_vars.reserve(6);
+  position_vars.reserve(4);
 
   std::vector<int> x_vals;
-  x_vals.reserve(6);
-  for (int i = -13; i < -7; ++i)
+  x_vals.reserve(4);
+  for (int i = -13; i < -9; ++i)
   {
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
@@ -517,12 +544,14 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  // One row per DOF for each of the n - 3 third differences
+  const Eigen::Index n_rows = targets.size() * static_cast<Eigen::Index>(position_vars.size() - 3);
+  EXPECT_EQ(jerk_cnt.getRows(), n_rows);
   EXPECT_EQ(jerk_cnt.getName(), name);
-  EXPECT_EQ(jerk_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getBounds().size(), n_rows);
 
   Eigen::VectorXd jerk_vals = jerk_cnt.getValues();
-  EXPECT_EQ(jerk_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_vals.size(), n_rows);
 
   // Test forward diff
   for (std::size_t i = 0; i < x_vals.size() - 3; ++i)
@@ -534,29 +563,25 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 3; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = f(x_vals[i]) - (3.0 * f(x_vals[i - 1])) + (3.0 * f(x_vals[i - 2])) - f(x_vals[i - 3]);
-      EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
   Jacobian jac = jerk_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
+  EXPECT_EQ(jac.rows(), n_rows);
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
+  for (Eigen::Index i = 0; i < jac.rows(); ++i)
   {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
+    for (Eigen::Index j = 0; j < jac.cols(); ++j)
     {
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  // Fewer waypoints than the stencil spans are rejected
+  const std::vector<std::shared_ptr<const Var>> too_few(position_vars.begin(), position_vars.end() - 1);
+  const std::vector<std::shared_ptr<const Var>> none;
+  EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, too_few, coeffs, name), std::runtime_error);
+  EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, none, coeffs, name), std::runtime_error);
 }
 ////////////////////////////////////////////////////////////////////
 

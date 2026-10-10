@@ -82,8 +82,6 @@ struct MinimalProblem
 
 /**
  * @brief Helper: create an N-waypoint, n-joint problem from a vector of positions
- *
- * JointAccelConstraint requires a minimum of 4 waypoints (3-point central difference stencil).
  */
 struct MultiWaypointProblem
 {
@@ -191,7 +189,6 @@ template <typename T>
 void runHessianMultipleCostsTest()
 {
   const Eigen::Index nj = 2;
-  // JointAccelConstraint requires >= 4 waypoints for its 3-point central difference stencil.
   // Use distinct per-joint values so each DOF has different velocity/acceleration profiles.
   MultiWaypointProblem prob(nj,
                             { (Eigen::VectorXd(nj) << 0.0, 0.0).finished(),
