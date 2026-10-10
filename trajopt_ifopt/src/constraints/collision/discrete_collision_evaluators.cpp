@@ -103,38 +103,21 @@ void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionC
   collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
   for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeGrsMap = std::map<trajopt_common::ShapePairKey, trajopt_common::GradientResultsSet>;
-
     if (pair.second.empty())
       continue;
 
-    ShapeGrsMap shape_grs;
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
     const double margin = margin_data_.getCollisionMargin(pair.first);
 
-    for (const auto& dist_result : pair.second)
-    {
-      const trajopt_common::ShapePairKey shape_key = trajopt_common::getShapePairKey(dist_result);
-
-      auto [it, inserted] = shape_grs.try_emplace(shape_key);
-      auto& grs = it->second;
-
-      if (inserted)
-      {
-        grs.key = pair.first;
-        grs.shape_key = shape_key;
-        grs.coeff = coeff;
-        grs.results.reserve(pair.second.size());
-      }
-
-      trajopt_common::GradientResults grad;
-      trajopt_common::getGradient(grad, dof_vals, dist_result, margin, margin_buffer_, *manip_);
-      grs.add(std::move(grad));
-    }
-
-    // Move results out instead of copying
-    for (auto& kv : shape_grs)
-      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
+    trajopt_common::appendGradientResultsSets(
+        collision_data.gradient_results_sets,
+        pair.first,
+        pair.second,
+        coeff,
+        /*is_continuous=*/false,
+        [&](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& dist_result) {
+          trajopt_common::getGradient(grad, dof_vals, dist_result, margin, margin_buffer_, *manip_);
+        });
   }
 
   if (collision_data.gradient_results_sets.size() > max_allowed)
