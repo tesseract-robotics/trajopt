@@ -36,9 +36,9 @@ namespace trajopt_ifopt
 class Var;
 
 /**
- * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
+ * @brief This creates a joint jerk constraint and allows bounds to be set on a joint jerk
  *
- * Joint acceleration is calculated as a = th_2 - 2th_1 + th_0
+ * Joint jerk is calculated as j = th_3 - 3th_2 + 3th_1 - th_0
  */
 class JointJerkConstraint : public ConstraintSet
 {
@@ -51,9 +51,10 @@ public:
   /**
    * @brief Constructs a jerk constraint from these variables, setting the bounds to the target
    * @param targets Joint Jerk targets (length should be n_dof). Upper and lower bounds are set to this value
-   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
-   * order.
+   * @param position_vars Joint positions used to calculate jerk. These vars are assumed to be continuous and in
+   * order. At least four are required.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every row is weighted 1.
    * @param name Name of the constraint
    */
   JointJerkConstraint(const Eigen::VectorXd& targets,
@@ -63,8 +64,8 @@ public:
 
   /**
    * @brief Constructs a jerk constraint from these variables, setting the bounds to those passed in.
-   * @param bounds Bounds on target joint acceleration (length should be n_dof)
-   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
+   * @param bounds Bounds on target joint jerk (length should be n_dof)
+   * @param position_vars Joint positions used to calculate jerk. These vars are assumed to be continuous and in
    * order.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
@@ -76,7 +77,7 @@ public:
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint jerk.
-   * @return Returns joint jerk. Length is n_dof_ * n_vars
+   * @return Returns joint jerk. Length is n_dof_ * (n_vars - 3)
    */
   Eigen::VectorXd getValues() const override;
 
@@ -102,7 +103,7 @@ private:
   /** @brief The coeff to apply to error and gradient */
   Eigen::VectorXd coeffs_;
 
-  /** @brief Bounds on the velocities of each joint */
+  /** @brief Bounds on the jerks of each joint */
   std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
