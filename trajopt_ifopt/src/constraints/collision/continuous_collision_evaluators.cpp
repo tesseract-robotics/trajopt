@@ -111,8 +111,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
   collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
   for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeKey = std::pair<std::size_t, std::size_t>;
-    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    using ShapeGrsMap = std::map<trajopt_common::ShapePairKey, trajopt_common::GradientResultsSet>;
     ShapeGrsMap shape_grs;
 
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
@@ -121,9 +120,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
 
     for (const tesseract::collision::ContactResult& dist_result : results)
     {
-      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+      const trajopt_common::ShapePairKey shape_key = trajopt_common::getShapePairKey(dist_result);
 
       auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
       auto& grs = it_shape->second;
@@ -330,8 +327,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
   collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
   for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeKey = std::pair<std::size_t, std::size_t>;
-    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    using ShapeGrsMap = std::map<trajopt_common::ShapePairKey, trajopt_common::GradientResultsSet>;
     ShapeGrsMap shape_grs;
 
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
@@ -340,9 +336,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
 
     for (const tesseract::collision::ContactResult& dist_result : results)
     {
-      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+      const trajopt_common::ShapePairKey shape_key = trajopt_common::getShapePairKey(dist_result);
 
       auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
       auto& grs = it_shape->second;
