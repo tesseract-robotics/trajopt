@@ -1,5 +1,5 @@
 /**
- * @file cartesian_error_plotter.h
+ * @file cartesian_error_plotter.cpp
  * @brief A callback to plot cartesian constraints
  *
  * @author Matthew Powelson

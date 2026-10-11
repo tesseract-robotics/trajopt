@@ -94,6 +94,9 @@ public:
   Jacobian getJacobian() const override;
 
 private:
+  /** @brief The order of the difference. Each row spans one waypoint more. */
+  static constexpr int DIFFERENCE_ORDER = 1;
+
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 

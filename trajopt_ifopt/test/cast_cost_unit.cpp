@@ -1,5 +1,5 @@
 /**
- * @file cast_cost_unit.h
+ * @file cast_cost_unit.cpp
  * @brief The casted collision unit test
  *
  * @author Levi Armstrong

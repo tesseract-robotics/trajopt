@@ -1,5 +1,5 @@
 /**
- * @file continuous_collision_gradient_unit.cpp
+ * @file discrete_collision_gradient_unit.cpp
  * @brief Unit test for the different methods for combining the gradients
  *
  * @author Levi Armstrong

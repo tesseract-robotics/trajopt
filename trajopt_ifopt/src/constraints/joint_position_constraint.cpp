@@ -49,18 +49,16 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
                                        std::string name,
                                        RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name), static_cast<int>(bounds.size()))
+  , n_dof_(static_cast<long>(bounds.size()))
   , coeffs_(coeffs)
   , bounds_(bounds)
   , range_bound_handling_(range_bound_handling)
   , position_var_(position_var)
 {
-  // Set the n_dof and n_vars for convenience
-  n_dof_ = static_cast<long>(bounds_.size());
-
   assert(n_dof_ > 0);
 
-  // Check and make sure the targets size aligns with the vars passed in
-  if (static_cast<long>(bounds_.size()) != position_var_->size())
+  // Check and make sure the bounds size aligns with the vars passed in
+  if (n_dof_ != position_var_->size())
     throw std::runtime_error("JointPosConstraint, targets or bounds must be the same size as the position variable.");
 
   if (!coeffs_.allFinite() || !(coeffs_.array() > 0).all())
@@ -71,7 +69,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
   else if (coeffs_.rows() == 1)
     coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
   else if (coeffs_.rows() != n_dof_)
-    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
+    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint position.");
 
   indices_.reserve(static_cast<std::size_t>(n_dof_));
   for (int i = 0; i < n_dof_; i++)

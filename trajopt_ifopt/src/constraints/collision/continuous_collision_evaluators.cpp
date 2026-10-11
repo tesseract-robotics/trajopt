@@ -1,5 +1,5 @@
 /**
- * @file continuous_collision_evaluators.h
+ * @file continuous_collision_evaluators.cpp
  * @brief Contains continuous evaluators for the collision constraint
  *
  * @author Levi Armstrong

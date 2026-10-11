@@ -1,6 +1,6 @@
 /**
  * @file joint_jerk_constraint.h
- * @brief The join jerk constraint
+ * @brief The joint jerk constraint
  *
  * @author Levi Armstrong
  * @date November 1, 2021
@@ -94,6 +94,9 @@ public:
   Jacobian getJacobian() const override;
 
 private:
+  /** @brief The order of the difference. Each row spans one waypoint more. */
+  static constexpr int DIFFERENCE_ORDER = 3;
+
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 

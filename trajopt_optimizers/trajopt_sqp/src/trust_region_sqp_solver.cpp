@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file trust_region_sqp_solver.cpp
  * @brief Contains the main trust region SQP solver. While it is based on the paper below, it has been completely
  * rewritten from trajopt_sco
