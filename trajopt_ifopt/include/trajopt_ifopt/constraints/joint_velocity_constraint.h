@@ -36,7 +36,7 @@ namespace trajopt_ifopt
 class Var;
 
 /**
- * @brief This creates a joint velocity constraint and allows bounds to be set on a joint position
+ * @brief This creates a joint velocity constraint and allows bounds to be set on a joint velocity
  *
  * Joint velocity is calculated as v = th_1 - th_0
  */
@@ -52,8 +52,9 @@ public:
    * @brief Constructs a velocity constraint from these variables, setting the bounds to the target
    * @param targets Joint Velocity targets (length should be n_dof). Upper and lower bounds are set to this value
    * @param position_vars Joint positions used to calculate velocity. These vars are assumed to be continuous and in
-   * order.
+   * order. At least two are required.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every row is weighted 1.
    * @param name Name of the constraint
    */
   JointVelConstraint(const Eigen::VectorXd& targets,

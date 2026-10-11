@@ -22,13 +22,14 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract/common/logging.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -38,42 +39,8 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
                                        const Eigen::VectorXd& coeffs,
                                        std::string name,
                                        RangeBoundHandling range_bound_handling)
-  : ConstraintSet(std::move(name), static_cast<int>(target.size()))
-  , n_dof_(target.size())
-  , coeffs_(coeffs)
-  , range_bound_handling_(range_bound_handling)
-  , position_var_(position_var)
+  : JointPosConstraint(toBounds(target, target), position_var, coeffs, std::move(name), range_bound_handling)
 {
-  // Set the n_dof and n_vars for convenience
-  assert(n_dof_ > 0);
-
-  if (!coeffs_.allFinite() || !(coeffs_.array() > 0).all())
-    throw std::runtime_error("JointPosConstraint, coeff must be finite and greater than zero.");
-
-  if (coeffs_.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
-
-  if (coeffs_.rows() != n_dof_)
-    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
-
-  // Check and make sure the targets size aligns with the vars passed in
-  if (target.size() != position_var->size())
-    TESSERACT_LOG_ERROR("Targets size does not align with variables provided");
-
-  // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
-  // All of the positions should be exactly at their targets
-
-  indices_.reserve(static_cast<std::size_t>(n_dof_));
-  for (int i = 0; i < n_dof_; i++)
-  {
-    const double w_target = target[i];
-    bounds[static_cast<std::size_t>(i)] = Bounds(w_target, w_target);
-    indices_.push_back(i);
-  }
-
-  non_zeros_ = static_cast<Eigen::Index>(indices_.size());
-  bounds_ = bounds;
 }
 
 JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
@@ -92,6 +59,10 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
 
   assert(n_dof_ > 0);
 
+  // Check and make sure the targets size aligns with the vars passed in
+  if (static_cast<long>(bounds_.size()) != position_var_->size())
+    throw std::runtime_error("JointPosConstraint, targets or bounds must be the same size as the position variable.");
+
   if (!coeffs_.allFinite() || !(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be finite and greater than zero.");
 
@@ -101,10 +72,6 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
     coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
   else if (coeffs_.rows() != n_dof_)
     throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
-
-  // Check and make sure the targets size aligns with the vars passed in
-  if (static_cast<long>(bounds_.size()) != position_var_->size())
-    TESSERACT_LOG_ERROR("Bounds size does not align with variables provided");
 
   indices_.reserve(static_cast<std::size_t>(n_dof_));
   for (int i = 0; i < n_dof_; i++)
