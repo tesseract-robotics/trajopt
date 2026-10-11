@@ -1,5 +1,5 @@
 /**
- * @file clear_plotter.h
+ * @file clear_plotter.cpp
  * @brief A callback to clear the plotter passed in. Add this callback before plotting callbacks to clear the plotter
  * before plotting new results
  *

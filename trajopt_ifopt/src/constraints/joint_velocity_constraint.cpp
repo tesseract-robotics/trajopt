@@ -1,5 +1,5 @@
 /**
- * @file joint_velocity_constraint.h
+ * @file joint_velocity_constraint.cpp
  * @brief The joint_velocity constraint
  *
  * @author Matthew Powelson
@@ -22,6 +22,7 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
@@ -37,12 +38,13 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
                                        const std::vector<std::shared_ptr<const Var>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
                                        std::string name)
-  : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - 1))
+  : ConstraintSet(std::move(name),
+                  static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
   , position_vars_(position_vars)
 {
-  if (position_vars_.size() < 2)
+  if (position_vars_.size() < DIFFERENCE_ORDER + 1)
     throw std::runtime_error("JointVelConstraint requires a minimum of two position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
@@ -52,39 +54,26 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
       throw std::runtime_error("JointVelConstraint, targets must be the same size as each position variable.");
   }
 
-  // Set n_dof and n_vars
   assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 
   // Each segment contributes 2 * n_dof_ nonzeros (− and +)
-  non_zeros_ = 2 * (n_vars_ - 1) * n_dof_;
+  non_zeros_ = (DIFFERENCE_ORDER + 1) * n_dof_ * (n_vars_ - DIFFERENCE_ORDER);
 
   if (!coeffs.allFinite() || !(coeffs.array() > 0).all())
     throw std::runtime_error("JointVelConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
-    coeffs_ = Eigen::VectorXd::Ones(n_dof_ * (n_vars_ - 1));
+    coeffs_ = Eigen::VectorXd::Ones(rows_);
   else if (coeffs.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), coeffs(0));
-  else if (coeffs.rows() != n_dof_)
+    coeffs_ = Eigen::VectorXd::Constant(rows_, coeffs(0));
+  else if (coeffs.rows() == n_dof_)
+    coeffs_ = coeffs.replicate(n_vars_ - DIFFERENCE_ORDER, 1);
+  else
     throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint position.");
 
-  if (coeffs.rows() == n_dof_)
-  {
-    coeffs_.resize(n_dof_ * (n_vars_ - 1));
-    for (long j = 0; j < n_vars_ - 1; j++)
-      coeffs_.segment(j * n_dof_, n_dof_) = coeffs;
-  }
-
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
-  // All of the positions should be exactly at their targets
-  for (long j = 0; j < n_vars_ - 1; j++)
-  {
-    for (long i = 0; i < n_dof_; i++)
-      bounds[static_cast<std::size_t>(i + (j * n_dof_))] = Bounds(targets[i], targets[i]);
-  }
-  bounds_ = bounds;
+  const Eigen::VectorXd row_targets = targets.replicate(n_vars_ - DIFFERENCE_ORDER, 1);
+  bounds_ = toBounds(row_targets, row_targets);
 }
 
 Eigen::VectorXd JointVelConstraint::getValues() const
@@ -98,9 +87,9 @@ Eigen::VectorXd JointVelConstraint::getValues() const
   // Velocity V = vel(var[0, 0]), vel(var[0, 1]), vel(var[0, 2]), vel(var[1, 0]), vel(var[1, 1]), vel(var[1, 2]), etc
 
   // Number of velocity segments (one less than number of position vars)
-  const Eigen::Index n_segments = n_vars_ - 1;
+  const Eigen::Index n_segments = n_vars_ - DIFFERENCE_ORDER;
 
-  Eigen::VectorXd velocity(n_dof_ * n_segments);
+  Eigen::VectorXd velocity(rows_);
 
   for (Eigen::Index seg = 0; seg < n_segments; ++seg)
   {
@@ -125,7 +114,7 @@ Jacobian JointVelConstraint::getJacobian() const
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 
-  for (Eigen::Index seg = 0; seg < (n_vars_ - 1); ++seg)
+  for (Eigen::Index seg = 0; seg < (n_vars_ - DIFFERENCE_ORDER); ++seg)
   {
     const Eigen::Index row_offset = seg * n_dof_;
 

@@ -1,6 +1,6 @@
 /**
- * @file joint_term_unit.cpp
- * @brief The joint position constraint unit test
+ * @file joint_terms_unit.cpp
+ * @brief The joint position, velocity, acceleration and jerk constraint unit tests
  *
  * @author Levi Armstrong
  * @author Matthew Powelson
@@ -280,7 +280,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
 /** @brief Tests the Joint Acceleration Constraint */
 TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
 {
-  TESSERACT_LOG_DEBUG("JointTermsUnit, JointVelConstraintUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointAccelConstraintUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };

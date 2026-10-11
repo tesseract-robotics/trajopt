@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file joint_position_optimization_unit.cpp
  * @brief A joint position constraint unit test
  *

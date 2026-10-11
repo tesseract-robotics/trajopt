@@ -1,6 +1,6 @@
 /**
- * @file joint_velocity_optimization_unit.cpp
- * @brief A joint velocity constraint unit test
+ * @file joint_acceleration_optimization_unit.cpp
+ * @brief A joint acceleration constraint unit test
  *
  * @author Levi Armstrong
  * @author Matthew Powelson

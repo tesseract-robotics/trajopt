@@ -1,6 +1,6 @@
 /**
- * @file cartesian_position_constraint.h
- * @brief The cartesian position constraint
+ * @file cartesian_line_constraint.cpp
+ * @brief The cartesian line constraint
  *
  * @author Levi Armstrong
  * @author Matthew Powelson

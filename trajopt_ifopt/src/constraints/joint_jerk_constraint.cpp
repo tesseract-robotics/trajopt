@@ -1,9 +1,9 @@
-﻿/**
- * @file joint_acceleration_constraint.h
- * @brief The joint_acceleration constraint
+/**
+ * @file joint_jerk_constraint.cpp
+ * @brief The joint jerk constraint
  *
- * @author Ben Greenberg
- * @date April 22, 2021
+ * @author Levi Armstrong
+ * @date November 1, 2021
  *
  * @copyright Copyright (c) 2021, Southwest Research Institute
  *
@@ -22,6 +22,7 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_jerk_constraint.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
@@ -37,54 +38,42 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
                                          const std::vector<std::shared_ptr<const Var>>& position_vars,
                                          const Eigen::VectorXd& coeffs,
                                          std::string name)
-  : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - 3))
+  : ConstraintSet(std::move(name),
+                  static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
   , position_vars_(position_vars)
 {
-  if (position_vars_.size() < 4)
+  if (position_vars_.size() < DIFFERENCE_ORDER + 1)
     throw std::runtime_error("JointJerkConstraint requires a minimum of four position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (const auto& position_var : position_vars)
+  for (const auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->size())
       throw std::runtime_error("JointJerkConstraint, targets must be the same size as each position variable.");
   }
 
-  // Set n_dof and n_vars
   assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 
   // Each third difference contributes 4 nonzeros per DOF
-  non_zeros_ = 4 * n_dof_ * (n_vars_ - 3);
+  non_zeros_ = (DIFFERENCE_ORDER + 1) * n_dof_ * (n_vars_ - DIFFERENCE_ORDER);
 
   if (!coeffs.allFinite() || !(coeffs.array() > 0).all())
     throw std::runtime_error("JointJerkConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
-    coeffs_ = Eigen::VectorXd::Ones(n_dof_ * (n_vars_ - 3));
+    coeffs_ = Eigen::VectorXd::Ones(rows_);
   else if (coeffs.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 3), coeffs(0));
-  else if (coeffs.rows() != n_dof_)
-    throw std::runtime_error("JointJerkConstraint, coeff must be the same size of the joint postion.");
-
-  if (coeffs.rows() == n_dof_)
-  {
-    coeffs_.resize(n_dof_ * (n_vars_ - 3));
-    for (long j = 0; j < n_vars_ - 3; j++)
-      coeffs_.segment(j * n_dof_, n_dof_) = coeffs;
-  }
+    coeffs_ = Eigen::VectorXd::Constant(rows_, coeffs(0));
+  else if (coeffs.rows() == n_dof_)
+    coeffs_ = coeffs.replicate(n_vars_ - DIFFERENCE_ORDER, 1);
+  else
+    throw std::runtime_error("JointJerkConstraint, coeff must be the same size of the joint position.");
 
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
-  // All of the positions should be exactly at their targets
-  for (long j = 0; j < n_vars_ - 3; j++)
-  {
-    for (long i = 0; i < n_dof_; i++)
-      bounds[static_cast<std::size_t>(i + (j * n_dof_))] = Bounds(targets[i], targets[i]);
-  }
-  bounds_ = bounds;
+  const Eigen::VectorXd row_targets = targets.replicate(n_vars_ - DIFFERENCE_ORDER, 1);
+  bounds_ = toBounds(row_targets, row_targets);
 }
 
 Eigen::VectorXd JointJerkConstraint::getValues() const
@@ -93,16 +82,14 @@ Eigen::VectorXd JointJerkConstraint::getValues() const
   Eigen::VectorXd jerk(rows_);
 
   // Forward difference: j_i = -q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3}
-  for (std::size_t i = 0; i < n - 3; ++i)
+  for (std::size_t i = 0; i < n - DIFFERENCE_ORDER; ++i)
   {
     const Eigen::VectorXd& q0 = position_vars_[i]->value();
     const Eigen::VectorXd& q1 = position_vars_[i + 1]->value();
     const Eigen::VectorXd& q2 = position_vars_[i + 2]->value();
     const Eigen::VectorXd& q3 = position_vars_[i + 3]->value();
 
-    const Eigen::VectorXd single_step = -q0 + 3.0 * q1 - 3.0 * q2 + q3;
-
-    jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
+    jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = -q0 + 3.0 * q1 - 3.0 * q2 + q3;
   }
 
   return jerk;
@@ -120,7 +107,7 @@ Jacobian JointJerkConstraint::getJacobian() const
 
   const std::size_t n = position_vars_.size();
 
-  for (std::size_t i = 0; i < n - 3; ++i)
+  for (std::size_t i = 0; i < n - DIFFERENCE_ORDER; ++i)
   {
     const Eigen::Index row_offset = static_cast<Eigen::Index>(i) * n_dof_;
 

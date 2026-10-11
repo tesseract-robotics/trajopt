@@ -49,7 +49,7 @@ public:
   int update() override { return rows_; }
 
   /**
-   * @brief Constructs a acceleration contraint from these variables, setting the bounds to the target
+   * @brief Constructs an acceleration constraint from these variables, setting the bounds to the target
    * @param targets Joint Acceleration targets (length should be n_dof). Upper and lower bounds are set to this value
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order. At least three are required.
@@ -63,7 +63,7 @@ public:
                        std::string name = "JointAccel");
 
   /**
-   * @brief Constructs a acceleration contraint from these variables, setting the bounds to those passed in.
+   * @brief Constructs an acceleration constraint from these variables, setting the bounds to those passed in.
    * @param bounds Bounds on target joint acceleration (length should be n_dof)
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
@@ -94,6 +94,9 @@ public:
   Jacobian getJacobian() const override;
 
 private:
+  /** @brief The order of the difference. Each row spans one waypoint more. */
+  static constexpr int DIFFERENCE_ORDER = 2;
+
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 

@@ -1,5 +1,5 @@
 /**
- * @file cartesian_position_constraint.h
+ * @file cartesian_position_constraint.cpp
  * @brief The cartesian position constraint
  *
  * @author Levi Armstrong

@@ -1,5 +1,5 @@
-﻿/**
- * @file cartesian_position_constraint_unit.h
+/**
+ * @file cartesian_position_constraint_unit.cpp
  * @brief The cartesian position constraint unit tests
  *
  * @author Levi Armstrong

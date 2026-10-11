@@ -1,5 +1,5 @@
 /**
- * @file discrete_collision_evaluators.h
+ * @file discrete_collision_evaluators.cpp
  * @brief Contains discrete evaluators for the collision constraint
  *
  * @author Levi Armstrong
