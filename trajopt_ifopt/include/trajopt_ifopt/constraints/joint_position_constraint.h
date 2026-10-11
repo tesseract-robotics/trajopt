@@ -52,6 +52,7 @@ public:
    * @param position_vars Variables to which this constraint is applied. Note that all variables should have the same
    * number of components (joint DOF)
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every joint is weighted 1.
    * @param name Name of the constraint
    */
   JointPosConstraint(const Eigen::VectorXd& target,
@@ -65,6 +66,7 @@ public:
    * @param bounds Bounds on target joint position (length should be n_dof)
    * @param position_vars Variables to which this constraint is applied
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every joint is weighted 1.
    * @param name Name of the constraint
    */
   JointPosConstraint(const std::vector<Bounds>& bounds,

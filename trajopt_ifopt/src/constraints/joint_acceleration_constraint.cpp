@@ -27,8 +27,8 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract/common/logging.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -49,7 +49,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   for (const auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->size())
-      TESSERACT_LOG_ERROR("Targets size does not align with variables provided");
+      throw std::runtime_error("JointAccelConstraint, targets must be the same size as each position variable.");
   }
 
   // Set n_dof and n_vars

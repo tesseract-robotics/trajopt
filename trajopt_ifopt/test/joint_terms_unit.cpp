@@ -196,6 +196,8 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  expectOneTargetAndWeightPerRow<JointVelConstraint>(position_vars);
 }
 
 /** @brief Tests the Joint Velocity Constraint */
@@ -267,6 +269,12 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
       EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
     }
   }
+
+  // Fewer than two waypoints are rejected
+  const std::vector<std::shared_ptr<const Var>> too_few(position_vars.begin(), position_vars.end() - 1);
+  const std::vector<std::shared_ptr<const Var>> none;
+  EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, too_few, coeffs, name), std::runtime_error);
+  EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, none, coeffs, name), std::runtime_error);
 }
 
 /** @brief Tests the Joint Acceleration Constraint */
@@ -613,6 +621,46 @@ TEST(JointTermsUnit, JointConstraintsRejectInvalidCoeffs)  // NOLINT
   }
 }
 
+/** @brief Joint constraints reject targets and bounds whose size differs from the variables' */
+TEST(JointTermsUnit, JointConstraintsRejectMismatchedSizes)  // NOLINT
+{
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
+  for (int i = 0; i < 6; ++i)
+  {
+    auto node = std::make_unique<Node>();
+    position_vars.push_back(node->addVar(
+        "test_var_" + std::to_string(i), { "x", "y" }, Eigen::VectorXd::Zero(2), std::vector<Bounds>(2, NoBound)));
+    nodes.push_back(std::move(node));
+  }
+
+  // The coefficients fit the variables, so a mismatch must not be reported as theirs
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(2);
+  const auto blames_coeffs = [](const auto& construct) {
+    try
+    {
+      construct();
+    }
+    catch (const std::runtime_error& e)
+    {
+      return std::string(e.what()).find("coeff") != std::string::npos;
+    }
+    return false;
+  };
+  for (const int size : { 1, 3 })
+  {
+    const Eigen::VectorXd targets = Eigen::VectorXd::Zero(size);
+    const std::vector<Bounds> bounds(static_cast<std::size_t>(size), Bounds(-1, 1));
+    EXPECT_THROW(std::make_shared<JointPosConstraint>(targets, position_vars[0], coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointPosConstraint>(bounds, position_vars[0], coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_FALSE(blames_coeffs([&] { const JointPosConstraint cnt(targets, position_vars[0], coeffs); }));
+    EXPECT_FALSE(blames_coeffs([&] { const JointPosConstraint cnt(bounds, position_vars[0], coeffs); }));
+  }
+}
+
 /** @brief Splitting a range bound gives both rows their joint's coefficient, broadcast or per joint */
 TEST(JointTermsUnit, JointPosConstraintSplitKeepsJointCoeffs)  // NOLINT
 {
@@ -629,6 +677,20 @@ TEST(JointTermsUnit, JointPosConstraintSplitKeepsJointCoeffs)  // NOLINT
   expected << 1, 1, 2, 3, 3;
   ASSERT_EQ(per_joint.getRows(), 5);
   EXPECT_TRUE(per_joint.getCoefficients().isApprox(expected));
+}
+
+/** @brief Both JointPosConstraint constructors weight every row 1 when coeffs is empty */
+TEST(JointTermsUnit, JointPosConstraintEmptyCoeffs)  // NOLINT
+{
+  auto node = std::make_unique<Node>();
+  auto var = node->addVar("state", { "a", "b", "c" }, Eigen::VectorXd::Zero(3), std::vector<Bounds>(3, NoBound));
+
+  const JointPosConstraint from_targets(Eigen::VectorXd::Zero(3), var, Eigen::VectorXd());
+  EXPECT_TRUE(from_targets.getCoefficients().isApprox(Eigen::VectorXd::Ones(from_targets.getRows())));
+
+  const std::vector<Bounds> bounds{ Bounds(-1, 1), Bounds(0, 0), Bounds(-2, 2) };
+  const JointPosConstraint from_bounds(bounds, var, Eigen::VectorXd());
+  EXPECT_TRUE(from_bounds.getCoefficients().isApprox(Eigen::VectorXd::Ones(from_bounds.getRows())));
 }
 
 int main(int argc, char** argv)

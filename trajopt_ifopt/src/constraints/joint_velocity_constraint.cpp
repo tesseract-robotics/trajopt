@@ -27,8 +27,8 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract/common/logging.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -37,19 +37,19 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
                                        const std::vector<std::shared_ptr<const Var>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
                                        std::string name)
-  : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1))
+  : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - 1))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 2)
-    throw std::runtime_error("JointVelConstraint, requires minimum of three position variables!");
+    throw std::runtime_error("JointVelConstraint requires a minimum of two position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
   for (const auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->size())
-      TESSERACT_LOG_ERROR("Targets size does not align with variables provided");
+      throw std::runtime_error("JointVelConstraint, targets must be the same size as each position variable.");
   }
 
   // Set n_dof and n_vars
@@ -63,7 +63,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointVelConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), 5);
+    coeffs_ = Eigen::VectorXd::Ones(n_dof_ * (n_vars_ - 1));
   else if (coeffs.rows() == 1)
     coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), coeffs(0));
   else if (coeffs.rows() != n_dof_)
@@ -108,7 +108,7 @@ Eigen::VectorXd JointVelConstraint::getValues() const
     const Eigen::VectorXd& q0 = position_vars_[static_cast<std::size_t>(seg)]->value();
     const Eigen::VectorXd& q1 = position_vars_[static_cast<std::size_t>(seg + 1)]->value();
 
-    // v_i = coeffs_ .* (q_{i+1} - q_i)
+    // v_i = q_{i+1} - q_i
     velocity.segment(seg * n_dof_, n_dof_) = (q1 - q0);
   }
 
@@ -137,7 +137,7 @@ Jacobian JointVelConstraint::getJacobian() const
     {
       const Eigen::Index row = row_offset + k;
       jac.startVec(row);
-      // v(seg,k) = c * (q1 - q0)
+      // v(seg,k) = q1 - q0
       jac.insertBack(row, col0 + k) = -1;  // ∂v/∂q_seg
       jac.insertBack(row, col1 + k) = 1;   // ∂v/∂q_{seg+1}
     }
