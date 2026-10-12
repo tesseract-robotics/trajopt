@@ -37,9 +37,10 @@ namespace trajopt_sqp
 /**
  * @brief An interface to the PIQP sparse proximal interior point QP solver
  *
- * Constraint rows are passed to PIQP by kind: rows with equal bounds as equalities, rows with a single nonzero
- * coefficient as variable bounds, and the remaining rows as two-sided inequalities. Rows unbounded on both sides are
- * dropped. The partition is rebuilt on every solve, so any change to the problem data is supported.
+ * Constraint rows are passed to PIQP by kind: rows with equal bounds as equalities, rows storing a single
+ * coefficient, not zero, as variable bounds, and the remaining rows as two-sided inequalities. Stored zeros count as
+ * coefficients. Rows unbounded on both sides are dropped. The partition is rebuilt on every solve, so any change to
+ * the problem data is supported.
  *
  * A solve that follows a change of bounds alone keeps PIQP's setup and passes it only the bounds, provided the same
  * rows are equalities and the same rows are inequalities as at the setup. Any other change sets PIQP up again.

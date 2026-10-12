@@ -120,7 +120,7 @@ TEST(PIQPSolverUnit, NegativeCoefficientBoundRows)  // NOLINT
 
 TEST(PIQPSolverUnit, StoredZeroCoefficients)  // NOLINT
 {
-  // Stored zeros do not change the solution: row 0 stores only a zero, row 1 a zero next to its bound on x1
+  // Stored zeros do not change the solution: row 0 stores only a zero, row 1 a zero next to its coefficient of x1
   PIQPSolver solver;
   const auto A = makeMatrix(2, 2, { { 0, 0, 0.0 }, { 1, 0, 0.0 }, { 1, 1, 1.0 } });
   ASSERT_EQ(A.nonZeros(), 3);
@@ -129,6 +129,36 @@ TEST(PIQPSolverUnit, StoredZeroCoefficients)  // NOLINT
       solveQP(solver, Eigen::Vector2d(-4.0, -4.0), A, Eigen::Vector2d(-1.0, -kInf), Eigen::Vector2d(1.0, 1.0), x));
   EXPECT_TRUE(x.allFinite());
   EXPECT_TRUE(x.isApprox(Eigen::Vector2d(2.0, 1.0), kTol));
+}
+
+TEST(PIQPSolverUnit, LoneStoredZeroAtRangeEnd)  // NOLINT
+{
+  // A row storing only a zero holds for every x when zero lies in its range, also at an end of it
+  const auto A = makeMatrix(1, 2, { { 0, 0, 0.0 } });
+  for (const Eigen::Vector2d& range : { Eigen::Vector2d(0.0, 1.0), Eigen::Vector2d(-1.0, 0.0) })
+  {
+    PIQPSolver solver;
+    Eigen::VectorXd x;
+    ASSERT_TRUE(solveQP(solver,
+                        Eigen::Vector2d(-4.0, -4.0),
+                        A,
+                        Eigen::Matrix<double, 1, 1>(range[0]),
+                        Eigen::Matrix<double, 1, 1>(range[1]),
+                        x));
+    EXPECT_TRUE(x.isApprox(Eigen::Vector2d(2.0, 2.0), kTol));
+  }
+}
+
+TEST(PIQPSolverUnit, LoneStoredZeroOutsideRangeFails)  // NOLINT
+{
+  // 0 * x0 in [1, 2] holds for no x
+  PIQPSolver solver;
+  const auto A = makeMatrix(1, 2, { { 0, 0, 0.0 } });
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveQP(
+      solver, Eigen::Vector2d(-4.0, -4.0), A, Eigen::Matrix<double, 1, 1>(1.0), Eigen::Matrix<double, 1, 1>(2.0), x));
+  EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kFailed);
+  EXPECT_EQ(solver.solver().result().info.status, piqp::Status::PIQP_PRIMAL_INFEASIBLE);
 }
 
 TEST(PIQPSolverUnit, FreeRows)  // NOLINT
