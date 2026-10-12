@@ -110,9 +110,10 @@ bool PIQPSolver::solve()
     if (lower <= -inf && upper >= inf)
       continue;
 
-    if (lower != upper && constraint_matrix_.row(r).nonZeros() == 1)
+    // A stored zero bounds no variable, so its row is passed as an inequality
+    const trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix_, r);
+    if (lower != upper && constraint_matrix_.row(r).nonZeros() == 1 && it.value() != 0.0)
     {
-      const trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix_, r);
       const double coeff = it.value();
       const double scaled_lower = (coeff > 0) ? lower : -upper;
       const double scaled_upper = (coeff > 0) ? upper : -lower;
@@ -230,9 +231,7 @@ bool PIQPSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& li
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
-  // Drop stored zeros so a row with a single nonzero coefficient is passed as a variable bound
   constraint_matrix_ = linearConstraintsMatrix;
-  constraint_matrix_.prune([](Eigen::Index, Eigen::Index, double value) { return value != 0.0; });
   setup_needed_ = true;
   return true;
 }
