@@ -77,11 +77,12 @@ enum class CostPenaltyType : std::uint8_t
 
 /**
  * @brief Constraint violations in the two forms the SQP solver consumes, one entry per merit unit.
- * @details @c raw sums a merit unit's row violations, each in its row's own units, excluding rows whose weight is
- * exactly 0; that sum is the feasibility metric compared against SQPParameters::cnt_tolerance. @c weighted sums each
- * row's violation times its weight; the merit function charges it as @c weighted.dot(merit_error_coeffs). A merit
- * unit is a constraint set for TrajOptQPProblem and a constraint row for IfoptQPProblem. IfoptQPProblem applies no
- * per-row weights, so its two forms are equal. Entries are non-negative; 0 means satisfied.
+ * @details @c raw reduces a merit unit's row violations, each in its row's own units and excluding rows whose weight
+ * is exactly 0, to their sum, or to the largest of them as set by QPProblem::setSumConstraintSetViolations; it is the
+ * feasibility metric compared against SQPParameters::cnt_tolerance. @c weighted sums each row's violation times its
+ * weight; the merit function charges it as @c weighted.dot(merit_error_coeffs). A merit unit is a constraint set for
+ * TrajOptQPProblem and a constraint row for IfoptQPProblem, which also applies no per-row weights, so its two forms
+ * are equal. Entries are non-negative; 0 means satisfied.
  */
 struct ConstraintViolations
 {
@@ -125,6 +126,14 @@ struct SQPParameters
   double initial_merit_error_coeff = 10;
   /** @brief If true, only the constraints that are violated will be inflated */
   bool inflate_constraints_individually = true;
+  /**
+   * @brief If true, cnt_tolerance is tested against a set's summed row violations; if false, against its largest row
+   * @details Tested per row, a set of k rows may carry up to k times cnt_tolerance in total (a collision set has one
+   * row per contact). The chosen quantity is reported as ConstraintViolations::raw and selects the sets inflated
+   * under inflate_constraints_individually. TrustRegionSQPSolver::init() applies it; a later change is ignored until
+   * the next init(). It has no effect with IfoptQPProblem, which tests every row.
+   */
+  bool sum_constraint_set_violations = true;
   /** @brief Initial size of the trust region */
   double initial_trust_box_size = 1e-1;
   /** @brief Unused */

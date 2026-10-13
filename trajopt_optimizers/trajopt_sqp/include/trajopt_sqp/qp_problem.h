@@ -117,6 +117,14 @@ public:
    */
   virtual void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) = 0;
 
+  /**
+   * @brief Set how a merit unit's row violations are reduced to its entry of ConstraintViolations::raw
+   * @details Takes effect at the next violation query. A problem with one row per merit unit ignores it.
+   * TrustRegionSQPSolver::init() overwrites it with SQPParameters::sum_constraint_set_violations.
+   * @param sum If true, to their sum; if false, to the largest of them
+   */
+  virtual void setSumConstraintSetViolations(bool sum) = 0;
+
   /** @brief Prints all members to the terminal in a human readable form */
   virtual void print() const = 0;
 

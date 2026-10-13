@@ -78,15 +78,18 @@ double weightedSum(const Eigen::ArrayBase<Values>& values, const Eigen::Ref<cons
 
 /**
  * @brief Write one constraint set's violation into slot @p idx of @p out.
- * @details `raw` sums the row violations and `weighted` sums them times their weights, both leaving out rows of
- * weight exactly 0.
+ * @details `raw` is the sum of the row violations if @p sum, else the largest of them, and `weighted` sums them
+ * times their weights, both leaving out rows of weight exactly 0. @p err must not be empty.
  */
 void reduceSetViolation(ConstraintViolations& out,
                         Eigen::Index idx,
                         const Eigen::Ref<const Eigen::VectorXd>& err,
-                        const Eigen::Ref<const Eigen::VectorXd>& w)
+                        const Eigen::Ref<const Eigen::VectorXd>& w,
+                        bool sum)
 {
-  out.raw(idx) = (w.array() != 0.0).select(err.array(), 0.0).sum();
+  assert(err.size() > 0);
+  const auto enabled = (w.array() != 0.0).select(err.array(), 0.0);
+  out.raw(idx) = sum ? enabled.sum() : enabled.maxCoeff();
   out.weighted(idx) = weightedSum(err.array(), w);
 }
 
@@ -223,7 +226,8 @@ struct ConvexProblem
     return err;
   }
 
-  ConstraintViolations evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const;
+  ConstraintViolations evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals,
+                                                          bool sum) const;
 };
 
 Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
@@ -294,7 +298,7 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
 }
 
 ConstraintViolations
-ConvexProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
+ConvexProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals, bool sum) const
 {
   /** @note Merit rows are evaluated on the slack-free linear model, as penalty rows are in evaluateConvexCosts(). */
   const auto n = static_cast<Eigen::Index>(merit_constraint_infos.size());
@@ -311,7 +315,7 @@ ConvexProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::
       continue;
     }
 
-    reduceSetViolation(result, cnt_idx++, linearizedViolations(var_block, row_index, c_info), c_info.coeffs);
+    reduceSetViolation(result, cnt_idx++, linearizedViolations(var_block, row_index, c_info), c_info.coeffs, sum);
     row_index += c_info.rows;
   }
 
@@ -425,6 +429,9 @@ struct TrajOptQPProblem::Implementation
 
   /** @brief Box size - constraint is set at current_val +/- box_size */
   Eigen::VectorXd box_size;
+
+  /** @brief Whether a constraint set's raw violation is the sum of its rows, or else the largest of them */
+  bool sum_constraint_set_violations{ true };
 
   // These two help reduce number of calls to update method
   int n_dyn_components{ 0 };
@@ -1172,7 +1179,7 @@ ConstraintViolations TrajOptQPProblem::Implementation::getExactConstraintViolati
     auto err = scratch_err.head(c->getRows());
 
     trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
-    reduceSetViolation(result, cnt_idx++, err, c->getCoefficients());
+    reduceSetViolation(result, cnt_idx++, err, c->getCoefficients(), sum_constraint_set_violations);
   }
 
   return result;
@@ -1302,7 +1309,8 @@ Eigen::VectorXd TrajOptQPProblem::getExactCosts() const
 ConstraintViolations
 TrajOptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
-  return std::as_const<Implementation>(*impl_).cvp.evaluateConvexConstraintViolations(var_vals);
+  const Implementation& impl = *impl_;
+  return impl.cvp.evaluateConvexConstraintViolations(var_vals, impl.sum_constraint_set_violations);
 }
 
 ConstraintViolations TrajOptQPProblem::getExactConstraintViolations() const
@@ -1318,6 +1326,8 @@ void TrajOptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::Vec
 {
   impl_->setConstraintMeritCoeff(merit_coeff);
 }
+
+void TrajOptQPProblem::setSumConstraintSetViolations(bool sum) { impl_->sum_constraint_set_violations = sum; }
 
 void TrajOptQPProblem::print() const { std::as_const<Implementation>(*impl_).print(); }
 

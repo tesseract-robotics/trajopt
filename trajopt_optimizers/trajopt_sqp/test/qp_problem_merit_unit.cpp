@@ -1058,6 +1058,54 @@ TEST(QPProblemMerit, SeedMeritWeightsConstraintViolations)  // NOLINT
   EXPECT_NEAR(results.best_exact_merit, 3.4 + (solver.params.initial_merit_error_coeff * 5.1), 1e-12);
 }
 
+// With summing off, raw is each set's largest row violation; a disabled row stays out of it and weighted is unchanged.
+TEST(QPProblemMerit, RawViolationIsTheLargestRowWhenNotSummed)  // NOLINT
+{
+  // Set a's disabled row holds its largest violation.
+  const TestVariables t = makeVariables({ toVectorXd({ 0.9, -0.3, 0.8 }), toVectorXd({ 0.1, -0.4 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 0.0, 3.0, 4.0 }))));
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "b", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 5.0, 6.0 }))));
+  qp->setup();
+  qp->convexify();
+  qp->setSumConstraintSetViolations(false);
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  expectVectorNear(exact.raw, toVectorXd({ 0.8, 0.4 }));
+  expectVectorNear(exact.weighted, toVectorXd({ 4.1, 2.9 }));  // 0.3*3 + 0.8*4, 0.1*5 + 0.4*6
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(5) = toVectorXd({ 0.9, -0.3, 0.8, 0.1, -0.4 });
+  const trajopt_sqp::ConstraintViolations convex = qp->evaluateConvexConstraintViolations(qp_vals);
+  expectVectorNear(convex.raw, exact.raw);
+  expectVectorNear(convex.weighted, exact.weighted);
+}
+
+// cnt_tolerance is tested against a set's summed row violations, or against its largest row when
+// sum_constraint_set_violations is off.
+TEST(QPProblemMerit, ConstraintToleranceAppliesToSetSumOrLargestRow)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 6e-5, -6e-5, 6e-5 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))));
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.params.cnt_tolerance = 1e-4;
+
+  // Every row is below the tolerance, their sum of 1.8e-4 is not.
+  EXPECT_TRUE(solver.params.sum_constraint_set_violations);
+  solver.init(qp);
+  EXPECT_FALSE(solver.verifySQPSolverConvergence());
+
+  solver.params.sum_constraint_set_violations = false;
+  solver.init(qp);
+  EXPECT_TRUE(solver.verifySQPSolverConvergence());
+}
+
 // A violation equal to cnt_tolerance is satisfied, so every set is either satisfied or inflated.
 TEST(QPProblemMerit, ViolationAtTheToleranceIsSatisfied)  // NOLINT
 {
@@ -1070,12 +1118,48 @@ TEST(QPProblemMerit, ViolationAtTheToleranceIsSatisfied)  // NOLINT
   trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
   solver.params.cnt_tolerance = 0.5;
   solver.params.inflate_constraints_individually = true;
-  solver.init(qp);
-  ASSERT_EQ(solver.getResults().best_constraint_violations.raw(0), solver.params.cnt_tolerance);
+  for (const bool sum : { true, false })
+  {
+    solver.params.sum_constraint_set_violations = sum;
+    solver.init(qp);
+    ASSERT_EQ(solver.getResults().best_constraint_violations.raw(0), solver.params.cnt_tolerance);
 
-  EXPECT_TRUE(solver.verifySQPSolverConvergence());
+    EXPECT_TRUE(solver.verifySQPSolverConvergence());
+    solver.adjustPenalty();
+    expectVectorNear(solver.getResults().merit_error_coeffs, toVectorXd({ solver.params.initial_merit_error_coeff }));
+  }
+}
+
+// With individual inflation, the quantity tested against cnt_tolerance also selects the sets whose merit
+// coefficient grows.
+TEST(QPProblemMerit, PenaltyInflationFollowsTheToleranceTest)  // NOLINT
+{
+  // Set a exceeds the tolerance by its sum only, set b by a single row, set c not at all.
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 6e-5, -6e-5, 6e-5 }), toVectorXd({ 0.5, 0.0 }), toVectorXd({ 2e-5, 3e-5 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))));
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "b", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 5.0, 6.0 }))));
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[2], "c", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 1.0, 1.0 }))));
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.params.cnt_tolerance = 1e-4;
+  solver.params.inflate_constraints_individually = true;
+  const double mu = solver.params.initial_merit_error_coeff;
+  const double inflated = mu * solver.params.merit_coeff_increase_ratio;
+
+  solver.init(qp);
   solver.adjustPenalty();
-  expectVectorNear(solver.getResults().merit_error_coeffs, toVectorXd({ solver.params.initial_merit_error_coeff }));
+  expectVectorNear(solver.getResults().merit_error_coeffs, toVectorXd({ inflated, inflated, mu }));
+
+  solver.params.sum_constraint_set_violations = false;
+  solver.init(qp);
+  solver.adjustPenalty();
+  expectVectorNear(solver.getResults().merit_error_coeffs, toVectorXd({ mu, inflated, mu }));
 }
 
 // A squared cost keeps its curvature when the products of its Jacobian entries are small: only the linearized

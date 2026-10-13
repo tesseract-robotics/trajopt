@@ -65,6 +65,7 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 
   results_.best_costs = qp_problem->getExactCosts();
 
+  qp_problem->setSumConstraintSetViolations(params.sum_constraint_set_violations);
   results_.best_constraint_violations = qp_problem->getExactConstraintViolations();
 
   setBoxSize(params.initial_trust_box_size);
