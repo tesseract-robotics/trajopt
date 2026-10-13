@@ -73,6 +73,8 @@ public:
 
   void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
 
+  void setSumConstraintSetViolations(bool sum) override;
+
   /** @brief Prints all members to the terminal in a human readable form */
   void print() const override;
 

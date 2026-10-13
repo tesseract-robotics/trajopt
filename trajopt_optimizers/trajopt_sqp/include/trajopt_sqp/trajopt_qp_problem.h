@@ -57,6 +57,8 @@ public:
 
   void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
 
+  void setSumConstraintSetViolations(bool sum) override;
+
   void print() const override;
 
   Eigen::Index getNumNLPVars() const override;

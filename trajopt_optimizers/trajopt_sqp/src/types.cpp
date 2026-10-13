@@ -51,6 +51,7 @@ bool SQPParameters::operator==(const SQPParameters& rhs) const
   equal &=
       tesseract::common::almostEqualRelativeAndAbs(initial_merit_error_coeff, rhs.initial_merit_error_coeff, max_diff);
   equal &= (inflate_constraints_individually == rhs.inflate_constraints_individually);
+  equal &= (sum_constraint_set_violations == rhs.sum_constraint_set_violations);
   equal &= tesseract::common::almostEqualRelativeAndAbs(initial_trust_box_size, rhs.initial_trust_box_size, max_diff);
   equal &= (log_results == rhs.log_results);
   equal &= (log_dir == rhs.log_dir);

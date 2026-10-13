@@ -574,6 +574,9 @@ void IfoptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::Vecto
   constraint_merit_coeff_ = merit_coeff;
 }
 
+// A merit unit is one row, so there is nothing to reduce.
+void IfoptQPProblem::setSumConstraintSetViolations(bool /*sum*/) {}
+
 void IfoptQPProblem::print() const
 {
   const Eigen::IOFormat format(3);

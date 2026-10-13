@@ -52,11 +52,15 @@ The QP model $m$ is the same expression with each row linearized at the iterate 
 
 Violations are reported per constraint set in two forms (`ConstraintViolations`):
 - `weighted` sums $w_i v_i$ and feeds the merit.
-- `raw` sums $v_i$, in the rows' own units, and is compared with `cnt_tolerance`. The solve is feasible once no set's `raw` is above it; otherwise the $\mu_s$ of each set above it is multiplied by `merit_coeff_increase_ratio`, or every $\mu_s$ if `inflate_constraints_individually` is off. Being a sum, it is not a per-row tolerance; `trajopt_sco` applies the same test to its weighted sums, with a strict comparison.
+- `raw` reduces the $v_i$, in the rows' own units, to one number per set and is compared with `cnt_tolerance`. The solve is feasible once no set's `raw` is above it; otherwise the $\mu_s$ of each set above it is multiplied by `merit_coeff_increase_ratio`, or every $\mu_s$ if `inflate_constraints_individually` is off.
 
-A row whose weight is exactly `0` is disabled: the QP does not penalize it, and it is left out of both sums.
+`sum_constraint_set_violations` chooses the reduction behind `raw`:
+- On (default): the sum of the $v_i$. Being a sum, it is not a per-row tolerance: a set of $k$ rows has to keep them within `cnt_tolerance` together. `trajopt_sco` applies the same test to its weighted sums, with a strict comparison.
+- Off: the largest $v_i$, so every row is held to `cnt_tolerance` on its own, and a set of $k$ rows may carry up to $k$ times that in total. A collision set has one row per contact.
 
-`IfoptQPProblem` applies no per-row weights to constraints, in the QP or the merit, so its two forms are equal.
+A row whose weight is exactly `0` is disabled: the QP does not penalize it, and it is left out of both forms.
+
+`IfoptQPProblem` reports one entry per row and applies no per-row weights to constraints, in the QP or the merit, so its two forms are equal and `sum_constraint_set_violations` has no effect.
 
 ## Trust-Box Construction Near Variable Bounds
 
