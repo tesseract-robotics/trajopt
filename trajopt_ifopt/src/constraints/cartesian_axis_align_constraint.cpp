@@ -167,7 +167,7 @@ Jacobian CartAxisAlignConstraint::getJacobian() const
 
 void CartAxisAlignConstraint::setTargetAxis(const Eigen::Vector3d& target_axis)
 {
-  target_axis_ = CartAxisKinematics::toUnitAxis(target_axis, "target axis");
+  target_axis_ = CartAxisKinematics::toUnitAxis(target_axis, "CartAxis: target axis");
 
   // p1, p2 are fixed in target link coordinates, so the rows are smooth in q whichever link moves
   const Eigen::Vector3d p1 = target_axis_.unitOrthogonal();
