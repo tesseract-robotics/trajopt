@@ -133,8 +133,8 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
         break;
     }
 
-    // A callback stop ends the solve with its own status
-    if (status_ == SQPStatus::kStoppedByCallback)
+    // A spent QP failure budget and a callback stop end the solve with their own status
+    if (status_ == SQPStatus::kQPSolveFailed || status_ == SQPStatus::kStoppedByCallback)
       break;
 
     // Check if constraints are satisfied
@@ -260,8 +260,9 @@ bool TrustRegionSQPSolver::stepSQPSolver()
   // Trust region loop
   runTrustRegionLoop();
 
-  // Check if the NLP has converged or a callback stopped it
-  if (status_ == SQPStatus::kConverged || status_ == SQPStatus::kStoppedByCallback)
+  // A converged inner loop, a spent QP failure budget and a callback stop each end this convexification
+  if (status_ == SQPStatus::kConverged || status_ == SQPStatus::kQPSolveFailed ||
+      status_ == SQPStatus::kStoppedByCallback)
     return true;
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
@@ -383,6 +384,9 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       return;
     }
   }  // Trust region loop
+
+  // A tiny trust region ends the loop without a terminal status, whatever the last QP solve reported
+  status_ = SQPStatus::kRunning;
 }
 
 SQPStatus TrustRegionSQPSolver::solveQPProblem()

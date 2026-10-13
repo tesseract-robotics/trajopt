@@ -55,7 +55,8 @@ public:
   /**
    * @brief Run a single convexification step which calls runTrustRegionLoop
    * @warning This should not normally be call directly, but exposed for online planning
-   * @return True the QP solve converged, but does not mean the SQP solver has converged.
+   * @return True when no further step should follow at the current penalty: the step converged, the QP failure budget
+   * was spent or a callback stopped the solve; getStatus() tells which. It does not mean the SQP solver has converged.
    */
   bool stepSQPSolver();
 
