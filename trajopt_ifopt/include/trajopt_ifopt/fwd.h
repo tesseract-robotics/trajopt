@@ -51,6 +51,9 @@ class CartAxisKinematics;
 struct CartLineInfo;
 class CartLineConstraint;
 
+// cartesian_offset_constraint.h
+class CartOffsetConstraint;
+
 // cartesian_position_constraint.h
 struct CartPosInfo;
 class CartPosConstraint;
