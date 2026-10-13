@@ -52,7 +52,7 @@ The QP model $m$ is the same expression with each row linearized at the iterate 
 
 Violations are reported per constraint set in two forms (`ConstraintViolations`):
 - `weighted` sums $w_i v_i$ and feeds the merit.
-- `raw` sums $v_i$, in the rows' own units, and is compared with `cnt_tolerance`. The solve is feasible once every set's `raw` is below it; otherwise the $\mu_s$ of each set above it is multiplied by `merit_coeff_increase_ratio`, or every $\mu_s$ if `inflate_constraints_individually` is off. Being a sum, it is not a per-row tolerance; `trajopt_sco` applies the same test to its weighted sums.
+- `raw` sums $v_i$, in the rows' own units, and is compared with `cnt_tolerance`. The solve is feasible once no set's `raw` is above it; otherwise the $\mu_s$ of each set above it is multiplied by `merit_coeff_increase_ratio`, or every $\mu_s$ if `inflate_constraints_individually` is off. Being a sum, it is not a per-row tolerance; `trajopt_sco` applies the same test to its weighted sums, with a strict comparison.
 
 A row whose weight is exactly `0` is disabled: the QP does not penalize it, and it is left out of both sums.
 

@@ -110,7 +110,7 @@ struct SQPParameters
   /** @brief Trust region is expanded by this when it is expanded */
   double trust_expand_ratio = 1.5;
 
-  /** @brief Any constraint under this value is not considered a violation */
+  /** @brief Any constraint at or under this value is not considered a violation */
   double cnt_tolerance = 1e-4;
   /** @brief Max number of times the constraints will be inflated */
   double max_merit_coeff_increases = 5;

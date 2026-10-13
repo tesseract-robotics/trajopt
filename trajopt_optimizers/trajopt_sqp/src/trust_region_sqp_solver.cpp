@@ -181,7 +181,7 @@ bool TrustRegionSQPSolver::verifySQPSolverConvergence()
     return true;
   }
 
-  if (results_.best_constraint_violations.raw.maxCoeff() < params.cnt_tolerance)
+  if (results_.best_constraint_violations.raw.maxCoeff() <= params.cnt_tolerance)
   {
     TESSERACT_LOG_DEBUG("woo-hoo! constraints are satisfied (to tolerance {:.2e})", params.cnt_tolerance);
     return true;
@@ -580,7 +580,7 @@ void TrustRegionSQPSolver::printStepInfo() const
   // Constraint
   const Eigen::VectorXd& new_violations = results_.new_constraint_violations.raw;
   const std::string constraints_satisfied =
-      (new_violations.size() == 0 || new_violations.maxCoeff() < params.cnt_tolerance) ? "True" : "False";
+      (new_violations.size() == 0 || new_violations.maxCoeff() <= params.cnt_tolerance) ? "True" : "False";
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT), Satisfied "
               "(%s)\n",
