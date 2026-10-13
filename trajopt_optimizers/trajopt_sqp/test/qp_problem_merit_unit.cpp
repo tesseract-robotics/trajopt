@@ -1058,6 +1058,26 @@ TEST(QPProblemMerit, SeedMeritWeightsConstraintViolations)  // NOLINT
   EXPECT_NEAR(results.best_exact_merit, 3.4 + (solver.params.initial_merit_error_coeff * 5.1), 1e-12);
 }
 
+// A violation equal to cnt_tolerance is satisfied, so every set is either satisfied or inflated.
+TEST(QPProblemMerit, ViolationAtTheToleranceIsSatisfied)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, 0.0 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0 }))));
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.params.cnt_tolerance = 0.5;
+  solver.params.inflate_constraints_individually = true;
+  solver.init(qp);
+  ASSERT_EQ(solver.getResults().best_constraint_violations.raw(0), solver.params.cnt_tolerance);
+
+  EXPECT_TRUE(solver.verifySQPSolverConvergence());
+  solver.adjustPenalty();
+  expectVectorNear(solver.getResults().merit_error_coeffs, toVectorXd({ solver.params.initial_merit_error_coeff }));
+}
+
 // A squared cost keeps its curvature when the products of its Jacobian entries are small: only the linearized
 // rows are filtered, never their square. The objective handed to the solver is the model the cost is scored with.
 TEST(QPProblemMerit, SquaredCostKeepsCurvatureOfSmallProducts)  // NOLINT
