@@ -28,7 +28,13 @@
 #include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <tesseract/common/utils.h>
 #include <cassert>
+#include <cmath>
+#include <stdexcept>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
@@ -252,5 +258,46 @@ Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& co
   constraint_set.update();
 
   return jac;
+}
+
+RowSelection selectRows(const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                        const std::vector<Bounds>& bounds,
+                        RangeBoundHandling range_bound_handling)
+{
+  if (coeffs.size() != static_cast<Eigen::Index>(bounds.size()))
+    throw std::runtime_error("selectRows: coeffs and bounds must have the same size.");
+
+  const bool split = range_bound_handling == RangeBoundHandling::kSplitToTwoInequalities;
+
+  RowSelection selection;
+  std::vector<int> indices;
+  std::vector<double> kept_coeffs;
+  indices.reserve(2 * bounds.size());
+  kept_coeffs.reserve(2 * bounds.size());
+  selection.bounds.reserve(2 * bounds.size());
+  for (Eigen::Index i = 0; i < coeffs.size(); ++i)
+  {
+    if (tesseract::common::almostEqualRelativeAndAbs(coeffs(i), 0))
+      continue;
+
+    const Bounds& b = bounds[static_cast<std::size_t>(i)];
+    if (split && b.getType() == BoundsType::kRangeBound)
+    {
+      selection.bounds.emplace_back(b.getLower(), double(INFINITY));
+      selection.bounds.emplace_back(-double(INFINITY), b.getUpper());
+      indices.insert(indices.end(), 2, static_cast<int>(i));
+      kept_coeffs.insert(kept_coeffs.end(), 2, coeffs(i));
+    }
+    else
+    {
+      selection.bounds.push_back(b);
+      indices.push_back(static_cast<int>(i));
+      kept_coeffs.push_back(coeffs(i));
+    }
+  }
+
+  selection.indices = Eigen::Map<Eigen::VectorXi>(indices.data(), static_cast<Eigen::Index>(indices.size()));
+  selection.coeffs = Eigen::Map<Eigen::VectorXd>(kept_coeffs.data(), static_cast<Eigen::Index>(kept_coeffs.size()));
+  return selection;
 }
 }  // namespace trajopt_ifopt
