@@ -51,7 +51,7 @@ CartAxisConeConstraint::CartAxisConeConstraint(std::shared_ptr<const Var> positi
   : ConstraintSet(std::move(name), 1)
   , position_var_(std::move(position_var))
   , kin_(std::move(manip), std::move(source_frame), source_axis, std::move(target_frame))
-  , target_axis_(CartAxisKinematics::toUnitAxis(target_axis, "target axis"))
+  , target_axis_(CartAxisKinematics::toUnitAxis(target_axis, "CartAxis: target axis"))
   , half_angle_(half_angle)
 {
   // At theta = 0 the gradient vanishes on the feasible set; at theta >= pi nothing is cut.
@@ -124,6 +124,6 @@ Jacobian CartAxisConeConstraint::getJacobian() const
 
 void CartAxisConeConstraint::setTargetAxis(const Eigen::Vector3d& target_axis)
 {
-  target_axis_ = CartAxisKinematics::toUnitAxis(target_axis, "target axis");
+  target_axis_ = CartAxisKinematics::toUnitAxis(target_axis, "CartAxis: target axis");
 }
 }  // namespace trajopt_ifopt

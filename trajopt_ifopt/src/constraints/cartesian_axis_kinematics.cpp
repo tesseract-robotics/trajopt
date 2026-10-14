@@ -52,7 +52,7 @@ CartAxisKinematics::CartAxisKinematics(std::shared_ptr<const tesseract::kinemati
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , target_frame_(std::move(target_frame))
-  , source_axis_(toUnitAxis(source_axis, "source axis"))
+  , source_axis_(toUnitAxis(source_axis, "CartAxis: source axis"))
 {
   if (!manip_->hasLinkId(source_frame_))
     throw std::runtime_error("CartAxis: source link '" + source_frame_.name() + "' does not exist.");
@@ -75,7 +75,7 @@ Eigen::Vector3d CartAxisKinematics::toUnitAxis(const Eigen::Vector3d& axis, cons
   if (!axis.allFinite() || !(norm > 0))
   {
     std::stringstream msg;
-    msg << "CartAxis: " << what << " must be finite and non-zero, got [" << axis.transpose() << "].";
+    msg << what << " must be finite and non-zero, got [" << axis.transpose() << "].";
     throw std::runtime_error(msg.str());
   }
   return axis / norm;

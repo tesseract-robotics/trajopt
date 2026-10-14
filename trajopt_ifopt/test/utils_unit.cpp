@@ -25,9 +25,13 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
+#include <utility>
+#include <vector>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/core/bounds.h>
+#include <trajopt_ifopt/core/constraint_set.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_common/utils.hpp>
 #include <tesseract/common/logging.h>
@@ -272,6 +276,74 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
+}
+
+namespace
+{
+/** Compare a selection with the rows, coefficients and bounds expected of it */
+void expectSelection(const RowSelection& selection,
+                     const std::vector<int>& indices,
+                     const std::vector<double>& coeffs,
+                     const std::vector<std::pair<double, double>>& bounds)
+{
+  ASSERT_EQ(selection.indices.size(), static_cast<Eigen::Index>(indices.size()));
+  ASSERT_EQ(selection.coeffs.size(), static_cast<Eigen::Index>(indices.size()));
+  ASSERT_EQ(selection.bounds.size(), indices.size());
+  for (std::size_t i = 0; i < indices.size(); ++i)
+  {
+    EXPECT_EQ(selection.indices[static_cast<Eigen::Index>(i)], indices[i]) << "row " << i;
+    EXPECT_EQ(selection.coeffs[static_cast<Eigen::Index>(i)], coeffs[i]) << "row " << i;
+    EXPECT_EQ(selection.bounds[i].getLower(), bounds[i].first) << "row " << i;
+    EXPECT_EQ(selection.bounds[i].getUpper(), bounds[i].second) << "row " << i;
+  }
+}
+}  // namespace
+
+/** @brief A row without a coefficient is dropped; a range bound is kept as one row or split in two */
+TEST(UtilsUnit, selectRows)  // NOLINT
+{
+  const double inf = std::numeric_limits<double>::infinity();
+  Eigen::VectorXd coeffs(6);
+  coeffs << 2, 3, 0, 5, 7, 11;
+  std::vector<Bounds> bounds(6, BoundZero);
+  bounds[1] = Bounds(-0.1, 0.2);
+  bounds[2] = Bounds(-1.0, 1.0);
+  bounds[3] = Bounds(0.5, inf);
+  bounds[4] = Bounds(-inf, 0.1);
+
+  expectSelection(selectRows(coeffs, bounds, RangeBoundHandling::kKeepAsIs),
+                  { 0, 1, 3, 4, 5 },
+                  { 2, 3, 5, 7, 11 },
+                  { { 0, 0 }, { -0.1, 0.2 }, { 0.5, inf }, { -inf, 0.1 }, { 0, 0 } });
+
+  expectSelection(selectRows(coeffs, bounds, RangeBoundHandling::kSplitToTwoInequalities),
+                  { 0, 1, 1, 3, 4, 5 },
+                  { 2, 3, 3, 5, 7, 11 },
+                  { { 0, 0 }, { -0.1, inf }, { -inf, 0.2 }, { 0.5, inf }, { -inf, 0.1 }, { 0, 0 } });
+
+  // A coefficient within 1e-6 of zero counts as zero
+  expectSelection(selectRows(Eigen::Vector2d(1e-7, 1e-5), { BoundZero, BoundZero }, RangeBoundHandling::kKeepAsIs),
+                  { 1 },
+                  { 1e-5 },
+                  { { 0, 0 } });
+}
+
+/** @brief No coefficient leaves no rows; any number of rows is accepted; the sizes must agree */
+TEST(UtilsUnit, selectRowsSizes)  // NOLINT
+{
+  const RowSelection none = selectRows(
+      Eigen::VectorXd::Zero(6), std::vector<Bounds>(6, BoundZero), RangeBoundHandling::kSplitToTwoInequalities);
+  EXPECT_EQ(none.indices.size(), 0);
+  EXPECT_EQ(none.coeffs.size(), 0);
+  EXPECT_TRUE(none.bounds.empty());
+
+  expectSelection(selectRows(Eigen::Vector2d(4, 9), { Bounds(-1.0, 1.0), BoundZero }, RangeBoundHandling::kKeepAsIs),
+                  { 0, 1 },
+                  { 4, 9 },
+                  { { -1.0, 1.0 }, { 0, 0 } });
+
+  EXPECT_THROW(selectRows(Eigen::VectorXd::Ones(6), std::vector<Bounds>(5, BoundZero), RangeBoundHandling::kKeepAsIs),
+               std::runtime_error);
 }
 
 ////////////////////////////////////////////////////////////////////

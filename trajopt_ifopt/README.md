@@ -91,6 +91,7 @@ Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back throug
 * Joint Jerk
 * Cartesian Position (FK)
 * Cartesian Axis Cone and Cartesian Axis Align (see below)
+* Cartesian Offset between two states (see below)
 * Cartesian Line
 * Inverse Kinematics
 * Collision, in fixed-size and dynamic-size forms, with these evaluators:
@@ -127,6 +128,17 @@ where the Jacobian is exact, built from the angular rows of the links' geometric
 
 The new constraints are as robust as the alternatives with the same feasible set, not more; the failures that remain end at local minima against joint limits. The cone's distinguishing property is its feasible set. Tight cones cost more iterations than a box, because a linearizing solver has to approximate a round boundary of curvature $1/\theta$.
 
+### Cartesian Offset Constraint
+`CartOffsetConstraint` ties a frame in one state, the follower, to the pose the same frame reaches in another state, the reference. The frame is a link with a constant offset $O$. With a unit axis $a$ in frame coordinates and a signed distance $d$,
+
+$$T_r = \mathrm{FK}(q_r)\, O\, \mathrm{Trans}(d\,a), \qquad T_f = \mathrm{FK}(q_f)\, O,$$
+
+the six rows are the pose of $T_f$ in the coordinates of $T_r$: the translation $R_r^\top (p_f - p_r)$ and the rotation vector of $R_r^\top R_f$. All rows zero means the follower frame has the orientation of the reference frame and sits at $d\,a$ in its coordinates.
+
+Use it where a pose is reached with a free rotation, a zero coefficient or a tolerance on a rotation row of `CartPosConstraint`, and the state before it must lie on an axis of the pose actually reached, as for a straight approach. A Cartesian target fixed for that state follows the nominal pose only.
+
+Rows are selected as in `CartPosConstraint`: a zero coefficient drops a row, and a range bound is split in two rows by default. The Jacobian is exact for both states, and either state may come first in the variable set. The rotation rows need the rotation between the two frames to stay below half a turn.
+
 ### Adding New Constraints
 * Fill in only your own block of the Jacobian; its placement in the full Jacobian is handled for you.
 * `getCoefficients()` returns exactly one finite, non-negative weight per row, in row order; `0` disables the row. Validate weights where they are set, as the in-tree constraints do.
@@ -135,7 +147,7 @@ The new constraints are as robust as the alternatives with the same feasible set
 ## Currently Supported Costs
 Any constraint set can be used as a cost:
 
-* `TrajOptQPProblem::addCostSet` takes a `CostPenaltyType`, squared or linear (`kAbsolute` and `kHinge` name the same linear penalty), and charges each row for its distance outside its own bounds. A set may mix equality rows with one-sided rows, so a toleranced row is free inside its tolerance and charged outside it. A row bounded on both sides must be split into two one-sided rows, which `CartPosConstraint` and `JointPosConstraint` do by default (`RangeBoundHandling::kSplitToTwoInequalities`).
+* `TrajOptQPProblem::addCostSet` takes a `CostPenaltyType`, squared or linear (`kAbsolute` and `kHinge` name the same linear penalty), and charges each row for its distance outside its own bounds. A set may mix equality rows with one-sided rows, so a toleranced row is free inside its tolerance and charged outside it. A row bounded on both sides must be split into two one-sided rows, which `CartPosConstraint`, `CartOffsetConstraint` and `JointPosConstraint` do by default (`RangeBoundHandling::kSplitToTwoInequalities`).
 * The `SquaredCost` and `AbsoluteCost` wrappers turn a constraint set into a `CostTerm` for a `trajopt_ifopt::Problem`.
 
 ## Solver

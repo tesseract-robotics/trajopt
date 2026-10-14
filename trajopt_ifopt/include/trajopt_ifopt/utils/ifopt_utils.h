@@ -24,14 +24,12 @@
 #ifndef TRAJOPT_IFOPT_IFOPT_UTILS_H
 #define TRAJOPT_IFOPT_IFOPT_UTILS_H
 
+#include <trajopt_ifopt/core/bounds.h>
 #include <trajopt_ifopt/core/eigen_types.h>
+#include <trajopt_ifopt/fwd.h>
 
 namespace trajopt_ifopt
 {
-class Bounds;
-class Variables;
-class ConstraintSet;
-class Problem;
 
 /**
  * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Bounds
@@ -117,6 +115,34 @@ Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double e
  * @return The numerical constraint gradient
  */
 Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
+
+/** @brief The rows a constraint keeps of those it defines, with their coefficients and bounds */
+struct RowSelection
+{
+  /** @brief For each kept row, the index of the row it is taken from */
+  Eigen::VectorXi indices;
+
+  /** @brief The coefficient of each kept row */
+  Eigen::VectorXd coeffs;
+
+  /** @brief The bounds of each kept row */
+  std::vector<Bounds> bounds;
+};
+
+/**
+ * @brief Select the rows of a constraint that carry a coefficient
+ * @details A row whose coefficient is zero (tesseract::common::almostEqualRelativeAndAbs) is dropped. Under
+ * RangeBoundHandling::kSplitToTwoInequalities a kept row with a range bound becomes two rows with its index and
+ * coefficient, the first bounded below and the second bounded above. Every other kept row is copied.
+ * @param coeffs One coefficient per row
+ * @param bounds One bounds per row
+ * @param range_bound_handling Keep a range bound as one row or split it in two
+ * @return The kept rows, in the order given
+ * @throws std::runtime_error if @p coeffs and @p bounds differ in size
+ */
+RowSelection selectRows(const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                        const std::vector<Bounds>& bounds,
+                        RangeBoundHandling range_bound_handling);
 
 }  // namespace trajopt_ifopt
 #endif

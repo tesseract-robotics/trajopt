@@ -106,7 +106,8 @@ public:
 
   /**
    * @brief Normalize an axis given by a caller
-   * @throws std::runtime_error if @p axis is zero or not finite; @p what names it in the message
+   * @throws std::runtime_error if @p axis is zero or not finite; the message starts with @p what, which names the
+   * constraint and the axis
    */
   static Eigen::Vector3d toUnitAxis(const Eigen::Vector3d& axis, const std::string& what);
 

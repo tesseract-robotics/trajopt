@@ -28,6 +28,7 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt_common/utils.hpp>
 
@@ -90,50 +91,10 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   else
     throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
 
-  std::vector<double> local_coeffs;
-  std::vector<int> local_indices;
-  local_coeffs.reserve(12);
-  local_indices.reserve(12);
-  if (range_bound_handling_ == RangeBoundHandling::kSplitToTwoInequalities)
-  {
-    for (int i = 0; i < 6; ++i)
-    {
-      if (!tesseract::common::almostEqualRelativeAndAbs(coeffs(i), 0))
-      {
-        const auto& b = bounds[static_cast<std::size_t>(i)];
-        if (b.getType() == BoundsType::kRangeBound)
-        {
-          bounds_.emplace_back(b.getLower(), double(INFINITY));
-          bounds_.emplace_back(-double(INFINITY), b.getUpper());
-          local_indices.push_back(i);
-          local_indices.push_back(i);
-          local_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
-          local_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
-        }
-        else
-        {
-          bounds_.push_back(b);
-          local_indices.push_back(i);
-          local_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
-        }
-      }
-    }
-  }
-  else
-  {
-    for (int i = 0; i < 6; ++i)
-    {
-      if (!tesseract::common::almostEqualRelativeAndAbs(coeffs(i), 0))
-      {
-        local_indices.push_back(i);
-        local_coeffs.push_back(coeffs(i));
-        bounds_.push_back(bounds[static_cast<std::size_t>(i)]);
-      }
-    }
-  }
-
-  indices_ = Eigen::Map<Eigen::VectorXi>(local_indices.data(), static_cast<Eigen::Index>(local_indices.size()));
-  coeffs_ = Eigen::Map<Eigen::VectorXd>(local_coeffs.data(), static_cast<Eigen::Index>(local_coeffs.size()));
+  RowSelection selection = selectRows(coeffs, bounds, range_bound_handling_);
+  indices_ = std::move(selection.indices);
+  coeffs_ = std::move(selection.coeffs);
+  bounds_ = std::move(selection.bounds);
   rotation_rows_ = (indices_.array() >= 3).any();
   rows_ = static_cast<int>(indices_.rows());
   non_zeros_ = n_dof_ * indices_.rows();
