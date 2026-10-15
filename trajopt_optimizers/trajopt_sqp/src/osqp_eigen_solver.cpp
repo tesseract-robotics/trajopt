@@ -23,16 +23,32 @@
  */
 #include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_sqp/qp_problem.h>
+#include <trajopt_sqp/warm_start.h>
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
+#include <algorithm>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace
 {
 constexpr bool OSQP_COMPARE_DEBUG_MODE = false;
+
+/** @brief Whether @p matrix has the dimensions and sparsity pattern of @p stored */
+bool samePattern(const OSQPCscMatrix* stored, const Eigen::SparseMatrix<double, Eigen::ColMajor>& matrix)
+{
+  if (stored == nullptr || stored->m != matrix.rows() || stored->n != matrix.cols() ||
+      stored->p[stored->n] != matrix.nonZeros())
+    return false;
+
+  // Element-wise: OSQP's index type differs from Eigen's
+  const OSQPInt* column_pointers = stored->p;
+  const OSQPInt* row_indices = stored->i;
+  return std::equal(column_pointers, column_pointers + stored->n + 1, matrix.outerIndexPtr()) &&
+         std::equal(row_indices, row_indices + matrix.nonZeros(), matrix.innerIndexPtr());
 }
+}  // namespace
 
 namespace trajopt_sqp
 {
@@ -77,10 +93,25 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 
 bool OSQPEigenSolver::clear()
 {
+  // Only a set-up solver takes or drops the carry; clearing one without a set-up keeps a carry pending. A rho from a
+  // solve without a solution may be extreme, so the configured rho wins; it also wins without adaptive rho, here and at
+  // the set-up in solve()
+  if (solver_->isInitialized())
+  {
+    const bool solved =
+        last_solve_status_ == OsqpEigen::Status::Solved || last_solve_status_ == OsqpEigen::Status::SolvedInaccurate;
+    carried_rho_.reset();
+    if (solved && solver_->settings()->getSettings()->adaptive_rho != 0)  // NOLINT
+      carried_rho_ = solver_->solver()->settings->rho;
+  }
+  last_solve_status_ = OsqpEigen::Status::Unsolved;
+
   // Clear all data
   solver_->clearSolver();
   solver_->data()->clearHessianMatrix();
   solver_->data()->clearLinearConstraintsMatrix();
+  hessian_pending_ = false;
+  constraints_pending_ = false;
 
   num_vars_ = 0;
   num_cnts_ = 0;
@@ -96,9 +127,18 @@ bool OSQPEigenSolver::clear()
 bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
+  last_solve_status_ = OsqpEigen::Status::Unsolved;
   if (!solver_->isInitialized())  // NOLINT
   {
-    if (!solver_->initSolver())
+    // OSQP copies the settings in setup: the carried rho goes in for the setup only, and only with adaptive rho on in
+    // the settings it is set up with; every set-up consumes the carry
+    const double configured_rho = solver_->settings()->getSettings()->rho;
+    if (carried_rho_.has_value() && solver_->settings()->getSettings()->adaptive_rho != 0)  // NOLINT
+      solver_->settings()->setRho(*carried_rho_);
+    const bool set_up = solver_->initSolver();
+    solver_->settings()->setRho(configured_rho);
+    carried_rho_.reset();
+    if (!set_up)
     {
       solver_status_ = QPSolverStatus::kFailed;
       return false;
@@ -107,6 +147,11 @@ bool OSQPEigenSolver::solve()
     // Apply stored warm start if the setting is enabled
     if (solver_->settings()->getSettings()->warm_starting == 1)
       solver_->setWarmStart(x0_, y0_);
+  }
+  else if (!applyPendingMatrices())
+  {
+    solver_status_ = QPSolverStatus::kFailed;
+    return false;
   }
 
   const Eigen::IOFormat format(8);
@@ -159,6 +204,8 @@ bool OSQPEigenSolver::solve()
   /** @todo Need to check if this is what we want in the new version */
   const auto solveExitFlag = solver_->solveProblem();
   const auto status = solver_->getStatus();
+  if (solveExitFlag == OsqpEigen::ErrorExitFlag::NoError)
+    last_solve_status_ = status;
   if (OSQP_COMPARE_DEBUG_MODE)
     std::cout << "OSQP Status Value: " << static_cast<int>(solver_->getStatus()) << '\n';
 
@@ -172,6 +219,16 @@ bool OSQPEigenSolver::solve()
     solver_status_ = QPSolverStatus::kInitialized;
     return true;
   }
+
+  // A rho adapted during a solve without a solution may be extreme: the next solve of this workspace starts from the
+  // configured one. The update's own status goes unreported: solve() fails either way.
+  // osqp_update_rho stores the rho before it refactorizes: should that fail, the configured rho stands with a
+  // factorization that does not match it. Termination is still checked against the data, so later solves fail or
+  // return a solution within OSQP's tolerances until the next successful refactorization, at the latest the in-place
+  // matrix update, or set-up, of TrustRegionSQPSolver's next convexification.
+  const OSQPSettings* configured = solver_->settings()->getSettings();
+  if (configured->adaptive_rho != 0 && solver_->solver()->settings->rho != configured->rho)  // NOLINT
+    osqp_update_rho(solver_->solver().get(), configured->rho);
 
   if (verbosity > 0)  // NOLINT
   {
@@ -220,13 +277,28 @@ Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); 
 
 bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
 {
-  // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
-  auto h2 = 2.0 * hessian; /** @todo This should be handled already by who is calling this function */
-  if (solver_->isInitialized())
-    return solver_->updateHessianMatrix(h2.eval());
+  // OSQP minimizes 1/2 x'Px + q'x over the upper triangle of P; explicit zeros stay entries of the pattern
+  Eigen::SparseMatrix<double, Eigen::ColMajor> upper =
+      (2.0 * hessian).triangularView<Eigen::Upper>(); /** @todo The caller should hand over P itself */
+  upper.makeCompressed();
 
-  solver_->data()->clearHessianMatrix();
-  return solver_->data()->setHessianMatrix(h2.eval());
+  if (!solver_->isInitialized())
+  {
+    solver_->data()->clearHessianMatrix();
+    return solver_->data()->setHessianMatrix(upper);
+  }
+
+  if (!samePattern(solver_->data()->getData()->P, upper))
+  {
+    // Drop both pending matrices: the caller sets the solver up again
+    hessian_pending_ = false;
+    constraints_pending_ = false;
+    return false;
+  }
+
+  pending_hessian_.swap(upper);
+  hessian_pending_ = true;
+  return true;
 }
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
@@ -242,13 +314,19 @@ bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gr
 bool OSQPEigenSolver::updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound)
 {
   bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
-  return solver_->updateLowerBound(bounds_lower_);
+  if (solver_->isInitialized())
+    return applyPendingMatrices() && solver_->updateLowerBound(bounds_lower_);
+
+  return solver_->data()->setLowerBound(bounds_lower_);
 }
 
 bool OSQPEigenSolver::updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound)
 {
   bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
-  return solver_->updateUpperBound(bounds_upper_);
+  if (solver_->isInitialized())
+    return applyPendingMatrices() && solver_->updateUpperBound(bounds_upper_);
+
+  return solver_->data()->setUpperBound(bounds_upper_);
 }
 
 bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
@@ -257,72 +335,85 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
   bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
 
+  // OSQP classifies each row as an equality or not from its bounds scaled as its current data, so it must hold the new
+  // matrices first
   if (solver_->isInitialized())
-    return solver_->updateBounds(bounds_lower_, bounds_upper_);
+    return applyPendingMatrices() && solver_->updateBounds(bounds_lower_, bounds_upper_);
 
   return solver_->data()->setBounds(bounds_lower_, bounds_upper_);
 }
 
 bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix)
 {
-  assert(num_cnts_ == linearConstraintsMatrix.rows());
-  assert(num_vars_ == linearConstraintsMatrix.cols());
+  Eigen::SparseMatrix<double, Eigen::ColMajor> constraints = linearConstraintsMatrix;
+  constraints.makeCompressed();
 
-  if (solver_->isInitialized())
-    return solver_->updateLinearConstraintsMatrix(linearConstraintsMatrix);
+  if (!solver_->isInitialized())
+  {
+    assert(num_cnts_ == linearConstraintsMatrix.rows());
+    assert(num_vars_ == linearConstraintsMatrix.cols());
+    solver_->data()->clearLinearConstraintsMatrix();
+    return solver_->data()->setLinearConstraintsMatrix(constraints);
+  }
 
-  solver_->data()->clearLinearConstraintsMatrix();
-  return solver_->data()->setLinearConstraintsMatrix(linearConstraintsMatrix);
+  if (!samePattern(solver_->data()->getData()->A, constraints))
+  {
+    // Drop both pending matrices: the caller sets the solver up again
+    hessian_pending_ = false;
+    constraints_pending_ = false;
+    return false;
+  }
+
+  pending_constraints_.swap(constraints);
+  constraints_pending_ = true;
+  return true;
 }
 
 bool OSQPEigenSolver::setWarmStart(const QPProblem& qp_problem)
 {
+  // OSQP scales the seed with the scaling of its current data, so it must hold the new matrices first
+  if (!applyPendingMatrices())
+    return false;
+
   if (solver_->settings()->getSettings()->warm_starting != 1)
     return true;
 
-  // Initialize primal variables with NLP variables followed by slack variables
-  const Eigen::Index num_nlp_vars = qp_problem.getNumNLPVars();
-  const Eigen::Index num_slacks = num_vars_ - num_nlp_vars;
-  x0_.setZero(num_vars_);
+  x0_ = qpStartPoint(qp_problem);
+  y0_.setZero(num_cnts_);
+  assert(x0_.size() == num_vars_);
 
-  // Extract NLP variable values from the problem
-  const Eigen::VectorXd nlp_vars = qp_problem.getVariableValues();
-  assert(nlp_vars.size() == num_nlp_vars);
+  // A set-up solver would otherwise continue from the iterate it kept, which belongs to other data and scaling;
+  // a solver not yet set up takes the seed in solve()
+  if (solver_->isInitialized())
+    return solver_->setWarmStart(x0_, y0_);
+  return true;
+}
 
-  // Set the primal NLP variables
-  x0_.head(num_nlp_vars) = nlp_vars;
+bool OSQPEigenSolver::applyPendingMatrices()
+{
+  if (!hessian_pending_ && !constraints_pending_)
+    return true;
 
-  // If there are slack variables, compute them from constraint violations
-  if (num_slacks > 0)
+  // Whole value arrays in the stored pattern's order: OSQP keeps its symbolic factorization, rho and settings, and
+  // rescales all of its data, vectors updated before included
+  const OSQPFloat* hessian_values = hessian_pending_ ? pending_hessian_.valuePtr() : nullptr;
+  const OSQPFloat* constraint_values = constraints_pending_ ? pending_constraints_.valuePtr() : nullptr;
+  const auto hessian_count = static_cast<OSQPInt>(hessian_pending_ ? pending_hessian_.nonZeros() : 0);
+  const auto constraint_count = static_cast<OSQPInt>(constraints_pending_ ? pending_constraints_.nonZeros() : 0);
+  if (osqp_update_data_mat(solver_->solver().get(),
+                           hessian_values,
+                           nullptr,
+                           hessian_count,
+                           constraint_values,
+                           nullptr,
+                           constraint_count) != 0)
   {
-    // Evaluate constraint violations at current NLP variables
-    const Eigen::VectorXd violations = qp_problem.evaluateConvexConstraintViolations(nlp_vars).raw;
-
-    // Get the constraint matrix (row-major)
-    const trajopt_ifopt::Jacobian& constraint_matrix = qp_problem.getConstraintMatrix();
-
-    for (Eigen::Index k = 0; k < violations.size(); ++k)
-    {
-      for (trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix, k); it; ++it)
-      {
-        const Eigen::Index col_idx = it.col();
-        const double coeff = it.value();
-
-        // Slack variables start at index num_nlp_vars
-        if (col_idx >= num_nlp_vars && std::abs(coeff) > 1e-14)
-        {
-          // Slack is computed as: slack = violation / coefficient
-          double slack = violations(k) / coeff;
-          // Enforce non-negativity constraint on slack variables
-          x0_(col_idx) = std::max(0.0, slack);
-        }
-      }
-    }
+    // Stay pending, so every later solve fails until the caller loads the QP again
+    return false;
   }
 
-  // Initialize dual variables to zero
-  y0_.setZero(num_cnts_);
-
+  hessian_pending_ = false;
+  constraints_pending_ = false;
   return true;
 }
 

@@ -39,7 +39,8 @@ add_library(
   src/trust_region_sqp_solver.cpp
   src/trajopt_qp_problem.cpp
   src/expressions.cpp
-  src/types.cpp)
+  src/types.cpp
+  src/warm_start.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_ifopt tesseract::common OsqpEigen::OsqpEigen)
 if(piqp_FOUND)
   target_sources(${PROJECT_NAME} PRIVATE src/piqp_solver.cpp)
