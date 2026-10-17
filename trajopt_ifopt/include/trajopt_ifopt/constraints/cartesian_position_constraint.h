@@ -46,11 +46,6 @@ public:
 
   using Ptr = std::shared_ptr<CartPosConstraint>;
   using ConstPtr = std::shared_ptr<const CartPosConstraint>;
-  using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
-  using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
-                                                              const Eigen::Isometry3d&,
-                                                              const Eigen::Isometry3d&,
-                                                              tesseract::common::LinkIdTransformMap&)>;
 
   CartPosConstraint(std::shared_ptr<const Var> position_var,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
@@ -77,15 +72,11 @@ public:
   /**
    * @brief CalcValues Calculates the values associated with the constraint
    * @param joint_vals Input joint values for which FK is solved
-   * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
-   * associated with orientation.
+   * @return Error of FK solution from target, one entry per row of the constraint. Position rows come before
+   * orientation rows.
    */
   Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
-  /**
-   * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
-   * associated with each of the joint positions should be n_dof_ * n_vars_ long
-   * @return
-   */
+  /** @brief Returns the error of FK solution from target at the current values of the variables, as calcValues */
   Eigen::VectorXd getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
@@ -107,14 +98,14 @@ public:
   Jacobian getJacobian() const override;
 
   /**
-   * @brief Set the target pose
-   * @param pose
+   * @brief Set the target frame offset
+   * @param target_frame_offset The pose of the target frame in the coordinates of the target link
    */
   void setTargetPose(const Eigen::Isometry3d& target_frame_offset);
 
   /**
-   * @brief Returns the target pose for the constraint
-   * @return The target pose for the constraint
+   * @brief Returns the target frame offset
+   * @return The pose of the target frame in the coordinates of the target link, not in world coordinates
    */
   Eigen::Isometry3d getTargetPose() const;
 
@@ -131,20 +122,13 @@ public:
   bool use_numeric_differentiation{ true };
 
 private:
-  enum class Type : std::uint8_t
-  {
-    kTargetActive,
-    kSourceActive,
-    kBothActive
-  };
-
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;
 
-  /** @brief Bounds on the positions of each joint */
+  /** @brief Bounds on each row of the constraint */
   std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
@@ -168,8 +152,11 @@ private:
   /** @brief Static transform applied to the target_frame location */
   Eigen::Isometry3d target_frame_offset_;
 
-  /** @brief indicates which link is active */
-  Type type_{ Type::kTargetActive };
+  /** @brief True if the rows are the pose of the target in the coordinates of the source: only the target moves */
+  bool rows_in_source_{ false };
+
+  /** @brief True if the joints of the group move both frames */
+  bool base_moves_{ false };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -182,11 +169,21 @@ private:
   /** @brief True if the indices name a rotation row */
   bool rotation_rows_{ false };
 
-  /** @brief Error function for calculating the error in the position given the source and target positions */
-  ErrorFunctionType error_function_{ nullptr };
+  /** @brief The kept rows of the six */
+  Eigen::VectorXd keptRows(const Eigen::Ref<const Eigen::VectorXd>& all_rows) const;
 
-  /** @brief The error function to calculate the error difference used for jacobian calculations */
-  ErrorDiffFunctionType error_diff_function_{ nullptr };
+  /** @brief Maps the angular velocity of the moving frame in base coordinates to the rate of the rotation rows */
+  Eigen::Matrix3d calcRateMap(const Eigen::Isometry3d& base_tf, const Eigen::Isometry3d& moving_tf) const;
+
+  /**
+   * @brief The rates of the kept rows
+   * @param twists The twists of the moving frame relative to the base frame, at the moving frame, in world coordinates
+   * @param base_tf The pose of the base frame
+   * @param rate_map From calcRateMap
+   */
+  Eigen::MatrixXd toRowRates(Eigen::MatrixXd twists,
+                             const Eigen::Isometry3d& base_tf,
+                             const Eigen::Matrix3d& rate_map) const;
 
   static thread_local tesseract::common::LinkIdTransformMap transforms_cache_;  // NOLINT
 };
