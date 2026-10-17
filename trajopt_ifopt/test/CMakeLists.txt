@@ -26,6 +26,8 @@ endmacro()
 add_gtest(${PROJECT_NAME}_cartesian_axis_constraint_unit cartesian_axis_constraint_unit.cpp)
 add_gtest(${PROJECT_NAME}_cartesian_line_constraint_unit cartesian_line_constraint_unit.cpp)
 add_gtest(${PROJECT_NAME}_cartesian_position_constraint_unit cartesian_position_constraint_unit.cpp)
+add_gtest(${PROJECT_NAME}_cartesian_position_constraint_two_states_unit
+          cartesian_position_constraint_two_states_unit.cpp)
 # add_gtest(${PROJECT_NAME}_cast_cost_unit cast_cost_unit.cpp)
 add_gtest(${PROJECT_NAME}_collision_unit collision_unit.cpp)
 add_gtest(${PROJECT_NAME}_continuous_collision_gradient_unit continuous_collision_gradient_unit.cpp)
