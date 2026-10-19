@@ -39,6 +39,19 @@ namespace trajopt_ifopt
 {
 class Var;
 
+/**
+ * @brief Holds the pose of a source frame at a target frame, both on links of a joint group.
+ *
+ * The six rows are the pose of one frame in the coordinates of the other: the translation, then the rotation vector.
+ * They are in the coordinates of the target, unless the target is the only frame the joints move.
+ *
+ * Both frames are evaluated in one state, or each in a state of its own. With two states, the source frame of one
+ * state is held at the target frame of the other. To keep a state on an axis a of the pose another state reaches,
+ * as for the approach to a pose reached with a free rotation, give both frames the same link and offset O, make the
+ * approaching state the source and give the target the offset O Translation(d a). A target fixed for the
+ * approaching state follows the nominal pose only. Either state may come first in the variable set, and the
+ * rotation rows need the rotation between the two frames to stay below half a turn.
+ */
 class CartPosConstraint : public ConstraintSet
 {
 public:
@@ -46,11 +59,6 @@ public:
 
   using Ptr = std::shared_ptr<CartPosConstraint>;
   using ConstPtr = std::shared_ptr<const CartPosConstraint>;
-  using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
-  using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
-                                                              const Eigen::Isometry3d&,
-                                                              const Eigen::Isometry3d&,
-                                                              tesseract::common::LinkIdTransformMap&)>;
 
   CartPosConstraint(std::shared_ptr<const Var> position_var,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
@@ -72,20 +80,52 @@ public:
                     std::string name = "CartPos",
                     RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
+  /**
+   * @brief The source frame in one state and the target frame in another
+   * @param source_var Joint values of the state of the source frame
+   * @param target_var Joint values of the state of the target frame; @p source_var again gives the one-state form
+   */
+  CartPosConstraint(std::shared_ptr<const Var> source_var,
+                    std::shared_ptr<const Var> target_var,
+                    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
+
+  /** @brief The two-state form with a coefficient and bounds for each of the six rows */
+  CartPosConstraint(std::shared_ptr<const Var> source_var,
+                    std::shared_ptr<const Var> target_var,
+                    const Eigen::VectorXd& coeffs,
+                    const std::vector<Bounds>& bounds,
+                    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
+
   int update() override { return rows_; }
 
   /**
    * @brief CalcValues Calculates the values associated with the constraint
    * @param joint_vals Input joint values for which FK is solved
-   * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
-   * associated with orientation.
+   * @return Error of FK solution from target, one entry per row of the constraint. Position rows come before
+   * orientation rows.
    */
   Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+
   /**
-   * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
-   * associated with each of the joint positions should be n_dof_ * n_vars_ long
-   * @return
+   * @brief The values with the source frame at @p source_vals and the target frame at @p target_vals
+   * @pre The constraint is on two states
    */
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& source_vals,
+                             const Eigen::Ref<const Eigen::VectorXd>& target_vals) const;
+
+  /** @brief Returns the error of FK solution from target at the current values of the variables, as calcValues */
   Eigen::VectorXd getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
@@ -100,6 +140,7 @@ public:
   /**
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
+   * @param joint_vals Joint values at which every state of the constraint is evaluated
    */
   void calcJacobianBlock(Jacobian& jac_block, const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
 
@@ -107,14 +148,14 @@ public:
   Jacobian getJacobian() const override;
 
   /**
-   * @brief Set the target pose
-   * @param pose
+   * @brief Set the target frame offset
+   * @param target_frame_offset The pose of the target frame in the coordinates of the target link
    */
   void setTargetPose(const Eigen::Isometry3d& target_frame_offset);
 
   /**
-   * @brief Returns the target pose for the constraint
-   * @return The target pose for the constraint
+   * @brief Returns the target frame offset
+   * @return The pose of the target frame in the coordinates of the target link, not in world coordinates
    */
   Eigen::Isometry3d getTargetPose() const;
 
@@ -131,24 +172,23 @@ public:
   bool use_numeric_differentiation{ true };
 
 private:
-  enum class Type : std::uint8_t
-  {
-    kTargetActive,
-    kSourceActive,
-    kBothActive
-  };
-
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;
 
-  /** @brief Bounds on the positions of each joint */
+  /** @brief Bounds on each row of the constraint */
   std::vector<Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint. */
-  std::shared_ptr<const Var> position_var_;
+  /** @brief The joint values of the state of the source frame */
+  std::shared_ptr<const Var> source_var_;
+
+  /** @brief The joint values of the state of the target frame; source_var_ in the one-state form */
+  std::shared_ptr<const Var> target_var_;
+
+  /** @brief True if the two frames are in two states */
+  bool two_states_{ false };
 
   /** @brief Policy for representing range bounds when building the constraint rows. */
   RangeBoundHandling range_bound_handling_{ RangeBoundHandling::kSplitToTwoInequalities };
@@ -168,8 +208,14 @@ private:
   /** @brief Static transform applied to the target_frame location */
   Eigen::Isometry3d target_frame_offset_;
 
-  /** @brief indicates which link is active */
-  Type type_{ Type::kTargetActive };
+  /** @brief True if the rows are the pose of the target in the coordinates of the source: only the target moves */
+  bool rows_in_source_{ false };
+
+  /** @brief True if the joints of the group move both frames */
+  bool base_moves_{ false };
+
+  /** @brief True if both frames move in two states, so each state has a block of the jacobian */
+  bool base_block_{ false };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -182,11 +228,33 @@ private:
   /** @brief True if the indices name a rotation row */
   bool rotation_rows_{ false };
 
-  /** @brief Error function for calculating the error in the position given the source and target positions */
-  ErrorFunctionType error_function_{ nullptr };
+  /** @brief The poses of the links of the two frames */
+  void calcLinkPoses(Eigen::Isometry3d& source_link_tf,
+                     Eigen::Isometry3d& target_link_tf,
+                     const Eigen::Ref<const Eigen::VectorXd>& source_vals,
+                     const Eigen::Ref<const Eigen::VectorXd>& target_vals) const;
 
-  /** @brief The error function to calculate the error difference used for jacobian calculations */
-  ErrorDiffFunctionType error_diff_function_{ nullptr };
+  /** @brief Fills the jacobian with the source frame at @p source_vals and the target frame at @p target_vals */
+  void fillJacobianBlock(Jacobian& jac_block,
+                         const Eigen::Ref<const Eigen::VectorXd>& source_vals,
+                         const Eigen::Ref<const Eigen::VectorXd>& target_vals) const;
+
+  /** @brief The kept rows of the six */
+  Eigen::VectorXd keptRows(const Eigen::Ref<const Eigen::VectorXd>& all_rows) const;
+
+  /** @brief Maps the angular velocity of the moving frame in base coordinates to the rate of the rotation rows */
+  Eigen::Matrix3d calcRateMap(const Eigen::Isometry3d& base_tf, const Eigen::Isometry3d& moving_tf) const;
+
+  /**
+   * @brief The rates of the kept rows
+   * @param twists Twists at the moving frame, in world coordinates: of the moving frame relative to the link of the
+   * base frame in one state, or of the link of one frame alone with two states
+   * @param base_tf The pose of the base frame
+   * @param rate_map From calcRateMap
+   */
+  Eigen::MatrixXd toRowRates(Eigen::MatrixXd twists,
+                             const Eigen::Isometry3d& base_tf,
+                             const Eigen::Matrix3d& rate_map) const;
 
   static thread_local tesseract::common::LinkIdTransformMap transforms_cache_;  // NOLINT
 };

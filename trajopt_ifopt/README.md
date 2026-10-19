@@ -89,7 +89,7 @@ Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back throug
 * Joint Velocity
 * Joint Acceleration
 * Joint Jerk
-* Cartesian Position (FK)
+* Cartesian Position (FK), in one state or between two states (see below)
 * Cartesian Axis Cone and Cartesian Axis Align (see below)
 * Cartesian Line
 * Inverse Kinematics
@@ -98,6 +98,17 @@ Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back throug
   * longest valid segment, discrete
   * longest valid segment, continuous
 * Numerical-Jacobian variants of the discrete and continuous collision constraints
+
+### Cartesian Position Between Two States
+`CartPosConstraint` takes a second variable for the state of its target frame. The source frame of one state is then held at the target frame of another. With a frame on a link with a constant offset $O$, a unit axis $a$ in frame coordinates and a signed distance $d$, a source offset $O$ and a target offset $O\, \mathrm{Trans}(d\,a)$ give
+
+$$T_t = \mathrm{FK}(q_t)\, O\, \mathrm{Trans}(d\,a), \qquad T_s = \mathrm{FK}(q_s)\, O,$$
+
+and the six rows are the pose of $T_s$ in the coordinates of $T_t$: the translation $R_t^\top (p_s - p_t)$ and the rotation vector of $R_t^\top R_s$. All rows zero means the source frame has the orientation of the target frame and sits at $d\,a$ in the coordinates of $\mathrm{FK}(q_t)\, O$.
+
+Use it where a pose is reached with a free rotation, a zero coefficient or a tolerance on a rotation row, and the state before it must lie on an axis of the pose actually reached, as for a straight approach. A Cartesian target fixed for that state follows the nominal pose only.
+
+The analytic Jacobian is exact for both states and the numeric one is their forward difference; either state may come first in the variable set. The rotation rows need the rotation between the two frames to stay below half a turn.
 
 ### Cartesian Axis Constraints
 Both constrain the direction of a unit axis $a_s$ fixed in a source link relative to a unit axis $a_t$ fixed in a target link. Either link, or both, may move. Rotation about the source axis is free. Both use the source axis expressed in target link coordinates,
