@@ -7,9 +7,13 @@
 #include <trajopt_sqp/types.h>
 
 #include <algorithm>
+#include <tuple>
 #include <utility>
 #include <iostream>
 #include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 /**
  * In the previous version of trajopt it handled hinge cost and absolute costs differently.
@@ -126,6 +130,7 @@ void checkRowBounds(const std::vector<trajopt_ifopt::Bounds>& bounds, const std:
   if (!std::all_of(bounds.begin(), bounds.end(), isEqualityOrOneSided))
     throw std::runtime_error("TrajOpt Ifopt set '" + name + "' rows must have equality or one-sided bounds!");
 }
+
 }  // namespace
 
 enum class ComponentInfoType : std::uint8_t
@@ -448,6 +453,125 @@ struct TrajOptQPProblem::Implementation
 
   ConvexProblem cvp;
 
+  /** @brief Whether convexify() reduces the QP handed to the solver, see buildReducedQP() */
+  bool qp_row_reduction{ false };
+
+  /**
+   * @brief The QP handed to the solver, without the one-sided linear-slack rows that cannot change sign in the box
+   * @details Valid while active; the full problem in cvp stays the model the merit is evaluated on. Its variables
+   * are the NLP variables followed by one slack per kept row slack. Its dimensions change only in convexify(),
+   * because the solver loads a QP once per convexification and afterwards only updates its bounds.
+   */
+  struct ReducedQP
+  {
+    bool active{ false };
+    Eigen::Index n_rows{ 0 };
+    Eigen::Index num_vars{ 0 };
+    Eigen::Index num_cnts{ 0 };
+    trajopt_ifopt::Jacobian hessian;
+    trajopt_ifopt::Jacobian constraint_matrix;
+    Eigen::VectorXd gradient;
+    Eigen::VectorXd bounds_lower;
+    Eigen::VectorXd bounds_upper;
+    /** @brief The trust box the QP was built for; its NLP variable rows never exceed it */
+    Eigen::VectorXd box_lower;
+    Eigen::VectorXd box_upper;
+  } reduced;
+
+  /** @brief One row of cvp's constraint matrix as buildReducedQP() classifies it */
+  struct ReductionRow
+  {
+    /** @brief The row's entries in the constraint matrix arrays, NLP columns first */
+    Eigen::Index begin{ 0 };
+    Eigen::Index n_nlp{ 0 };
+    /** @brief +1 for a row a·x - s <= ub, -1 for a row a·x + s >= lb, which is -a·x - s <= -lb */
+    double sign{ 1 };
+    /** @brief The bound of the row in the a·x - s <= ub form */
+    double ub{ 0 };
+    double w{ 0 };
+    double norm{ 0 };
+    /** @brief The leader this row is merged into, or the row itself */
+    Eigen::Index leader{ -1 };
+    /** @brief The slack weight of a leader: its own plus that of every row merged into it, scaled to its row */
+    double group_w{ 0 };
+    enum class Fate : std::uint8_t
+    {
+      kCopy,
+      kKeep,
+      kDrop,
+      kFold,
+    } fate{ Fate::kCopy };
+  };
+  std::vector<ReductionRow> reduction_rows;
+  /** @brief A row that can merge, ordered so that the rows it can merge with are its neighbours */
+  struct MergeCandidate
+  {
+    /** @brief A hash of the row's NLP columns: equal for rows with equal columns */
+    std::uint64_t columns{ 0 };
+    /** @brief The bound of the normalized row, ub / norm */
+    double t{ 0 };
+    Eigen::Index row{ 0 };
+    bool operator<(const MergeCandidate& other) const
+    {
+      return std::tie(columns, t, row) < std::tie(other.columns, other.t, other.row);
+    }
+  };
+  std::vector<MergeCandidate> reduction_order;
+  /**
+   * @brief Per row of cvp's constraint matrix, set by convexify(): +1 for a·x - s <= ub and -1 for a·x + s >= lb
+   * with one linear slack s, 0 for any other row
+   */
+  std::vector<std::int8_t> linear_slack_row_sign;
+
+  /**
+   * @brief Build the reduced QP from cvp, if qp_row_reduction
+   * @details A row is eligible if it is one-sided, a·x - s <= ub or a·x + s >= lb, with one linear slack (a hinge cost
+   * or NLP constraint row, not a row of a squared cost) of weight w > 0; every other row is kept as it is. Write an
+   * eligible row as a·x - s <= ub, negating a lower-bounded one. With x0 the current values and the trust box [l, u]
+   * the QP's NLP variable rows (centred on x0 clamped to its limits), let r0 = a·x0 - ub and
+   * d+ / d- = the maximum / minimum of a·(x - x0) over the box. A row with r0 + d+ <= 0 cannot become violated and is
+   * dropped. A row with r0 + d- >= 0 cannot become satisfied; its slack equals a·x - ub everywhere in the box, so it
+   * is folded into the gradient as w·a. Both tests keep a relative margin for rounding. The other rows are kept,
+   * and among those, rows with the same sparsity whose rows and bounds are positive multiples of one another
+   * (to 1e-12 after normalizing) become one of them, row L, with the weight Sum_m w_m |a_m| / |a_L|.
+   * Each eligible slack appears in one row only, so minimizing the full QP over its slacks leaves
+   * Sum w max(0, a·x - ub), which on the box equals the reduced QP's objective plus a constant: the two have the
+   * same minimizers in x and the predicted improvement is the full QP's. The QP stays the full one if nothing is
+   * reduced.
+   * @param x0 The variable values cvp was convexified at
+   */
+  void buildReducedQP(const Eigen::VectorXd& x0);
+
+  /**
+   * @brief Copy the trust-box rows of cvp into the reduced QP, if it is active
+   * @details The NLP variable rows are clipped to the box the reduced QP was built for, so a box grown without a
+   * convexify() shrinks the trust region instead of reaching rows the reduction left out. The clipped box is empty
+   * only if the variables were moved outside that box without a convexify().
+   */
+  void syncReducedBounds();
+
+  /** @brief The QP handed to the solver: the reduced QP while it is active, the full one in cvp otherwise */
+  struct ServedQP
+  {
+    /** @brief The linearized rows, which sit above one bound row per QP variable */
+    Eigen::Index n_rows;
+    Eigen::Index num_vars;
+    Eigen::Index num_cnts;
+    const trajopt_ifopt::Jacobian& hessian;
+    const trajopt_ifopt::Jacobian& constraint_matrix;
+    const Eigen::VectorXd& gradient;
+    const Eigen::VectorXd& bounds_lower;
+    const Eigen::VectorXd& bounds_upper;
+  };
+  ServedQP servedQP() const
+  {
+    if (reduced.active)
+      return { reduced.n_rows,   reduced.num_vars,     reduced.num_cnts,    reduced.hessian, reduced.constraint_matrix,
+               reduced.gradient, reduced.bounds_lower, reduced.bounds_upper };
+    return { cvp.n_constraint_terms, cvp.num_qp_vars, cvp.num_qp_cnts,  cvp.hessian,
+             cvp.constraint_matrix,  cvp.gradient,    cvp.bounds_lower, cvp.bounds_upper };
+  }
+
   void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set);
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set);
@@ -649,6 +773,7 @@ void TrajOptQPProblem::Implementation::update()
 
 void TrajOptQPProblem::Implementation::setup()
 {
+  reduced.active = false;
   objective_terms.clear();
   objective_terms.insert(objective_terms.end(), squared_costs.begin(), squared_costs.end());
   objective_terms.insert(objective_terms.end(), dyn_squared_costs.begin(), dyn_squared_costs.end());
@@ -805,6 +930,7 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::getVariableValues() const { re
 void TrajOptQPProblem::Implementation::convexify()
 {
   assert(initialized);  // NOLINT
+  reduced.active = false;
 
   // Update if dynamic constraints are present
   update();
@@ -821,6 +947,7 @@ void TrajOptQPProblem::Implementation::convexify()
   cache_slack_gradient.clear();
   cache_slack_gradient.reserve(static_cast<std::size_t>(cvp.n_constraint_terms * 3));
 
+  linear_slack_row_sign.assign(static_cast<std::size_t>(cvp.n_constraint_terms), 0);
   cvp.n_slack_vars = 0;
   Eigen::Index constraint_matrix_row{ 0 };
   Eigen::Index current_var_index{ cvp.n_nlp_vars };
@@ -894,12 +1021,14 @@ void TrajOptQPProblem::Implementation::convexify()
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
+        linear_slack_row_sign[static_cast<std::size_t>(row)] = -1;
         ++cvp.n_slack_vars;
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
+        linear_slack_row_sign[static_cast<std::size_t>(row)] = 1;
         ++cvp.n_slack_vars;
       }
       else
@@ -1111,6 +1240,222 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Update NLP Bounds
   updateNLPVariableBounds(x_initial);
+
+  buildReducedQP(x_initial);
+}
+
+void TrajOptQPProblem::Implementation::buildReducedQP(const Eigen::VectorXd& x0)
+{
+  if (!qp_row_reduction)
+    return;
+
+  using Fate = ReductionRow::Fate;
+  static constexpr double kRelTol = 1e-12;
+  const Eigen::Index n_nlp = cvp.n_nlp_vars;
+  const Eigen::Index nr = cvp.n_constraint_terms;
+  const auto& A = cvp.constraint_matrix;
+  const auto* outer = A.outerIndexPtr();
+  const auto* inner = A.innerIndexPtr();
+  const double* vals = A.valuePtr();
+  const auto box_lower = cvp.bounds_lower.segment(nr, n_nlp);
+  const auto box_upper = cvp.bounds_upper.segment(nr, n_nlp);
+
+  // Classify every row; the constraint matrix is row major and compressed, so a row's NLP columns come first
+  reduction_rows.assign(static_cast<std::size_t>(nr), ReductionRow{});
+  reduction_order.clear();
+  // Every removed row takes its one slack with it
+  Eigen::Index n_removed = 0;
+  for (Eigen::Index r = 0; r < nr; ++r)
+  {
+    auto& R = reduction_rows[static_cast<std::size_t>(r)];
+    R.begin = outer[r];
+    R.leader = r;
+    const Eigen::Index end = outer[r + 1];
+    Eigen::Index k = R.begin;
+    while (k < end && inner[k] < n_nlp)
+      ++k;
+    R.n_nlp = k - R.begin;
+
+    const std::int8_t slack_sign = linear_slack_row_sign[static_cast<std::size_t>(r)];
+    if (slack_sign == 0)
+      continue;
+    assert(end - k == 1);  // NOLINT
+    R.sign = slack_sign;
+    R.ub = (slack_sign > 0) ? cvp.bounds_upper[r] : -cvp.bounds_lower[r];
+    R.w = cvp.gradient[inner[k]];
+    if (!(R.w > 0))
+      continue;
+
+    double ax0 = 0;
+    double d_max = 0;
+    double d_min = 0;
+    double norm2 = 0;
+    double scale = std::abs(R.ub);
+    std::uint64_t columns = 0xcbf29ce484222325ULL;
+    for (Eigen::Index j = R.begin; j < k; ++j)
+    {
+      const Eigen::Index c = inner[j];
+      columns = (columns ^ static_cast<std::uint64_t>(c)) * 0x100000001b3ULL;
+      const double a = R.sign * vals[j];
+      const double to_upper = a * (box_upper[c] - x0[c]);
+      const double to_lower = a * (box_lower[c] - x0[c]);
+      ax0 += a * x0[c];
+      d_max += std::max(to_upper, to_lower);
+      d_min += std::min(to_upper, to_lower);
+      norm2 += a * a;
+      scale += std::abs(a) * std::max({ std::abs(x0[c]), std::abs(box_lower[c]), std::abs(box_upper[c]) });
+    }
+    R.norm = std::sqrt(norm2);
+    R.group_w = R.w;
+    const double r0 = ax0 - R.ub;
+    const double margin = kRelTol * scale;
+    if (r0 + d_max <= -margin)
+      R.fate = Fate::kDrop;
+    else if (r0 + d_min >= margin)
+      R.fate = Fate::kFold;
+    else
+      R.fate = Fate::kKeep;
+
+    if (R.fate != Fate::kKeep)
+      ++n_removed;
+    else if (R.norm > 0)
+    {
+      reduction_order.push_back({ columns, R.ub / R.norm, r });
+    }
+  }
+
+  // Merge kept rows that are positive multiples of one another: equal NLP columns, normalized row and bound
+  const auto row_of = [this](Eigen::Index r) -> ReductionRow& { return reduction_rows[static_cast<std::size_t>(r)]; };
+  // Order by columns, then normalized bound, then row: rows that can merge are neighbours, the first of them leads
+  std::sort(reduction_order.begin(), reduction_order.end());
+  const auto same_columns = [inner](const ReductionRow& a, const ReductionRow& b) {
+    return a.n_nlp == b.n_nlp && std::equal(inner + a.begin, inner + a.begin + a.n_nlp, inner + b.begin);
+  };
+  // Whether two rows with the same NLP columns point the same way; each coefficient is compared at its own scale
+  const auto same_direction = [vals](const ReductionRow& a, const ReductionRow& b) {
+    for (Eigen::Index j = 0; j < a.n_nlp; ++j)
+    {
+      const double da = a.sign * vals[a.begin + j] / a.norm;
+      const double db = b.sign * vals[b.begin + j] / b.norm;
+      if (std::abs(da - db) > kRelTol * std::max(std::abs(da), std::abs(db)))
+        return false;
+    }
+    return true;
+  };
+  std::size_t window_begin = 0;
+  for (std::size_t i = 0; i < reduction_order.size(); ++i)
+  {
+    const MergeCandidate& candidate = reduction_order[i];
+    ReductionRow& R = row_of(candidate.row);
+    // Rows earlier in the order with equal columns and an equal bound are the merge candidates
+    while (window_begin < i)
+    {
+      const MergeCandidate& first = reduction_order[window_begin];
+      if (first.columns == candidate.columns && candidate.t - first.t <= kRelTol * std::max(1.0, std::abs(first.t)))
+        break;
+      ++window_begin;
+    }
+    for (std::size_t j = window_begin; j < i; ++j)
+    {
+      const Eigen::Index l = reduction_order[j].row;
+      ReductionRow& L = row_of(l);
+      if (L.leader != l || !same_columns(L, R) || !same_direction(L, R))
+        continue;
+      R.leader = l;
+      L.group_w += R.w * R.norm / L.norm;
+      ++n_removed;
+      break;
+    }
+  }
+
+  if (n_removed == 0)
+    return;
+
+  // Emit the kept rows in their original order, each with fresh slack columns after the NLP variables
+  reduced.n_rows = nr - n_removed;
+  reduced.num_vars = cvp.num_qp_vars - n_removed;
+  reduced.num_cnts = reduced.n_rows + reduced.num_vars;
+
+  reduced.gradient.resize(reduced.num_vars);
+  reduced.gradient.head(n_nlp) = cvp.gradient.head(n_nlp);
+  reduced.bounds_lower.resize(reduced.num_cnts);
+  reduced.bounds_upper.resize(reduced.num_cnts);
+
+  // Both matrices are row major and filled in storage order: rows ascending, columns ascending within a row
+  reduced.constraint_matrix.resize(reduced.num_cnts, reduced.num_vars);
+  reduced.constraint_matrix.reserve(A.nonZeros());
+  // The Hessian keeps its NLP block, which holds no slack columns, and the diagonal of the squared-cost slacks
+  reduced.hessian.resize(reduced.num_vars, reduced.num_vars);
+  reduced.hessian.reserve(cvp.hessian.nonZeros());
+  for (Eigen::Index k = 0; k < n_nlp; ++k)
+  {
+    reduced.hessian.startVec(k);
+    for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.hessian, k); it; ++it)
+      reduced.hessian.insertBack(k, it.col()) = it.value();
+  }
+
+  Eigen::Index row = 0;
+  Eigen::Index next_var = n_nlp;
+  for (Eigen::Index r = 0; r < nr; ++r)
+  {
+    const ReductionRow& R = row_of(r);
+    if (R.fate == Fate::kDrop || R.leader != r)
+      continue;
+    if (R.fate == Fate::kFold)
+    {
+      for (Eigen::Index j = R.begin; j < R.begin + R.n_nlp; ++j)
+        reduced.gradient[inner[j]] += R.w * R.sign * vals[j];
+      continue;
+    }
+
+    reduced.constraint_matrix.startVec(row);
+    for (Eigen::Index j = R.begin; j < R.begin + R.n_nlp; ++j)
+      reduced.constraint_matrix.insertBack(row, inner[j]) = vals[j];
+    for (Eigen::Index j = R.begin + R.n_nlp; j < outer[r + 1]; ++j)
+    {
+      const Eigen::Index col = inner[j];
+      reduced.constraint_matrix.insertBack(row, next_var) = vals[j];
+      reduced.gradient[next_var] = (R.fate == Fate::kKeep) ? R.group_w : cvp.gradient[col];
+      reduced.hessian.startVec(next_var);
+      // Only the slack of a squared cost's row, which is copied, has a Hessian entry
+      if (R.fate == Fate::kCopy)
+      {
+        const double h = cvp.hessian.coeff(col, col);
+        if (h != 0.0)
+          reduced.hessian.insertBack(next_var, next_var) = h;
+      }
+      reduced.bounds_lower[reduced.n_rows + next_var] = cvp.bounds_lower[nr + col];
+      reduced.bounds_upper[reduced.n_rows + next_var] = cvp.bounds_upper[nr + col];
+      ++next_var;
+    }
+    reduced.bounds_lower[row] = cvp.bounds_lower[r];
+    reduced.bounds_upper[row] = cvp.bounds_upper[r];
+    ++row;
+  }
+  assert(row == reduced.n_rows && next_var == reduced.num_vars);
+
+  for (Eigen::Index i = 0; i < reduced.num_vars; ++i)
+  {
+    reduced.constraint_matrix.startVec(reduced.n_rows + i);
+    reduced.constraint_matrix.insertBack(reduced.n_rows + i, i) = 1.0;
+  }
+  reduced.constraint_matrix.finalize();
+  reduced.hessian.finalize();
+
+  reduced.box_lower = box_lower;
+  reduced.box_upper = box_upper;
+  reduced.active = true;
+  syncReducedBounds();
+}
+
+void TrajOptQPProblem::Implementation::syncReducedBounds()
+{
+  if (!reduced.active)
+    return;
+  reduced.bounds_lower.segment(reduced.n_rows, cvp.n_nlp_vars) =
+      cvp.bounds_lower.segment(cvp.n_constraint_terms, cvp.n_nlp_vars).cwiseMax(reduced.box_lower);
+  reduced.bounds_upper.segment(reduced.n_rows, cvp.n_nlp_vars) =
+      cvp.bounds_upper.segment(cvp.n_constraint_terms, cvp.n_nlp_vars).cwiseMin(reduced.box_upper);
 }
 
 double TrajOptQPProblem::Implementation::getTotalExactCost() const { return getExactCosts().sum(); }
@@ -1208,28 +1553,29 @@ void TrajOptQPProblem::Implementation::print() const
 {
   const Eigen::IOFormat format(3);
 
+  // The QP handed to the solver
+  const ServedQP qp = servedQP();
+
   std::cout << "-------------- QPProblem::print() --------------" << '\n';
   std::cout << "Num NLP Vars: " << cvp.n_nlp_vars << '\n';
-  std::cout << "Num QP Vars: " << cvp.num_qp_vars << '\n';
-  std::cout << "Num NLP Constraints: " << cvp.num_qp_cnts << '\n';
+  std::cout << "Num QP Vars: " << qp.num_vars << '\n';
+  std::cout << "Num NLP Constraints: " << qp.num_cnts << '\n';
+  if (reduced.active)
+    std::cout << "Reduced from QP Vars: " << cvp.num_qp_vars << ", QP Constraints: " << cvp.num_qp_cnts << '\n';
   std::cout << "Box Size: " << box_size.transpose().format(format) << '\n';  // NOLINT
   std::cout << "Constraint Merit Coeff: " << constraint_merit_coeff.transpose().format(format) << '\n';
 
-  std::cout << "Hessian:\n" << cvp.hessian.toDense().format(format) << '\n';
-  std::cout << "Gradient: " << cvp.gradient.transpose().format(format) << '\n';
-  std::cout << "Constraint Matrix:\n" << cvp.constraint_matrix.toDense().format(format) << '\n';
-  std::cout << "Constraint Lower Bounds: " << cvp.bounds_lower.head(cvp.n_constraint_terms).transpose().format(format)
-            << '\n';
-  std::cout << "Constraint Upper Bounds: " << cvp.bounds_upper.head(cvp.n_constraint_terms).transpose().format(format)
-            << '\n';
+  std::cout << "Hessian:\n" << qp.hessian.toDense().format(format) << '\n';
+  std::cout << "Gradient: " << qp.gradient.transpose().format(format) << '\n';
+  std::cout << "Constraint Matrix:\n" << qp.constraint_matrix.toDense().format(format) << '\n';
+  std::cout << "Constraint Lower Bounds: " << qp.bounds_lower.head(qp.n_rows).transpose().format(format) << '\n';
+  std::cout << "Constraint Upper Bounds: " << qp.bounds_upper.head(qp.n_rows).transpose().format(format) << '\n';
   std::cout << "Variable Lower Bounds: "
-            << cvp.bounds_lower.tail(cvp.bounds_lower.rows() - cvp.n_constraint_terms).transpose().format(format)
-            << '\n';
+            << qp.bounds_lower.tail(qp.bounds_lower.rows() - qp.n_rows).transpose().format(format) << '\n';
   std::cout << "Variable Upper Bounds: "
-            << cvp.bounds_upper.tail(cvp.bounds_upper.rows() - cvp.n_constraint_terms).transpose().format(format)
-            << '\n';
-  std::cout << "All Lower Bounds: " << cvp.bounds_lower.transpose().format(format) << '\n';
-  std::cout << "All Upper Bounds: " << cvp.bounds_upper.transpose().format(format) << '\n';
+            << qp.bounds_upper.tail(qp.bounds_upper.rows() - qp.n_rows).transpose().format(format) << '\n';
+  std::cout << "All Lower Bounds: " << qp.bounds_lower.transpose().format(format) << '\n';
+  std::cout << "All Upper Bounds: " << qp.bounds_upper.transpose().format(format) << '\n';
   std::cout << "NLP values: " << '\n' << variables->getValues().transpose().format(format) << '\n';
 }
 
@@ -1255,6 +1601,7 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<
     lower[i] = std::max(xi - bi, lb);
     upper[i] = std::min(xi + bi, ub);
   }
+  syncReducedBounds();
 }
 
 TrajOptQPProblem::TrajOptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables)
@@ -1329,6 +1676,8 @@ void TrajOptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::Vec
 
 void TrajOptQPProblem::setSumConstraintSetViolations(bool sum) { impl_->sum_constraint_set_violations = sum; }
 
+void TrajOptQPProblem::setQPRowReduction(bool reduce) { impl_->qp_row_reduction = reduce; }
+
 void TrajOptQPProblem::print() const { std::as_const<Implementation>(*impl_).print(); }
 
 Eigen::Index TrajOptQPProblem::getNumNLPVars() const
@@ -1349,13 +1698,13 @@ Eigen::Index TrajOptQPProblem::getNumNLPCosts() const
 Eigen::Index TrajOptQPProblem::getNumQPVars() const
 {
   assert(impl_->initialized);
-  return std::as_const<Implementation>(*impl_).cvp.num_qp_vars;
+  return impl_->servedQP().num_vars;
 }
 
 Eigen::Index TrajOptQPProblem::getNumQPConstraints() const
 {
   assert(impl_->initialized);
-  return std::as_const<Implementation>(*impl_).cvp.num_qp_cnts;
+  return impl_->servedQP().num_cnts;
 }
 
 const std::vector<std::string>& TrajOptQPProblem::getNLPConstraintNames() const
@@ -1370,11 +1719,14 @@ const std::vector<std::string>& TrajOptQPProblem::getNLPCostNames() const
 const Eigen::VectorXd& TrajOptQPProblem::getBoxSize() const { return impl_->box_size; }
 const Eigen::VectorXd& TrajOptQPProblem::getConstraintMeritCoeff() const { return impl_->constraint_merit_coeff; }
 
-const trajopt_ifopt::Jacobian& TrajOptQPProblem::getHessian() const { return impl_->cvp.hessian; }
-const Eigen::VectorXd& TrajOptQPProblem::getGradient() const { return impl_->cvp.gradient; }
+const trajopt_ifopt::Jacobian& TrajOptQPProblem::getHessian() const { return impl_->servedQP().hessian; }
+const Eigen::VectorXd& TrajOptQPProblem::getGradient() const { return impl_->servedQP().gradient; }
 
-const trajopt_ifopt::Jacobian& TrajOptQPProblem::getConstraintMatrix() const { return impl_->cvp.constraint_matrix; }
-const Eigen::VectorXd& TrajOptQPProblem::getBoundsLower() const { return impl_->cvp.bounds_lower; }
-const Eigen::VectorXd& TrajOptQPProblem::getBoundsUpper() const { return impl_->cvp.bounds_upper; }
+const trajopt_ifopt::Jacobian& TrajOptQPProblem::getConstraintMatrix() const
+{
+  return impl_->servedQP().constraint_matrix;
+}
+const Eigen::VectorXd& TrajOptQPProblem::getBoundsLower() const { return impl_->servedQP().bounds_lower; }
+const Eigen::VectorXd& TrajOptQPProblem::getBoundsUpper() const { return impl_->servedQP().bounds_upper; }
 
 }  // namespace trajopt_sqp

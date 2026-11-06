@@ -29,6 +29,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <algorithm>
+
 namespace
 {
 constexpr bool OSQP_COMPARE_DEBUG_MODE = false;
@@ -301,7 +303,10 @@ bool OSQPEigenSolver::setWarmStart(const QPProblem& qp_problem)
     // Get the constraint matrix (row-major)
     const trajopt_ifopt::Jacobian& constraint_matrix = qp_problem.getConstraintMatrix();
 
-    for (Eigen::Index k = 0; k < violations.size(); ++k)
+    // The linearized rows sit above one variable-bound row per QP variable. A reduced QP can have fewer of them than
+    // there are entries in violations, so stop at the last linearized row.
+    const Eigen::Index n_rows = std::min(violations.size(), constraint_matrix.rows() - num_vars_);
+    for (Eigen::Index k = 0; k < n_rows; ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix, k); it; ++it)
       {

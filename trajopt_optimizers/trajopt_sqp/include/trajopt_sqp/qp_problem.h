@@ -125,6 +125,17 @@ public:
    */
   virtual void setSumConstraintSetViolations(bool sum) = 0;
 
+  /**
+   * @brief Set whether the QP handed to the solver leaves out the one-sided slack rows that cannot change sign inside
+   * the trust box
+   * @details Takes effect at the next convexify(). The QP getters then return the reduced QP, whose solution vector
+   * can be shorter than the full one; the NLP variables stay its head, and the convex and exact merits are still
+   * evaluated on every row. Within the trust box the reduced QP has the minimizers of the full one.
+   * TrustRegionSQPSolver::init() overwrites it with SQPParameters::qp_row_reduction.
+   * @param reduce true reduces the QP, false solves the full QP
+   */
+  virtual void setQPRowReduction(bool reduce) = 0;
+
   /** @brief Prints all members to the terminal in a human readable form */
   virtual void print() const = 0;
 
