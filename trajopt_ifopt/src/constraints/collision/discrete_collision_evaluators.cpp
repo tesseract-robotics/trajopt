@@ -76,16 +76,20 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   all_active_link_ids_ = manip_active_link_ids_;
   all_active_link_ids_.insert(diff_active_link_ids_.begin(), diff_active_link_ids_.end());
 
-  contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
-  contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
+  std::unique_ptr<tesseract::collision::DiscreteContactManager> contact_manager = env_->getDiscreteContactManager();
+  contact_manager->setActiveCollisionObjects(manip_->getActiveLinkIds());
+  contact_manager->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
-  margin_data_ = contact_manager_->getCollisionMarginData();
+  margin_data_ = contact_manager->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
   margin_buffer_ = collision_config.collision_margin_buffer;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMargin(margin_buffer_);
+  contact_manager->incrementCollisionMargin(margin_buffer_);
+
+  // Each evaluating thread checks on its own clone of the configured manager
+  contact_managers_ =
+      std::make_unique<tesseract::collision::PerThreadDiscreteContactManager>(std::move(contact_manager));
 }
 
 void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionCacheData& collision_data,
@@ -138,9 +142,11 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
 
   get_state_fn_(state, dof_vals);
 
-  contact_manager_->setCollisionObjectsTransform(all_active_link_ids_, state);
+  tesseract::collision::DiscreteContactManager& contact_manager = contact_managers_->get();
 
-  contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
+  contact_manager.setCollisionObjectsTransform(all_active_link_ids_, state);
+
+  contact_manager.contactTest(dist_results, collision_check_config_.contact_request);
 
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs

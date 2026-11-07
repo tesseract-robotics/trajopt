@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 
 #include <tesseract/collision/fwd.h>
+#include <tesseract/collision/per_thread_contact_manager.h>
 #include <tesseract/kinematics/fwd.h>
 #include <tesseract/environment/fwd.h>
 #include <tesseract/common/eigen_types.h>
@@ -153,7 +154,7 @@ private:
   std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
-  std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
+  std::unique_ptr<tesseract::collision::PerThreadContinuousContactManager> contact_managers_;
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
   calcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
@@ -210,7 +211,7 @@ private:
   std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
-  std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;
+  std::unique_ptr<tesseract::collision::PerThreadDiscreteContactManager> contact_managers_;
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
   calcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,

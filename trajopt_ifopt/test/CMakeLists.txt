@@ -28,6 +28,7 @@ add_gtest(${PROJECT_NAME}_cartesian_line_constraint_unit cartesian_line_constrai
 add_gtest(${PROJECT_NAME}_cartesian_position_constraint_unit cartesian_position_constraint_unit.cpp)
 # add_gtest(${PROJECT_NAME}_cast_cost_unit cast_cost_unit.cpp)
 add_gtest(${PROJECT_NAME}_collision_unit collision_unit.cpp)
+add_gtest(${PROJECT_NAME}_collision_evaluator_threads_unit collision_evaluator_threads_unit.cpp)
 add_gtest(${PROJECT_NAME}_continuous_collision_gradient_unit continuous_collision_gradient_unit.cpp)
 add_gtest(${PROJECT_NAME}_continuous_collision_evaluator_unit continuous_collision_evaluator_unit.cpp)
 add_gtest(${PROJECT_NAME}_cost_wrappers_unit cost_wrappers_unit.cpp)
