@@ -27,6 +27,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_numerical_constraint.h>
@@ -116,6 +117,9 @@ int ContinuousCollisionNumericalConstraint::update()
 
 Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("ContinuousCollisionNumericalConstraint::getValues: call update() first");
+
   // Get current joint values
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
@@ -158,6 +162,9 @@ std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { 
 
 Jacobian ContinuousCollisionNumericalConstraint::getJacobian() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("ContinuousCollisionNumericalConstraint::getJacobian: call update() first");
+
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 

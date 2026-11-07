@@ -26,6 +26,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <algorithm>
+#include <stdexcept>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
 #include <cassert>
@@ -90,6 +91,9 @@ int DiscreteCollisionConstraint::update()
 
 Eigen::VectorXd DiscreteCollisionConstraint::getValues() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("DiscreteCollisionConstraint::getValues: call update() first");
+
   // Check the collisions
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
@@ -115,6 +119,9 @@ std::vector<Bounds> DiscreteCollisionConstraint::getBounds() const { return boun
 
 Jacobian DiscreteCollisionConstraint::getJacobian() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("DiscreteCollisionConstraint::getJacobian: call update() first");
+
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 
@@ -238,6 +245,9 @@ std::vector<Bounds> DiscreteCollisionConstraintD::getBounds() const { return bou
 
 Jacobian DiscreteCollisionConstraintD::getJacobian() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("DiscreteCollisionConstraintD::getJacobian: call update() first");
+
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 

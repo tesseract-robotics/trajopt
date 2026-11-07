@@ -29,6 +29,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
@@ -107,6 +108,9 @@ int ContinuousCollisionConstraint::update()
 
 Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint::getValues: call update() first");
+
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(rows_, -margin_buffer);
 
@@ -181,6 +185,9 @@ void ContinuousCollisionConstraint::init() const
 
 Jacobian ContinuousCollisionConstraint::getJacobian() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint::getJacobian: call update() first");
+
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 
@@ -332,6 +339,9 @@ std::vector<Bounds> ContinuousCollisionConstraintD::getBounds() const { return b
 
 Jacobian ContinuousCollisionConstraintD::getJacobian() const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraintD::getJacobian: call update() first");
+
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 
