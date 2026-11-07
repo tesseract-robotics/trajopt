@@ -29,6 +29,8 @@
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <cassert>
+#include <cmath>
+#include <vector>
 
 namespace trajopt_ifopt
 {
@@ -54,6 +56,53 @@ std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_limi
     bounds.emplace_back(lower_limits[i], upper_limits[i]);
 
   return bounds;
+}
+
+std::vector<Eigen::Index> splitRangeBounds(std::vector<Bounds>& bounds, Eigen::VectorXd& coeffs)
+{
+  assert(static_cast<Eigen::Index>(bounds.size()) == coeffs.size());  // NOLINT
+
+  std::vector<Bounds> split_bounds;
+  std::vector<double> split_coeffs;
+  std::vector<Eigen::Index> row_map;
+  split_bounds.reserve(bounds.size());
+  split_coeffs.reserve(bounds.size());
+  row_map.reserve(bounds.size());
+  for (std::size_t i = 0; i < bounds.size(); ++i)
+  {
+    const auto row = static_cast<Eigen::Index>(i);
+    if (bounds[i].getType() == BoundsType::kRangeBound)
+    {
+      split_bounds.emplace_back(bounds[i].getLower(), double(INFINITY));
+      split_bounds.emplace_back(-double(INFINITY), bounds[i].getUpper());
+      split_coeffs.insert(split_coeffs.end(), 2, coeffs(row));
+      row_map.insert(row_map.end(), 2, row);
+    }
+    else
+    {
+      split_bounds.push_back(bounds[i]);
+      split_coeffs.push_back(coeffs(row));
+      row_map.push_back(row);
+    }
+  }
+
+  bounds = std::move(split_bounds);
+  coeffs = Eigen::Map<Eigen::VectorXd>(split_coeffs.data(), static_cast<Eigen::Index>(split_coeffs.size()));
+  return row_map;
+}
+
+Jacobian selectRows(const Jacobian& jac, const std::vector<Eigen::Index>& rows)
+{
+  Jacobian selected(static_cast<Eigen::Index>(rows.size()), jac.cols());
+  for (std::size_t i = 0; i < rows.size(); ++i)
+  {
+    const auto row = static_cast<Eigen::Index>(i);
+    selected.startVec(row);
+    for (Jacobian::InnerIterator it(jac, rows[i]); it; ++it)
+      selected.insertBack(row, it.col()) = it.value();
+  }
+  selected.finalize();  // NOLINT
+  return selected;
 }
 
 std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>& start,

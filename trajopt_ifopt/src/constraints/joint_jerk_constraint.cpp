@@ -29,6 +29,7 @@
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
+#include <numeric>
 #include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -45,7 +46,8 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
 JointJerkConstraint::JointJerkConstraint(const std::vector<Bounds>& bounds,
                                          const std::vector<std::shared_ptr<const Var>>& position_vars,
                                          const Eigen::VectorXd& coeffs,
-                                         std::string name)
+                                         std::string name,
+                                         RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name),
                   static_cast<int>(bounds.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
   , n_dof_(static_cast<long>(bounds.size()))
@@ -83,12 +85,24 @@ JointJerkConstraint::JointJerkConstraint(const std::vector<Bounds>& bounds,
   bounds_.reserve(static_cast<std::size_t>(rows_));
   for (Eigen::Index block = 0; block < (n_vars_ - DIFFERENCE_ORDER); ++block)
     bounds_.insert(bounds_.end(), bounds.begin(), bounds.end());
+
+  if (range_bound_handling == RangeBoundHandling::kSplitToTwoInequalities)
+  {
+    row_map_ = splitRangeBounds(bounds_, coeffs_);
+    rows_ = static_cast<int>(row_map_.size());
+    non_zeros_ = (DIFFERENCE_ORDER + 1) * static_cast<Eigen::Index>(rows_);
+  }
+  else
+  {
+    row_map_.resize(bounds_.size());
+    std::iota(row_map_.begin(), row_map_.end(), Eigen::Index{ 0 });
+  }
 }
 
 Eigen::VectorXd JointJerkConstraint::getValues() const
 {
   const std::size_t n = position_vars_.size();
-  Eigen::VectorXd jerk(rows_);
+  Eigen::VectorXd jerk(n_dof_ * (n_vars_ - DIFFERENCE_ORDER));
 
   // Forward difference: j_i = -q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3}
   for (std::size_t i = 0; i < n - DIFFERENCE_ORDER; ++i)
@@ -101,7 +115,7 @@ Eigen::VectorXd JointJerkConstraint::getValues() const
     jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = -q0 + 3.0 * q1 - 3.0 * q2 + q3;
   }
 
-  return jerk;
+  return jerk(row_map_);
 }
 
 Eigen::VectorXd JointJerkConstraint::getCoefficients() const { return coeffs_; }
@@ -111,8 +125,9 @@ std::vector<Bounds> JointJerkConstraint::getBounds() const { return bounds_; }
 
 Jacobian JointJerkConstraint::getJacobian() const
 {
-  Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_);
+  // The Jacobian of the difference rows, before any range bound split
+  Jacobian jac(n_dof_ * (n_vars_ - DIFFERENCE_ORDER), variables_->getRows());
+  jac.reserve((DIFFERENCE_ORDER + 1) * n_dof_ * (n_vars_ - DIFFERENCE_ORDER));
 
   const std::size_t n = position_vars_.size();
 
@@ -138,7 +153,7 @@ Jacobian JointJerkConstraint::getJacobian() const
   }
 
   jac.finalize();  // NOLINT
-  return jac;
+  return selectRows(jac, row_map_);
 }
 
 }  // namespace trajopt_ifopt

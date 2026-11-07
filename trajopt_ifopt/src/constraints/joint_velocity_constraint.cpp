@@ -29,6 +29,7 @@
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
+#include <numeric>
 #include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -45,7 +46,8 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
 JointVelConstraint::JointVelConstraint(const std::vector<Bounds>& bounds,
                                        const std::vector<std::shared_ptr<const Var>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
-                                       std::string name)
+                                       std::string name,
+                                       RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name),
                   static_cast<int>(bounds.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
   , n_dof_(static_cast<long>(bounds.size()))
@@ -83,6 +85,18 @@ JointVelConstraint::JointVelConstraint(const std::vector<Bounds>& bounds,
   bounds_.reserve(static_cast<std::size_t>(rows_));
   for (Eigen::Index block = 0; block < (n_vars_ - DIFFERENCE_ORDER); ++block)
     bounds_.insert(bounds_.end(), bounds.begin(), bounds.end());
+
+  if (range_bound_handling == RangeBoundHandling::kSplitToTwoInequalities)
+  {
+    row_map_ = splitRangeBounds(bounds_, coeffs_);
+    rows_ = static_cast<int>(row_map_.size());
+    non_zeros_ = (DIFFERENCE_ORDER + 1) * static_cast<Eigen::Index>(rows_);
+  }
+  else
+  {
+    row_map_.resize(bounds_.size());
+    std::iota(row_map_.begin(), row_map_.end(), Eigen::Index{ 0 });
+  }
 }
 
 Eigen::VectorXd JointVelConstraint::getValues() const
@@ -98,7 +112,7 @@ Eigen::VectorXd JointVelConstraint::getValues() const
   // Number of velocity segments (one less than number of position vars)
   const Eigen::Index n_segments = n_vars_ - DIFFERENCE_ORDER;
 
-  Eigen::VectorXd velocity(rows_);
+  Eigen::VectorXd velocity(n_dof_ * (n_vars_ - DIFFERENCE_ORDER));
 
   for (Eigen::Index seg = 0; seg < n_segments; ++seg)
   {
@@ -110,7 +124,7 @@ Eigen::VectorXd JointVelConstraint::getValues() const
     velocity.segment(seg * n_dof_, n_dof_) = (q1 - q0);
   }
 
-  return velocity;
+  return velocity(row_map_);
 }
 
 Eigen::VectorXd JointVelConstraint::getCoefficients() const { return coeffs_; }
@@ -120,8 +134,9 @@ std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
 
 Jacobian JointVelConstraint::getJacobian() const
 {
-  Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_);
+  // The Jacobian of the difference rows, before any range bound split
+  Jacobian jac(n_dof_ * (n_vars_ - DIFFERENCE_ORDER), variables_->getRows());
+  jac.reserve((DIFFERENCE_ORDER + 1) * n_dof_ * (n_vars_ - DIFFERENCE_ORDER));
 
   for (Eigen::Index seg = 0; seg < (n_vars_ - DIFFERENCE_ORDER); ++seg)
   {
@@ -142,7 +157,7 @@ Jacobian JointVelConstraint::getJacobian() const
   }
 
   jac.finalize();  // NOLINT
-  return jac;
+  return selectRows(jac, row_map_);
 }
 
 }  // namespace trajopt_ifopt

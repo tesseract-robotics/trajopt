@@ -65,19 +65,23 @@ public:
   /**
    * @brief Constructs a jerk constraint from these variables, setting the bounds to those passed in.
    * @param bounds Bounds on each joint's jerk (length should be n_dof), repeated for every row block. The rows are
-   * finite differences of the joint positions, not divided by a time step, so the bounds are per step. A range bound
-   * (finite lower < upper) stays a single row, which TrajOptQPProblem does not accept; use equality or one-sided
-   * bounds there.
+   * finite differences of the joint positions, not divided by a time step, so the bounds are per step. Equality,
+   * one-sided and range bounds may be mixed per joint.
    * @param position_vars Joint positions used to calculate jerk. These vars are assumed to be continuous and in
    * order.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * If empty, every row is weighted 1.
    * @param name Name of the constraint
+   * @param range_bound_handling With kSplitToTwoInequalities (the default), each range bound becomes a lower-bound row
+   * followed by an upper-bound row, so getValues(), getJacobian(), getBounds() and getCoefficients() have one entry
+   * per split row. Equality and one-sided bounds keep a single row. With kKeepAsIs, a range bound stays one row,
+   * which TrajOptQPProblem does not accept.
    */
   JointJerkConstraint(const std::vector<Bounds>& bounds,
                       const std::vector<std::shared_ptr<const Var>>& position_vars,
                       const Eigen::VectorXd& coeffs,
-                      std::string name = "JointJerk");
+                      std::string name = "JointJerk",
+                      RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint jerk.
@@ -115,6 +119,9 @@ private:
 
   /** @brief Pointers to the vars used by this constraint. */
   std::vector<std::shared_ptr<const Var>> position_vars_;
+
+  /** @brief For each row, the difference row (timestep * n_dof_ + joint) it evaluates. Split range rows repeat it. */
+  std::vector<Eigen::Index> row_map_;
 };
 }  // namespace trajopt_ifopt
 #endif
