@@ -64,10 +64,14 @@ public:
 
   /**
    * @brief Constructs an acceleration constraint from these variables, setting the bounds to those passed in.
-   * @param bounds Bounds on target joint acceleration (length should be n_dof)
+   * @param bounds Bounds on each joint's acceleration (length should be n_dof), repeated for every row block. The rows
+   * are finite differences of the joint positions, not divided by a time step, so the bounds are per step. A range
+   * bound (finite lower < upper) stays a single row, which TrajOptQPProblem does not accept; use equality or one-sided
+   * bounds there.
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
+   * If empty, every row is weighted 1.
    * @param name Name of the constraint
    */
   JointAccelConstraint(const std::vector<Bounds>& bounds,

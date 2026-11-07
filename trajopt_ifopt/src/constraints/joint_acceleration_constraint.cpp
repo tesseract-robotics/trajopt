@@ -38,20 +38,28 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
                                            const std::vector<std::shared_ptr<const Var>>& position_vars,
                                            const Eigen::VectorXd& coeffs,
                                            std::string name)
+  : JointAccelConstraint(toBounds(targets, targets), position_vars, coeffs, std::move(name))
+{
+}
+
+JointAccelConstraint::JointAccelConstraint(const std::vector<Bounds>& bounds,
+                                           const std::vector<std::shared_ptr<const Var>>& position_vars,
+                                           const Eigen::VectorXd& coeffs,
+                                           std::string name)
   : ConstraintSet(std::move(name),
-                  static_cast<int>(targets.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
-  , n_dof_(targets.size())
+                  static_cast<int>(bounds.size()) * (static_cast<int>(position_vars.size()) - DIFFERENCE_ORDER))
+  , n_dof_(static_cast<long>(bounds.size()))
   , n_vars_(static_cast<long>(position_vars.size()))
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < DIFFERENCE_ORDER + 1)
     throw std::runtime_error("JointAccelConstraint requires a minimum of three position variables!");
 
-  // Check and make sure the targets size aligns with the vars passed in
+  // Check and make sure the bounds size aligns with the vars passed in
   for (const auto& position_var : position_vars_)
   {
-    if (targets.size() != position_var->size())
-      throw std::runtime_error("JointAccelConstraint, targets must be the same size as each position variable.");
+    if (n_dof_ != position_var->size())
+      throw std::runtime_error("JointAccelConstraint, bounds must be the same size as each position variable.");
   }
 
   assert(n_dof_ > 0);
@@ -71,9 +79,10 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   else
     throw std::runtime_error("JointAccelConstraint, coeff must be the same size of the joint position.");
 
-  // Set the bounds to the input targets
-  const Eigen::VectorXd row_targets = targets.replicate(n_vars_ - DIFFERENCE_ORDER, 1);
-  bounds_ = toBounds(row_targets, row_targets);
+  // Repeat the per-joint bounds for every row block
+  bounds_.reserve(static_cast<std::size_t>(rows_));
+  for (Eigen::Index block = 0; block < (n_vars_ - DIFFERENCE_ORDER); ++block)
+    bounds_.insert(bounds_.end(), bounds.begin(), bounds.end());
 }
 
 Eigen::VectorXd JointAccelConstraint::getValues() const
