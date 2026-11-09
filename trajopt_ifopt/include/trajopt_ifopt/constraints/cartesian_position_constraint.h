@@ -126,9 +126,9 @@ public:
 
   /**
    * @brief If true, find the jacobian by perturbing each joint; if false, from the jacobian of the kinematics.
-   * Default: true
+   * Default: false
    */
-  bool use_numeric_differentiation{ true };
+  bool use_numeric_differentiation{ false };
 
 private:
   enum class Type : std::uint8_t
