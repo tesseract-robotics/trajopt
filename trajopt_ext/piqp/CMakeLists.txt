@@ -16,13 +16,6 @@ endif()
 if(NOT piqp_FOUND AND NOT TRAJOPT_PIQP_DISABLED)
   message(WARNING "No valid PIQP version found. Cloning PIQP ${TRAJOPT_PIQP_VERSION} into build directory")
 
-  # PIQP does not install its DLL, so link it statically on Windows
-  if(WIN32)
-    set(PIQP_BUILD_SHARED_LIBS OFF)
-  else()
-    set(PIQP_BUILD_SHARED_LIBS ON)
-  endif()
-
   include(ExternalProject)
 
   ExternalProject_Add(
@@ -37,7 +30,7 @@ if(NOT piqp_FOUND AND NOT TRAJOPT_PIQP_DISABLED)
       -DCMAKE_BUILD_TYPE:STRING=Release
       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
       -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET}
-      -DBUILD_SHARED_LIBS:BOOL=${PIQP_BUILD_SHARED_LIBS}
+      -DBUILD_SHARED_LIBS:BOOL=ON
       # PIQP's tests and examples need Matio and fetch googletest
       -DBUILD_TESTS:BOOL=OFF
       -DBUILD_EXAMPLES:BOOL=OFF
