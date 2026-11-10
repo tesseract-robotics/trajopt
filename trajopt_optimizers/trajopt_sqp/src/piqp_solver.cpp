@@ -127,8 +127,7 @@ bool PIQPSolver::solve()
     (lower == upper ? eq_rows : ineq_rows).push_back(r);
   }
 
-  // PIQP does not detect crossed variable bounds and runs to its iteration limit; bound rows with disjoint ranges on
-  // one variable make the QP infeasible
+  // Bound rows with disjoint ranges on one variable make the QP infeasible, so fail without calling PIQP
   if ((x_lower.array() > x_upper.array()).any())
   {
     TESSERACT_LOG_DEBUG("PIQP not called: bound rows on one variable have disjoint ranges");
