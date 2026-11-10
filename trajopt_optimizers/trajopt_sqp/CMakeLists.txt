@@ -14,7 +14,12 @@ find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract REQUIRED COMPONENTS common visualization)
+# PIQP's package version file only accepts an exact match, so check the minimum here
 find_package(piqp QUIET)
+if(piqp_FOUND AND piqp_VERSION VERSION_LESS 0.7.0)
+  message(FATAL_ERROR "PIQP ${piqp_VERSION} found at ${piqp_DIR}, but trajopt requires PIQP 0.7.0 or newer. "
+                      "Pass -DCMAKE_DISABLE_FIND_PACKAGE_piqp=ON to build without PIQP.")
+endif()
 if(piqp_FOUND)
   message(STATUS "PIQP found: building trajopt_sqp::PIQPSolver")
   set(PIQP_DEPENDENCY piqp)
