@@ -75,6 +75,9 @@ public:
 
   void setSumConstraintSetViolations(bool sum) override;
 
+  /** @brief No-op: this problem always solves the full QP */
+  void setQPRowReduction(bool reduce) override;
+
   /** @brief Prints all members to the terminal in a human readable form */
   void print() const override;
 

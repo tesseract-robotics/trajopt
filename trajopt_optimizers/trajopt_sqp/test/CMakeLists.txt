@@ -40,6 +40,7 @@ add_gtest(${PROJECT_NAME}_cart_axis_optimization_unit cart_axis_optimization_uni
 add_gtest(${PROJECT_NAME}_cart_axis_formulation_study_unit cart_axis_formulation_study_unit.cpp)
 add_gtest(${PROJECT_NAME}_hessian_gradient_unit hessian_gradient_unit.cpp)
 add_gtest(${PROJECT_NAME}_qp_problem_merit_unit qp_problem_merit_unit.cpp)
+add_gtest(${PROJECT_NAME}_qp_row_reduction_unit qp_row_reduction_unit.cpp)
 add_gtest(${PROJECT_NAME}_trust_box_floor_unit trust_box_floor_unit.cpp)
 add_gtest(${PROJECT_NAME}_sqp_iteration_cap_unit sqp_iteration_cap_unit.cpp)
 add_gtest(${PROJECT_NAME}_sqp_termination_unit sqp_termination_unit.cpp)
