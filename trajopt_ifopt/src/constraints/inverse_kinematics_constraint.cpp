@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/types.h>
 #include <tesseract/common/logging.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -111,19 +112,28 @@ void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
   bounds_ = bounds;
 }
 
+void InverseKinematicsConstraint::calcJacobianBlock(Jacobian& jac_block,
+                                                    const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+{
+  if (joint_vals.size() != n_dof_)
+    throw std::runtime_error("InverseKinematicsConstraint, joint_vals must have one value per joint.");
+
+  // err = target - x =? derr/dx = -1
+  for (int j = 0; j < n_dof_; j++)  // NOLINT
+  {
+    jac_block.startVec(j);
+    jac_block.insertBack(j, constraint_var_->getIndex() + j) = -1;
+  }
+
+  jac_block.finalize();  // NOLINT
+}
+
 Jacobian InverseKinematicsConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
   jac.reserve(non_zeros_);
 
-  // err = target - x =? derr/dx = -1
-  for (int j = 0; j < n_dof_; j++)  // NOLINT
-  {
-    jac.startVec(j);
-    jac.insertBack(j, constraint_var_->getIndex() + j) = -1;
-  }
-
-  jac.finalize();  // NOLINT
+  calcJacobianBlock(jac, constraint_var_->value());
   return jac;
 }
 

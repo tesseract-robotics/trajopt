@@ -170,6 +170,30 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
   }
 }
 
+/**
+ * @brief calcJacobianBlock fills the same Jacobian as getJacobian at the linked values
+ */
+TEST_F(InverseKinematicsConstraintUnit, CalcJacobianBlock)  // NOLINT
+{
+  TESSERACT_LOG_DEBUG("InverseKinematicsConstraintUnit, CalcJacobianBlock");
+
+  Eigen::VectorXd joint_position = Eigen::VectorXd::LinSpaced(n_dof * 2, -0.5, 0.5);
+  nlp->setVariables(joint_position.data());
+
+  const Jacobian expected = constraint->getJacobian();
+  Jacobian jac_block(constraint->getRows(), nlp->getNumberOfOptimizationVariables());
+  constraint->calcJacobianBlock(jac_block, joint_position.head(n_dof));
+
+  ASSERT_EQ(jac_block.rows(), expected.rows());
+  ASSERT_EQ(jac_block.cols(), expected.cols());
+  EXPECT_EQ(jac_block.nonZeros(), expected.nonZeros());
+  EXPECT_TRUE(jac_block.toDense().isApprox(expected.toDense()));
+
+  Jacobian wrong_size(constraint->getRows(), nlp->getNumberOfOptimizationVariables());
+  EXPECT_THROW(constraint->calcJacobianBlock(wrong_size, Eigen::VectorXd::Zero(n_dof + 1)),  // NOLINT
+               std::runtime_error);
+}
+
 ////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
