@@ -1,18 +1,21 @@
 name: Ubuntu
 
+# Builds master against the latest released tesseract image. Whether master still builds on
+# released dependencies is a property of master, not of a pull request: while master uses
+# unreleased upstream API, every pull request would fail here for reasons it cannot fix.
+# Pull requests are covered by the Unstable workflow, which builds against upstream master.
 on:
   push:
     branches:
       - master
       - 'dev**'
-  pull_request:
   schedule:
     - cron: '0 5 * * *'
 
-# Supersede in-progress pull-request runs; queue everything else so two runs on one ref never race.
+# Queue runs so two runs on one ref never race.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   get-tag:
