@@ -120,7 +120,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
         coeff,
         /*is_continuous=*/true,
         [&](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& dist_result) {
-          trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
+          trajopt_common::getGradient(
+              grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
         });
   }
 
@@ -322,7 +323,8 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
         coeff,
         /*is_continuous=*/true,
         [&](trajopt_common::GradientResults& grad, const tesseract::collision::ContactResult& dist_result) {
-          trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
+          trajopt_common::getGradient(
+              grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
         });
   }
 
