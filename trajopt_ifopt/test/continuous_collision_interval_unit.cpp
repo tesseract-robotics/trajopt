@@ -21,7 +21,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract/common/logging.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
-#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
@@ -299,11 +298,12 @@ TEST_F(ContinuousCollisionIntervalTest, ConstraintJacobianBlendsEachContactsCast
   const std::shared_ptr<const Var> var1 = nodes.back()->addVar("position", joint_names, q1_, bounds);
   auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
-  Problem nlp(variables);
+  // The constraint's row count follows the contacts found, so it is updated on its own: a Problem
+  // stacks its constraint sets at a fixed row count.
   auto constraint = std::make_shared<ContinuousCollisionConstraintD>(
       evaluator, std::array<std::shared_ptr<const Var>, 2>{ var0, var1 }, false, false);
-  nlp.addConstraintSet(constraint);
-  nlp.setVariables(variables->getValues().data());
+  constraint->linkWithVariables(variables);
+  constraint->update();
   const Eigen::MatrixXd jac = constraint->getJacobian().toDense();
 
   // The same check the constraint ran, for the contacts its rows follow
