@@ -79,6 +79,15 @@ public:
                                  std::size_t max_allowed) = 0;
 
   /**
+   * @brief The number of equal casts calcCollisionData checks the segment from @p dof_vals0 to @p dof_vals1 with
+   * @details The gradients place each contact in the cast it was found in from this count, so it must be the count the
+   * check uses.
+   * @return The cast count, or 0 when the segment is checked at interpolated states rather than cast
+   */
+  virtual long getCastCount(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) const = 0;
+
+  /**
    * @brief Get the collision margin buffer
    * @return The collision margin buffer
    */
@@ -132,6 +141,9 @@ public:
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
 
+  long getCastCount(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) const override final;
+
   double getCollisionMarginBuffer() const override final;
 
   const tesseract::common::CollisionMarginData& getCollisionMarginData() const override final;
@@ -147,7 +159,6 @@ private:
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
-  bool single_timestep_{ false };
   std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
@@ -159,11 +170,13 @@ private:
   calcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
+  /** @param cast_count The number of casts to check the segment with, from getCastCount */
   void calcCollisionsHelper(tesseract::collision::ContactResultMap& dist_results,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                             bool vars0_fixed,
-                            bool vars1_fixed);
+                            bool vars1_fixed,
+                            long cast_count);
 };
 
 /**
@@ -189,6 +202,9 @@ public:
                          bool vars0_fixed,
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
+
+  long getCastCount(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) const override final;
 
   double getCollisionMarginBuffer() const override final;
 
