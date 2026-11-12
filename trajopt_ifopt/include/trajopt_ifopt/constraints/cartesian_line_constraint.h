@@ -166,12 +166,12 @@ public:
 
   /**
    * @brief If true, find the jacobian by perturbing each joint; if false, from the jacobian of the kinematics.
-   * Default: true
+   * Default: false
    *
    * With the source at an end of the line the error has no derivative. At an end, and within a billionth of the
    * length of the line of it, the jacobian found from the kinematics is that of a source beside the line.
    */
-  bool use_numeric_differentiation{ true };
+  bool use_numeric_differentiation{ false };
 
   /**
    * @brief GetLinePoint Finds the nearest point on the line between Isometry a,b
