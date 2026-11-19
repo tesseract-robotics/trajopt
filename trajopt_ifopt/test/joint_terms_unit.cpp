@@ -76,6 +76,87 @@ void expectOneTargetAndWeightPerRow(const std::vector<std::shared_ptr<const Var>
   }
 }
 
+/**
+ * @brief Check the bounds constructor with and without splitting the range bounds
+ * @details The per-joint bounds hold an equality, a one-sided and a range bound and repeat for every row block. Kept
+ * as is, every row matches the targets constructor apart from its bounds. Split, the range row of each block becomes
+ * a lower-bound row and an upper-bound row, and values, Jacobian rows and coefficients follow the split.
+ */
+template <typename ConstraintT>
+void expectBoundsPerRow(const std::vector<std::shared_ptr<const Var>>& position_vars,
+                        const std::shared_ptr<NodesVariables>& variables)
+{
+  const Eigen::Index n_dof = position_vars.front()->size();
+  ASSERT_EQ(n_dof, 3);
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  const std::vector<Bounds> bounds{ Bounds(0.25, 0.25), Bounds(-inf, 1.5), Bounds(-2.0, 3.0) };
+  const Eigen::VectorXd coeffs = Eigen::Vector3d(1, 2, 3);
+
+  ConstraintT from_targets(Eigen::VectorXd::Zero(n_dof), position_vars, coeffs, "from_targets");
+  ConstraintT kept(bounds, position_vars, coeffs, "kept", RangeBoundHandling::kKeepAsIs);
+  ConstraintT split(bounds, position_vars, coeffs, "split");
+  from_targets.linkWithVariables(variables);
+  kept.linkWithVariables(variables);
+  split.linkWithVariables(variables);
+
+  const Eigen::Index n_blocks = from_targets.getRows() / n_dof;
+  const Eigen::VectorXd values = from_targets.getValues();
+  const Eigen::MatrixXd jac = from_targets.getJacobian().toDense();
+
+  // Kept as is: one row per joint and block
+  {
+    EXPECT_EQ(kept.getName(), "kept");
+    ASSERT_EQ(kept.getRows(), from_targets.getRows());
+    EXPECT_TRUE(kept.getCoefficients().isApprox(from_targets.getCoefficients()));
+    const std::vector<Bounds> row_bounds = kept.getBounds();
+    ASSERT_EQ(row_bounds.size(), static_cast<std::size_t>(kept.getRows()));
+    for (std::size_t row = 0; row < row_bounds.size(); ++row)
+    {
+      const Bounds& expected = bounds[row % static_cast<std::size_t>(n_dof)];
+      EXPECT_EQ(row_bounds[row].getLower(), expected.getLower());
+      EXPECT_EQ(row_bounds[row].getUpper(), expected.getUpper());
+    }
+    EXPECT_TRUE(kept.getValues().isApprox(values));
+    EXPECT_TRUE(kept.getJacobian().toDense().isApprox(jac));
+  }
+
+  // Split: per block the equality row, the one-sided row, then the range as a lower row and an upper row
+  {
+    const std::vector<Eigen::Index> block_joint{ 0, 1, 2, 2 };
+    const std::vector<Bounds> block_bounds{
+      Bounds(0.25, 0.25), Bounds(-inf, 1.5), Bounds(-2.0, inf), Bounds(-inf, 3.0)
+    };
+    const auto per_block = static_cast<Eigen::Index>(block_joint.size());
+
+    ASSERT_EQ(split.getRows(), n_blocks * per_block);
+    const std::vector<Bounds> row_bounds = split.getBounds();
+    const Eigen::VectorXd split_coeffs = split.getCoefficients();
+    const Eigen::VectorXd split_values = split.getValues();
+    const Eigen::MatrixXd split_jac = split.getJacobian().toDense();
+    ASSERT_EQ(row_bounds.size(), static_cast<std::size_t>(split.getRows()));
+    ASSERT_EQ(split_coeffs.size(), split.getRows());
+    ASSERT_EQ(split_values.size(), split.getRows());
+    ASSERT_EQ(split_jac.rows(), split.getRows());
+    ASSERT_EQ(split_jac.cols(), jac.cols());
+
+    for (Eigen::Index block = 0; block < n_blocks; ++block)
+    {
+      for (Eigen::Index r = 0; r < per_block; ++r)
+      {
+        const Eigen::Index row = (block * per_block) + r;
+        const Eigen::Index joint = block_joint[static_cast<std::size_t>(r)];
+        const Eigen::Index source = (block * n_dof) + joint;
+        const Bounds& expected = block_bounds[static_cast<std::size_t>(r)];
+        EXPECT_EQ(row_bounds[static_cast<std::size_t>(row)].getLower(), expected.getLower());
+        EXPECT_EQ(row_bounds[static_cast<std::size_t>(row)].getUpper(), expected.getUpper());
+        EXPECT_DOUBLE_EQ(split_coeffs(row), coeffs(joint));
+        EXPECT_DOUBLE_EQ(split_values(row), values(source));
+        EXPECT_TRUE(split_jac.row(row).isApprox(jac.row(source)));
+      }
+    }
+  }
+}
+
 /** @brief Tests the Joint Position Constraint */
 TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
 {
@@ -593,6 +674,26 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
 }
 ////////////////////////////////////////////////////////////////////
 
+/** @brief The bounds constructors of the velocity, acceleration and jerk constraints */
+TEST(JointTermsUnit, JointDiffConstraintsBoundsConstructor)  // NOLINT
+{
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
+  for (int i = 0; i < 6; ++i)
+  {
+    auto node = std::make_unique<Node>();
+    const Eigen::VectorXd vals = Eigen::Vector3d(i * i, 2.0 * i, -1.0 * i * i * i);
+    position_vars.push_back(
+        node->addVar("test_var_" + std::to_string(i), { "x", "y", "z" }, vals, std::vector<Bounds>(3, NoBound)));
+    nodes.push_back(std::move(node));
+  }
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+
+  expectBoundsPerRow<JointVelConstraint>(position_vars, variables);
+  expectBoundsPerRow<JointAccelConstraint>(position_vars, variables);
+  expectBoundsPerRow<JointJerkConstraint>(position_vars, variables);
+}
+
 /** @brief Joint constraints reject coefficients that are not finite and positive */
 TEST(JointTermsUnit, JointConstraintsRejectInvalidCoeffs)  // NOLINT
 {
@@ -618,6 +719,9 @@ TEST(JointTermsUnit, JointConstraintsRejectInvalidCoeffs)  // NOLINT
     EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, position_vars, coeffs), std::runtime_error);
     EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, position_vars, coeffs), std::runtime_error);
     EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointVelConstraint>(bounds, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointAccelConstraint>(bounds, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointJerkConstraint>(bounds, position_vars, coeffs), std::runtime_error);
   }
 }
 
@@ -656,6 +760,9 @@ TEST(JointTermsUnit, JointConstraintsRejectMismatchedSizes)  // NOLINT
     EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, position_vars, coeffs), std::runtime_error);
     EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, position_vars, coeffs), std::runtime_error);
     EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointVelConstraint>(bounds, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointAccelConstraint>(bounds, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointJerkConstraint>(bounds, position_vars, coeffs), std::runtime_error);
     EXPECT_FALSE(blames_coeffs([&] { const JointPosConstraint cnt(targets, position_vars[0], coeffs); }));
     EXPECT_FALSE(blames_coeffs([&] { const JointPosConstraint cnt(bounds, position_vars[0], coeffs); }));
   }

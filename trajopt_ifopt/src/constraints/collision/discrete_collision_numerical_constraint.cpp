@@ -27,6 +27,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <cassert>
+#include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_numerical_constraint.h>
@@ -116,6 +117,9 @@ Jacobian DiscreteCollisionNumericalConstraint::getJacobian() const
 Eigen::VectorXd
 DiscreteCollisionNumericalConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& /*joint_vals*/) const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error(getName() + ": collision data not computed, call update() first");
+
   // Check the collisions
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
@@ -142,6 +146,9 @@ void DiscreteCollisionNumericalConstraint::setBounds(const std::vector<Bounds>& 
 void DiscreteCollisionNumericalConstraint::calcJacobianBlock(Jacobian& jac_block,
                                                              const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
+  if (collision_data_ == nullptr)
+    throw std::runtime_error(getName() + ": collision data not computed, call update() first");
+
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT

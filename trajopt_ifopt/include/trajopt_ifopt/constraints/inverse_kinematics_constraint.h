@@ -110,9 +110,12 @@ public:
 
   /**
    * @brief Fills the jacobian block associated with the constraint
+   * @details The IK solution is treated as constant, so the block is -1 on each joint of the constraint variable for
+   * any joint values.
    * @param jac_block Block of the overall jacobian associated with these constraints
+   * @param joint_vals Joint values of the constraint variable (size n_dof_)
    */
-  void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void calcJacobianBlock(Jacobian& jac_block, const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
 
   /** @brief Get the jacobian */
   Jacobian getJacobian() const override;

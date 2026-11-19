@@ -50,6 +50,23 @@ std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_limi
                              const Eigen::Ref<const Eigen::VectorXd>& upper_limits);
 
 /**
+ * @brief Splits each range bound (finite lower < finite upper) into a lower-bound row and an upper-bound row
+ * @details Equality and one-sided bounds keep a single row. Each split row keeps the coefficient of its source row.
+ * @param bounds Bounds per row, replaced by the bounds per split row
+ * @param coeffs Coefficients per row (same size as bounds), replaced by the coefficients per split row
+ * @return For each split row, the index of the row it came from
+ */
+std::vector<Eigen::Index> splitRangeBounds(std::vector<Bounds>& bounds, Eigen::VectorXd& coeffs);
+
+/**
+ * @brief Builds a Jacobian from rows of another, in the given order; a row may repeat
+ * @param jac The source Jacobian
+ * @param rows For each output row, the row of jac it copies
+ * @return A Jacobian with rows.size() rows and the columns of jac
+ */
+Jacobian selectRows(const Jacobian& jac, const std::vector<Eigen::Index>& rows);
+
+/**
  * @brief Interpolates between two Eigen::VectorXds
  * @param start Start vector. This will be the first vector in the results
  * @param end End vector. This will be the last vector in the results
