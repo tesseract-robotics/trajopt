@@ -34,6 +34,9 @@ if(NOT ${osqp_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
     GIT_TAG v${TRAJOPT_OSQP_VERSION}
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
+    # Print the no-active-set polishing message only when settings->verbose is set (osqp/osqp#785).
+    PATCH_COMMAND ${CMAKE_COMMAND} -DOSQP_SOURCE_DIR=<SOURCE_DIR> -P
+                  ${CMAKE_CURRENT_SOURCE_DIR}/guard_polish_message.cmake
     CMAKE_ARGS ${ssh_auth_sock_env}
     CMAKE_CACHE_ARGS
       -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
@@ -42,7 +45,9 @@ if(NOT ${osqp_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
       -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET}
       # Disable OSQP's SIGINT handling: concurrent solves fail to restore the application's handler.
-      -DOSQP_ENABLE_INTERRUPT:BOOL=OFF)
+      -DOSQP_ENABLE_INTERRUPT:BOOL=OFF
+      # Print OSQP's messages to stderr: its default printf writes to the application's stdout.
+      -DOSQP_CUSTOM_PRINTING:STRING=${CMAKE_CURRENT_SOURCE_DIR}/osqp_stderr_printing.h)
 
   if(TRAJOPT_PACKAGE)
     set(CPACK_BUILD_SOURCE_DIRS "${CMAKE_BINARY_DIR}-src;${CMAKE_BINARY_DIR}-build")
