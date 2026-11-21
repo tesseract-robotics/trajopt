@@ -4,20 +4,17 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 extract_package_metadata(pkg)
 project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-set(TRAJOPT_PIQP_VERSION "0.6.4")
+set(TRAJOPT_PIQP_VERSION "0.7.0")
 
-# PIQP's package version file only accepts an exact match, so do not request a version
+# PIQP's package version file only accepts an exact match, so do not request a version and check the minimum here
 find_package(piqp QUIET)
+if(piqp_FOUND AND piqp_VERSION VERSION_LESS 0.7.0)
+  message(WARNING "Ignoring PIQP ${piqp_VERSION} found at ${piqp_DIR}: trajopt requires PIQP 0.7.0 or newer")
+  set(piqp_FOUND FALSE)
+endif()
 
 if(NOT piqp_FOUND AND NOT TRAJOPT_PIQP_DISABLED)
   message(WARNING "No valid PIQP version found. Cloning PIQP ${TRAJOPT_PIQP_VERSION} into build directory")
-
-  # PIQP does not install its DLL, so link it statically on Windows
-  if(WIN32)
-    set(PIQP_BUILD_SHARED_LIBS OFF)
-  else()
-    set(PIQP_BUILD_SHARED_LIBS ON)
-  endif()
 
   include(ExternalProject)
 
@@ -33,7 +30,7 @@ if(NOT piqp_FOUND AND NOT TRAJOPT_PIQP_DISABLED)
       -DCMAKE_BUILD_TYPE:STRING=Release
       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
       -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET}
-      -DBUILD_SHARED_LIBS:BOOL=${PIQP_BUILD_SHARED_LIBS}
+      -DBUILD_SHARED_LIBS:BOOL=ON
       # PIQP's tests and examples need Matio and fetch googletest
       -DBUILD_TESTS:BOOL=OFF
       -DBUILD_EXAMPLES:BOOL=OFF

@@ -25,7 +25,12 @@ else()
     "osqp_interface.hpp"
     EXCLUDE)
 endif()
+# PIQP's package version file only accepts an exact match, so check the minimum here
 find_package(piqp QUIET)
+if(piqp_FOUND AND piqp_VERSION VERSION_LESS 0.7.0)
+  message(FATAL_ERROR "PIQP ${piqp_VERSION} found at ${piqp_DIR}, but trajopt requires PIQP 0.7.0 or newer. "
+                      "Pass -DCMAKE_DISABLE_FIND_PACKAGE_piqp=ON to build without PIQP.")
+endif()
 if(piqp_FOUND)
   set(TRAJOPT_SCO_HAS_PIQP ON)
   message(STATUS "PIQP found: building sco::PIQPModel")
