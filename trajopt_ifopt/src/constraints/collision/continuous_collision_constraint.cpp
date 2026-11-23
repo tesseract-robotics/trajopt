@@ -340,6 +340,8 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
 
   auto jp0 = position_vars_[0]->value();
   auto jp1 = position_vars_[1]->value();
+  // The count the check behind collision_data_ used, so each contact is placed in the cast it came from
+  const long cast_count = collision_evaluator_->getCastCount(jp0, jp1);
 
   // Iterate in the same deterministic key order established by update().
   trajopt_common::GradientResults result;
@@ -350,7 +352,8 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
     for (const auto& contact_results : results)
     {
       result.clear();
-      trajopt_common::getGradient(result, jp0, jp1, contact_results, 0, 0, collision_evaluator_->getJointGroup());
+      trajopt_common::getGradient(
+          result, jp0, jp1, contact_results, 0, 0, collision_evaluator_->getJointGroup(), cast_count);
       jac.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient ||
              result.cc_gradients[0].has_gradient || result.cc_gradients[1].has_gradient);

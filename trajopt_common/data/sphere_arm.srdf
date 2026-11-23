@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<robot name="sphere_arm">
+    <group name="manipulator">
+        <chain base_link="base_link" tip_link="tip" />
+    </group>
+
+    <!--Contact Managers plugins -->
+    <contact_managers_plugin_config filename="package://trajopt_common/data/contact_manager_plugins.yaml"/>
+</robot>
