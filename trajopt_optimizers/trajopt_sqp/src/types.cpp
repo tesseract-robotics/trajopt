@@ -53,6 +53,7 @@ bool SQPParameters::operator==(const SQPParameters& rhs) const
   equal &= (inflate_constraints_individually == rhs.inflate_constraints_individually);
   equal &= (sum_constraint_set_violations == rhs.sum_constraint_set_violations);
   equal &= tesseract::common::almostEqualRelativeAndAbs(initial_trust_box_size, rhs.initial_trust_box_size, max_diff);
+  equal &= (qp_row_reduction == rhs.qp_row_reduction);
   equal &= (log_results == rhs.log_results);
   equal &= (log_dir == rhs.log_dir);
   // equal &= (num_threads == rhs.num_threads);

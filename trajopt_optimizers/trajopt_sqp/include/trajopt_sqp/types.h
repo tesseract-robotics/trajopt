@@ -136,6 +136,17 @@ struct SQPParameters
   bool sum_constraint_set_violations = true;
   /** @brief Initial size of the trust region */
   double initial_trust_box_size = 1e-1;
+  /**
+   * @brief If true, the QP solved per iteration leaves out the one-sided linear-slack rows (hinge costs and NLP
+   * constraints) that cannot change sign inside the trust box, and merges rows that are positive multiples of each
+   * other; the merit still uses every row. Only TrajOptQPProblem reduces
+   * @details A row that cannot become violated is dropped, a row that cannot become satisfied is folded into the
+   * gradient, and the rest are kept. Within the trust box the reduced QP has the minimizers of the full QP, so the
+   * predicted improvement is the full QP's. A QP solver that stops at a loose tolerance can still return a different
+   * step for it and so take a different iteration path; compare the results with the option on and off before
+   * relying on it. Applied through QPProblem::setQPRowReduction.
+   */
+  bool qp_row_reduction = false;
   /** @brief Unused */
   bool log_results = false;
   /** @brief Unused */

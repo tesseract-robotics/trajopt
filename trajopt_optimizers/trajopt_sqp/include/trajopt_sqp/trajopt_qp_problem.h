@@ -59,6 +59,8 @@ public:
 
   void setSumConstraintSetViolations(bool sum) override;
 
+  void setQPRowReduction(bool reduce) override;
+
   void print() const override;
 
   Eigen::Index getNumNLPVars() const override;

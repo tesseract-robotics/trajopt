@@ -57,6 +57,9 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 {
   qp_problem = std::move(qp_prob);
 
+  // The QP solver may hold a QP of other dimensions, from another problem or from before a setup() of this one
+  qp_solver->clear();
+
   // Initialize optimization parameters
   results_ = SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraints(), qp_problem->getNumNLPCosts());
   results_.best_var_vals = qp_problem->getVariableValues();
@@ -66,6 +69,7 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   results_.best_costs = qp_problem->getExactCosts();
 
   qp_problem->setSumConstraintSetViolations(params.sum_constraint_set_violations);
+  qp_problem->setQPRowReduction(params.qp_row_reduction);
   results_.best_constraint_violations = qp_problem->getExactConstraintViolations();
 
   setBoxSize(params.initial_trust_box_size);
