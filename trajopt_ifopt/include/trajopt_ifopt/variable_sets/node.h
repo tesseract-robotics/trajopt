@@ -100,6 +100,8 @@ public:
    * @note The global index of the variable (within the full decision vector)
    *       is managed by @ref NodesVariables and will be updated via
    *       @ref incrementIndex() when nodes are assembled.
+   *
+   * @throws std::runtime_error if the node has a parent.
    */
   std::shared_ptr<const Var> addVar(const std::string& name, double value, Bounds bounds = NoBound);
 
@@ -116,6 +118,8 @@ public:
    * This is used for multi-DOF or grouped variables (e.g., a joint group).
    * The @p name identifies the block, while @p child_names provides more
    * detailed labels per element.
+   *
+   * @throws std::runtime_error if the node has a parent.
    */
   std::shared_ptr<const Var> addVar(const std::string& name,
                                     const std::vector<std::string>& child_names,
@@ -126,9 +130,23 @@ public:
    * @brief Get a variable by name.
    *
    * @param name Variable name as passed to @ref addVar().
-   * @return Shared pointer to the corresponding @ref Var, or nullptr if not found.
+   * @return Shared pointer to the corresponding @ref Var.
+   * @throws std::out_of_range if no variable has the given name.
    */
   std::shared_ptr<const Var> getVar(const std::string& name) const;
+
+  /**
+   * @brief Replace the bounds of a variable and clamp its values into them.
+   *
+   * A warning is logged if a value changes. Must be called before the node is moved into a
+   * @ref NodesVariables, which copies the bounds on assembly and would not see the change.
+   *
+   * @param name   Variable name as passed to @ref addVar().
+   * @param bounds Per-element bounds (size must match the size of the variable).
+   * @throws std::runtime_error if the node has a parent or the size of @p bounds does not match the variable.
+   * @throws std::out_of_range if no variable has the given name.
+   */
+  void setVarBounds(const std::string& name, const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get all variable values for this node as a single vector.

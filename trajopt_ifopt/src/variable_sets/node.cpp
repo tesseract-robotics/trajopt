@@ -25,6 +25,16 @@
 
 namespace trajopt_ifopt
 {
+namespace
+{
+/** @brief Throw if the node belongs to a NodesVariables, which caches its layout and bounds on assembly */
+void throwIfAssembled(const NodesVariables* parent, const std::string& node_name, const std::string& action)
+{
+  if (parent != nullptr)
+    throw std::runtime_error("Node: '" + node_name + "' cannot " + action + " after it is added to a NodesVariables");
+}
+}  // namespace
+
 Node::Node(std::string node_name) : name_(std::move(node_name)) {}
 Node::~Node() = default;
 
@@ -35,6 +45,7 @@ bool Node::hasVar(const std::string& name) const { return (vars_by_name_.find(na
 
 std::shared_ptr<const Var> Node::addVar(const std::string& name, double value, Bounds bounds)
 {
+  throwIfAssembled(parent_, name_, "add variables");
   vars_.emplace_back(std::make_shared<Var>(length_, name, value, bounds, this));
   vars_by_name_[name] = vars_.back();
   length_ += 1;
@@ -46,6 +57,7 @@ std::shared_ptr<const Var> Node::addVar(const std::string& name,
                                         const Eigen::VectorXd& values,
                                         const std::vector<Bounds>& bounds)
 {
+  throwIfAssembled(parent_, name_, "add variables");
   vars_.emplace_back(std::make_shared<Var>(length_, name, child_names, values, bounds, this));
   vars_by_name_[name] = vars_.back();
   length_ += static_cast<Eigen::Index>(child_names.size());
@@ -53,6 +65,13 @@ std::shared_ptr<const Var> Node::addVar(const std::string& name,
 }
 
 std::shared_ptr<const Var> Node::getVar(const std::string& name) const { return vars_by_name_.at(name); }
+
+void Node::setVarBounds(const std::string& name, const std::vector<Bounds>& bounds)
+{
+  throwIfAssembled(parent_, name_, "change bounds");
+
+  vars_by_name_.at(name)->setBounds(bounds);
+}
 
 Eigen::VectorXd Node::getValues() const
 {

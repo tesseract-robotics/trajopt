@@ -34,45 +34,21 @@ Var::Var(Eigen::Index index, std::string name, double value, Bounds bounds, Node
   , bounds_({ bounds })
   , parent_(parent)
 {
-  values_ = trajopt_ifopt::getClosestValidPoint(Eigen::VectorXd::Constant(1, value), bounds_);
-
-  // Clamping returns in-bound values unchanged, so compare exactly: a difference means a value was clamped or is NaN.
-  // A tolerance would misreport infinite values (inf - inf is NaN) and hide small clamps.
-  if (values_(0) != value)
-  {
-    TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
-                       "bounds.");
-  }
+  clampValuesToBounds();
 }
 
 Var::Var(Eigen::Index index,
          std::string identifier,
          std::vector<std::string> names,
          const Eigen::VectorXd& values,
-         const std::vector<Bounds>& bounds,
+         std::vector<Bounds> bounds,
          Node* parent)
-  : index_(index)
-  , identifier_(std::move(identifier))
-  , names_(std::move(names))
-  , values_(values)
-  , bounds_(bounds)
-  , parent_(parent)
+  : index_(index), identifier_(std::move(identifier)), names_(std::move(names)), values_(values), parent_(parent)
 {
-  if (names_.size() != bounds_.size())
-    throw std::runtime_error("Variable: '" + identifier_ + "' has mismatched sizes for names and bounds");
-
   if (static_cast<Eigen::Index>(names_.size()) != values_.size())
     throw std::runtime_error("Variable: '" + identifier_ + "' has mismatched sizes for names and values");
 
-  values_ = trajopt_ifopt::getClosestValidPoint(values, bounds_);
-
-  // Clamping returns in-bound values unchanged, so compare exactly: a difference means a value was clamped or is NaN.
-  // A tolerance would misreport infinite values (inf - inf is NaN) and hide small clamps.
-  if (values_ != values)
-  {
-    TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
-                       "bounds.");
-  }
+  setBounds(std::move(bounds));
 }
 
 const std::string& Var::getIdentifier() const { return identifier_; }
@@ -82,6 +58,27 @@ Eigen::Index Var::size() const { return values_.rows(); }
 const Eigen::VectorXd& Var::value() const { return values_; }
 const std::vector<std::string>& Var::name() const { return names_; }
 const std::vector<Bounds>& Var::bounds() const { return bounds_; }
+
+void Var::setBounds(std::vector<Bounds> bounds)
+{
+  if (bounds.size() != names_.size())
+    throw std::runtime_error("Variable: '" + identifier_ + "' has mismatched sizes for names and bounds");
+
+  bounds_ = std::move(bounds);
+  clampValuesToBounds();
+}
+
+void Var::clampValuesToBounds()
+{
+  Eigen::VectorXd clamped = trajopt_ifopt::getClosestValidPoint(values_, bounds_);
+
+  // Clamping returns in-bound values unchanged, so compare exactly: a difference means a value was clamped or is NaN.
+  // A tolerance would misreport infinite values (inf - inf is NaN) and hide small clamps.
+  const bool changed = (clamped != values_);
+  values_ = std::move(clamped);
+  if (changed)
+    TESSERACT_LOG_WARN("The values are not within the provided bounds. Adjusting to be within the bounds.");
+}
 
 void Var::incrementIndex(Eigen::Index value) { index_ += value; }
 void Var::setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)

@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <tesseract/common/logging.h>
 
 namespace
@@ -213,6 +214,45 @@ TEST(NodeUnit, NameParentAndVarManagement)
   EXPECT_DOUBLE_EQ(vec[2], 3.0);
 }
 
+TEST(NodeUnit, SetVarBoundsReplacesBoundsAndClampsValues)
+{
+  trajopt_ifopt::Node node("n");
+  Eigen::VectorXd pos(2);
+  pos << 0.5, -2.0;
+  auto var = node.addVar("position", { "a", "b" }, pos, { trajopt_ifopt::Bounds(-1, 1), trajopt_ifopt::Bounds(-3, 3) });
+  WarningCaptureGuard warnings;
+  node.setVarBounds("position", { trajopt_ifopt::Bounds(0.5, 0.5), trajopt_ifopt::Bounds(-1, 1) });
+  EXPECT_DOUBLE_EQ(var->bounds()[0].getLower(), 0.5);
+  EXPECT_DOUBLE_EQ(var->bounds()[0].getUpper(), 0.5);
+  EXPECT_DOUBLE_EQ(var->value()(0), 0.5);
+  EXPECT_DOUBLE_EQ(var->value()(1), -1.0);  // clamped
+  EXPECT_EQ(warnings.warningCount(), 1);
+  EXPECT_DOUBLE_EQ(node.getBounds()[1].getLower(), -1.0);  // node view agrees
+
+  // Re-pin at the current values: nothing moves, nothing is logged
+  const Eigen::VectorXd held = var->value();
+  node.setVarBounds("position", trajopt_ifopt::toBounds(held, held));
+  EXPECT_EQ(var->value(), held);
+  EXPECT_EQ(warnings.warningCount(), 1);
+}
+
+TEST(NodeUnit, SetVarBoundsRejectsSizeMismatchAndUnknownName)
+{
+  trajopt_ifopt::Node node("n");
+  Eigen::VectorXd pos(2);
+  pos << 0.5, -0.5;
+  auto var = node.addVar("position", { "a", "b" }, pos, { trajopt_ifopt::Bounds(-1, 1), trajopt_ifopt::Bounds(-1, 1) });
+
+  EXPECT_THROW(node.setVarBounds("position", { trajopt_ifopt::Bounds(0, 0) }), std::runtime_error);
+  EXPECT_THROW(node.setVarBounds("missing", { trajopt_ifopt::Bounds(0, 0), trajopt_ifopt::Bounds(0, 0) }),
+               std::out_of_range);
+  for (const auto& b : var->bounds())
+  {
+    EXPECT_DOUBLE_EQ(b.getLower(), -1.0);
+    EXPECT_DOUBLE_EQ(b.getUpper(), 1.0);
+  }
+}
+
 // -----------------------
 // NodesVariables tests
 // -----------------------
@@ -252,6 +292,32 @@ TEST(NodesVariablesUnit, AddNodesAndGetNodes)
   ASSERT_TRUE(static_cast<bool>(n1));
   EXPECT_EQ(n0->getName(), "n0");
   EXPECT_EQ(n1->getName(), "n1");
+}
+
+TEST(NodesVariablesUnit, AddVarAndSetVarBoundsThrowOnceNodeIsAssembled)
+{
+  auto node = std::make_unique<trajopt_ifopt::Node>("n0");
+  Eigen::VectorXd pos(2);
+  pos << 0.5, -0.5;
+  node->addVar("position", { "a", "b" }, pos, { trajopt_ifopt::Bounds(-1, 1), trajopt_ifopt::Bounds(-1, 1) });
+  trajopt_ifopt::Node* raw = node.get();
+
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  nodes.push_back(std::move(node));
+  trajopt_ifopt::NodesVariables vars("nodes", std::move(nodes));
+  const std::vector<trajopt_ifopt::Bounds> before = vars.getBounds();
+
+  EXPECT_THROW(raw->setVarBounds("position", trajopt_ifopt::toBounds(pos, pos)), std::runtime_error);
+  EXPECT_THROW(raw->addVar("time", 0.0), std::runtime_error);
+  EXPECT_EQ(raw->size(), 2);
+
+  const std::vector<trajopt_ifopt::Bounds> after = vars.getBounds();
+  ASSERT_EQ(after.size(), before.size());
+  for (std::size_t i = 0; i < before.size(); ++i)
+  {
+    EXPECT_DOUBLE_EQ(after[i].getLower(), before[i].getLower());
+    EXPECT_DOUBLE_EQ(after[i].getUpper(), before[i].getUpper());
+  }
 }
 
 TEST(NodesVariablesUnit, SetVariablesPropagatesToNodesAndVars)
