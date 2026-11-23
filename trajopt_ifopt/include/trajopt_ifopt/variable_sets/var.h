@@ -88,7 +88,7 @@ public:
       std::string identifier,
       std::vector<std::string> names,
       const Eigen::VectorXd& values,
-      const std::vector<Bounds>& bounds,
+      std::vector<Bounds> bounds,
       Node* parent = nullptr);
 
   Var(const Var& other) = default;
@@ -181,6 +181,19 @@ public:
 
 private:
   friend class Node;
+
+  /**
+   * @brief Replace the bounds and clamp the current values into them.
+   *
+   * @param bounds Per-element bounds (size must match @ref size()).
+   * @throws std::runtime_error if the size of @p bounds does not match the size of this variable.
+   */
+  void setBounds(std::vector<Bounds> bounds);
+
+  /**
+   * @brief Clamp the current values into the bounds, logging a warning if any value changes.
+   */
+  void clampValuesToBounds();
 
   /**
    * @brief Starting index of this segment in the full decision vector.
