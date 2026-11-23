@@ -106,7 +106,8 @@ public:
   /**
    * @brief Updates the cost hessian
    * @param hessian The QP hessian. Should be n_vars x n_vars
-   * @return true if successful
+   * @return true if successful; false also when the solver cannot take a new matrix in place, after which the caller
+   * must clear(), init() and load the whole QP again
    */
   virtual bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) = 0;
 
@@ -143,19 +144,20 @@ public:
   /**
    * @brief Updates the linear constraint matrix
    * @param linearConstraintsMatrix Input constraint matrix
-   * @return true if successful
+   * @return true if successful; false also when the solver cannot take a new matrix in place, after which the caller
+   * must clear(), init() and load the whole QP again
    */
   virtual bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) = 0;
 
   /**
-   * @brief Provides an explicit primal/dual warm start to the solver from the QP problem.
-   *
-   * This method computes initial primal and dual values based on the current NLP iterate
-   * and approximate constraint violations from the QP problem. It automatically calculates
-   * slack variable values using the constraint matrix structure.
-   *
-   * @param qp_problem        The QP problem containing variables, constraints, and violations.
-   * @return true if successful.
+   * @brief Seed the next solve from the linearization point of @p qp_problem
+   * @details The primal NLP variables start at the current iterate clamped into their bounds, and each slack at the
+   * smallest value that makes its row hold there (see qpStartPoint()). The duals start at zero. Call after the last
+   * data update of a convexification and before its first solve, and again before a re-solve that follows a failed
+   * solve. Any other re-solve after a bounds-only update continues from the solver's own iterate. A solver may ignore
+   * the seed.
+   * @param qp_problem The convexified QP problem
+   * @return true if successful
    */
   virtual bool setWarmStart(const QPProblem& qp_problem) = 0;
 
