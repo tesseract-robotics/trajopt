@@ -81,16 +81,20 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     env_active_link_ids_ = manip_active_link_ids_;
   }
 
-  contact_manager_ = env_->getContinuousContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
-  contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
+  std::unique_ptr<tesseract::collision::ContinuousContactManager> contact_manager = env_->getContinuousContactManager();
+  contact_manager->setActiveCollisionObjects(manip_->getActiveLinkIds());
+  contact_manager->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
-  margin_data_ = contact_manager_->getCollisionMarginData();
+  margin_data_ = contact_manager->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
   margin_buffer_ = collision_config.collision_margin_buffer;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMargin(margin_buffer_);
+  contact_manager->incrementCollisionMargin(margin_buffer_);
+
+  // Each evaluating thread checks on its own clone of the configured manager
+  contact_managers_ =
+      std::make_unique<tesseract::collision::PerThreadContinuousContactManager>(std::move(contact_manager));
 }
 
 void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
@@ -151,6 +155,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   // length. CONTINUOUS casts the segment once.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
+  tesseract::collision::ContinuousContactManager& contact_manager = contact_managers_->get();
+
   transforms_cache0.clear();
   transforms_cache1.clear();
 
@@ -158,7 +164,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
+    contact_manager.setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
   }
 
   // Create filter
@@ -201,9 +207,9 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
       get_state_fn_(transforms_cache0, subtraj.row(i));
       get_state_fn_(transforms_cache1, subtraj.row(i + 1));
 
-      contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
+      contact_manager.setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
 
-      contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
+      contact_manager.contactTest(contacts, collision_check_config_.contact_request);
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
@@ -216,9 +222,9 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   {
     get_state_fn_(transforms_cache0, dof_vals0);
     get_state_fn_(transforms_cache1, dof_vals1);
-    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
+    contact_manager.setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
 
-    contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
+    contact_manager.contactTest(dist_results, collision_check_config_.contact_request);
 
     dist_results.filter(filter);
   }
@@ -279,16 +285,20 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
     env_active_link_ids_ = manip_active_link_ids_;
   }
 
-  contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
-  contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
+  std::unique_ptr<tesseract::collision::DiscreteContactManager> contact_manager = env_->getDiscreteContactManager();
+  contact_manager->setActiveCollisionObjects(manip_->getActiveLinkIds());
+  contact_manager->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
-  margin_data_ = contact_manager_->getCollisionMarginData();
+  margin_data_ = contact_manager->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
   margin_buffer_ = collision_config.collision_margin_buffer;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMargin(margin_buffer_);
+  contact_manager->incrementCollisionMargin(margin_buffer_);
+
+  // Each evaluating thread checks on its own clone of the configured manager
+  contact_managers_ =
+      std::make_unique<tesseract::collision::PerThreadDiscreteContactManager>(std::move(contact_manager));
 }
 
 void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
@@ -345,13 +355,15 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
                                                          bool vars0_fixed,
                                                          bool vars1_fixed)
 {
+  tesseract::collision::DiscreteContactManager& contact_manager = contact_managers_->get();
+
   transforms_cache0.clear();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
+    contact_manager.setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
   }
 
   // Create filter
@@ -398,9 +410,9 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   {
     get_state_fn_(transforms_cache0, subtraj.row(i));
 
-    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0);
+    contact_manager.setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0);
 
-    contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
+    contact_manager.contactTest(contacts, collision_check_config_.contact_request);
 
     if (!contacts.empty())
     {
