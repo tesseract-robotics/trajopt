@@ -400,3 +400,44 @@ TEST(PIQPSolverUnit, SolveAfterRejectedSettingsSetsUpAgain)  // NOLINT
   EXPECT_FALSE(solver.reusedSetup());
   EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.0, 1.0), kTol));
 }
+
+TEST(PIQPSolverUnit, EnablingDerivativesSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+  EXPECT_EQ(solver.inequalityRows(), std::vector<Eigen::Index>{ 0 });
+  EXPECT_TRUE(solver.equalityRows().empty());
+
+  // A bounds-only change would keep the setup, but PIQP reads enable_derivatives only at setup
+  solver.settings.enable_derivatives = true;
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(1.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+
+  // x0 + x1 <= u is active at (u / 2, u / 2): raising u by one moves the solution by (0.5, 0.5)
+  const Eigen::Matrix<double, 1, 1> dh_u(1.0);
+  ASSERT_EQ(solver.solver().jvp(piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                Eigen::Ref<const Eigen::VectorXd>(dh_u)),
+            piqp::Status::PIQP_SOLVED);
+  EXPECT_TRUE(solver.solver().jvp_result().x.isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
+
+  // With the setting unchanged, a bounds-only change keeps the setup and the derivatives
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(0.5));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(0.25, 0.25), kTol));
+  ASSERT_EQ(solver.solver().jvp(piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                Eigen::Ref<const Eigen::VectorXd>(dh_u)),
+            piqp::Status::PIQP_SOLVED);
+  EXPECT_TRUE(solver.solver().jvp_result().x.isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
+}

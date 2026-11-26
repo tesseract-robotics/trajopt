@@ -144,8 +144,10 @@ bool PIQPSolver::solve()
   solver_.settings().verbose = settings.verbose || verbosity > 0;
 
   // PIQP's update leaves the data unscaled when a vector has another size than at setup, which equal row lists and an
-  // unchanged variable count rule out
-  reused_setup_ = !setup_needed_ && eq_rows == eq_rows_ && ineq_rows == ineq_rows_;
+  // unchanged variable count rule out. Equal row lists also keep update() from enabling a row that was unbounded on
+  // both sides, which PIQP 0.8 rejects without G. PIQP reads enable_derivatives only at setup.
+  reused_setup_ = !setup_needed_ && eq_rows == eq_rows_ && ineq_rows == ineq_rows_ &&
+                  settings.enable_derivatives == setup_enable_derivatives_;
   if (reused_setup_)
   {
     solver_.update(piqp::nullopt,
@@ -163,6 +165,7 @@ bool PIQPSolver::solve()
     const SparseMatrix eq_matrix = selectRows(constraint_matrix_, eq_rows);
     const SparseMatrix ineq_matrix = selectRows(constraint_matrix_, ineq_rows);
     solver_.setup(hessian_, gradient_, eq_matrix, eq_values, ineq_matrix, ineq_lower, ineq_upper, x_lower, x_upper);
+    setup_enable_derivatives_ = settings.enable_derivatives;
     eq_rows_ = std::move(eq_rows);
     ineq_rows_ = std::move(ineq_rows);
   }
