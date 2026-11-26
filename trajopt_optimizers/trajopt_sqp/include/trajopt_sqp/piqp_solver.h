@@ -26,6 +26,8 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <Eigen/SparseCholesky>
+#include <cstdint>
 #include <piqp/piqp.hpp>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -44,6 +46,13 @@ namespace trajopt_sqp
  *
  * A solve that follows a change of bounds alone keeps PIQP's setup and passes it only the bounds, provided the same
  * rows are equalities and the same rows are inequalities as at the setup. Any other change sets PIQP up again.
+ *
+ * With active_set_prediction set, a solve first assumes that the rows held at a bound by the last solution still are,
+ * and solves the equality-constrained KKT system of those rows with a single sparse LDL' factorization. The candidate
+ * is accepted only if it is a KKT point of the full QP to PIQP's tolerances: every other row within its bounds and
+ * every held row's multiplier of the right sign. Otherwise PIQP solves the QP, and its solution defines the next
+ * prediction. Between SQP iterations near convergence, and between neighbouring problems, the binding rows rarely
+ * change, so most solves then cost one factorization instead of one per interior point iteration.
  */
 class PIQPSolver : public QPSolver
 {
@@ -111,6 +120,15 @@ public:
   /** @brief Whether the last solve kept PIQP's setup and passed it only the bounds; false when PIQP did not run */
   bool reusedSetup() const { return reused_setup_; }
 
+  /** @brief Whether the last solve was the predicted active set's KKT solve, without PIQP */
+  bool usedActiveSet() const { return used_active_set_; }
+
+  /**
+   * @brief Solve by active-set prediction first, falling back to PIQP (off by default)
+   * @details Skipped while settings.enable_derivatives is set, as PIQP's derivatives describe PIQP's own last solve.
+   */
+  bool active_set_prediction{ false };
+
   /**
    * @brief Settings applied at every solve. The KKT solver must be a sparse one.
    * @details PIQP reads kkt_solver, preconditioner_iter and preconditioner_scale_cost only when it is set up, so a
@@ -139,6 +157,36 @@ private:
   bool setup_needed_{ true };
   bool setup_enable_derivatives_{ false };
   bool reused_setup_{ false };
+
+  /** @brief Where a constraint row was held by the last solution */
+  enum class RowState : std::uint8_t
+  {
+    kFree,
+    kLower,  ///< at its lower bound, or an equality
+    kUpper,
+  };
+
+  /** @brief Whether active_rows_ holds a prediction; an empty one predicts that no row binds */
+  bool has_prediction_{ false };
+  /** @brief The rows held at a bound by the last solution, in row order, with their states */
+  std::vector<Eigen::Index> active_rows_;
+  std::vector<RowState> active_states_;
+  Eigen::VectorXd active_solution_;
+  bool used_active_set_{ false };
+
+  /** @brief The factorization of the last active-set KKT system, kept to reuse its ordering */
+  Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper> kkt_ldlt_;
+  std::vector<int> kkt_outer_;
+  std::vector<int> kkt_inner_;
+
+  /** @brief Solve the KKT system of the predicted active set; true when its solution is a KKT point of the QP */
+  bool solveActiveSet();
+
+  /**
+   * @brief Predict the next active set from PIQP's solution
+   * @param lower_row, upper_row The rows that set each variable's lower and upper bound, -1 for none
+   */
+  void predictActiveSet(const std::vector<Eigen::Index>& lower_row, const std::vector<Eigen::Index>& upper_row);
 
   QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
 };
