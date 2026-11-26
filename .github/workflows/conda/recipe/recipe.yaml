@@ -48,7 +48,7 @@ requirements:
       - osqp
       - osqp-eigen
       - qpoases
-      - piqp 0.7.*
+      - piqp 0.8.*
       - if: unix
         then:
           - xorg-libx11
@@ -74,7 +74,7 @@ requirements:
       - osqp
       - osqp-eigen
       - qpoases
-      - piqp 0.7.*
+      - piqp 0.8.*
       - if: unix
         then:
           - xorg-libx11
