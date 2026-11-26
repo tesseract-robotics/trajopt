@@ -2,6 +2,11 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <OsqpEigen/Solver.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -31,6 +36,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#include <trajopt_sqp/sqp_callback.h>
+#ifdef TRAJOPT_SQP_HAS_PIQP
+#include <trajopt_sqp/piqp_solver.h>
+#endif
 
 using namespace trajopt_ifopt;
 using namespace tesseract::environment;
@@ -40,9 +49,104 @@ using namespace tesseract::scene_graph;
 using namespace tesseract::geometry;
 using namespace tesseract::common;
 
-/** @brief Benchmark trajopt ifopt simple collision solve */
-static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, const Environment::Ptr& env)
+namespace
 {
+/** @brief The QP solver a benchmark runs the SQP solver with */
+enum class QPSolverKind : std::uint8_t
+{
+  kOSQP,
+  kPIQP,
+  kPIQPActiveSet,  ///< PIQP with active-set prediction: one KKT factorization when the binding rows hold
+};
+
+/** @brief Counts QP solves per SQP solve and, for PIQP, those taken by the active-set KKT solve */
+struct QPSolverCounter
+{
+  class Callback : public trajopt_sqp::SQPCallback
+  {
+  public:
+    bool execute(const trajopt_sqp::QPProblem& /*problem*/, const trajopt_sqp::SQPResults& /*sqp_results*/) override
+    {
+      ++solves;
+#ifdef TRAJOPT_SQP_HAS_PIQP
+      if (piqp != nullptr && piqp->usedActiveSet())
+        ++active_set_solves;
+#endif
+      return true;
+    }
+
+    int solves{ 0 };
+    int active_set_solves{ 0 };
+#ifdef TRAJOPT_SQP_HAS_PIQP
+    std::shared_ptr<const trajopt_sqp::PIQPSolver> piqp;
+#endif
+  };
+
+  std::shared_ptr<Callback> callback{ std::make_shared<Callback>() };
+};
+
+/** @brief QP solve counts summed over a benchmark's SQP solves, reported as averages per SQP solve */
+struct QPSolveTotals
+{
+  double solves{ 0 };
+  double active_set_solves{ 0 };
+
+  void add(const QPSolverCounter& counter)
+  {
+    solves += counter.callback->solves;
+    active_set_solves += counter.callback->active_set_solves;
+  }
+
+  void report(benchmark::State& state) const
+  {
+    state.counters["qp_solves"] = benchmark::Counter(solves, benchmark::Counter::kAvgIterations);
+    state.counters["active_set_solves"] = benchmark::Counter(active_set_solves, benchmark::Counter::kAvgIterations);
+  }
+};
+
+std::shared_ptr<trajopt_sqp::QPSolver> makeQPSolver(QPSolverKind kind, QPSolverCounter& counter)
+{
+#ifdef TRAJOPT_SQP_HAS_PIQP
+  if (kind != QPSolverKind::kOSQP)
+  {
+    auto qp_solver = std::make_shared<trajopt_sqp::PIQPSolver>();
+    qp_solver->active_set_prediction = (kind == QPSolverKind::kPIQPActiveSet);
+    counter.callback->piqp = qp_solver;
+    return qp_solver;
+  }
+#else
+  (void)kind;
+  (void)counter;
+#endif
+  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  qp_solver->solver_->settings()->setVerbosity(false);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(false);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+  return qp_solver;
+}
+
+/** @brief The QP solvers to benchmark, with the suffix of their benchmark names */
+std::vector<std::pair<QPSolverKind, std::string>> qpSolverKinds()
+{
+  std::vector<std::pair<QPSolverKind, std::string>> kinds{ { QPSolverKind::kOSQP, "OSQP" } };
+#ifdef TRAJOPT_SQP_HAS_PIQP
+  kinds.emplace_back(QPSolverKind::kPIQP, "PIQP");
+  kinds.emplace_back(QPSolverKind::kPIQPActiveSet, "PIQP_ACTIVE_SET");
+#endif
+  return kinds;
+}
+}  // namespace
+
+/** @brief Benchmark trajopt ifopt simple collision solve */
+static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
+                                                    const Environment::Ptr& env,
+                                                    QPSolverKind kind)
+{
+  QPSolveTotals totals;
   for (auto _ : state)  // NOLINT
   {
     JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
@@ -91,24 +195,21 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
     qp_problem->setup();
 
     // 5) choose solver and options
-    auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
-    trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-    qp_solver->solver_->settings()->setVerbosity(false);
-    qp_solver->solver_->settings()->setWarmStart(true);
-    qp_solver->solver_->settings()->setPolish(true);
-    qp_solver->solver_->settings()->setAdaptiveRho(false);
-    qp_solver->solver_->settings()->setMaxIteration(8192);
-    qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
-    qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+    QPSolverCounter counter;
+    trajopt_sqp::TrustRegionSQPSolver solver(makeQPSolver(kind, counter));
+    solver.registerCallback(counter.callback);
 
     // 6) solve
     solver.verbose = false;
     solver.solve(qp_problem);
+    totals.add(counter);
   }
+  totals.report(state);
 }
 
-static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Environment::Ptr& env)
+static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Environment::Ptr& env, QPSolverKind kind)
 {
+  QPSolveTotals totals;
   for (auto _ : state)  // NOLINT
   {
     JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
@@ -187,20 +288,16 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
     qp_problem->setup();
 
     // Setup solver
-    auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
-    trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-    qp_solver->solver_->settings()->setVerbosity(false);
-    qp_solver->solver_->settings()->setWarmStart(true);
-    qp_solver->solver_->settings()->setPolish(true);
-    qp_solver->solver_->settings()->setAdaptiveRho(false);
-    qp_solver->solver_->settings()->setMaxIteration(8192);
-    qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
-    qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+    QPSolverCounter counter;
+    trajopt_sqp::TrustRegionSQPSolver solver(makeQPSolver(kind, counter));
+    solver.registerCallback(counter.callback);
 
     // 6) solve
     solver.verbose = false;
     solver.solve(qp_problem);
+    totals.add(counter);
   }
+  totals.report(state);
 }
 
 int main(int argc, char** argv)
@@ -222,11 +319,15 @@ int main(int argc, char** argv)
     ipos["spherebot_y_joint"] = 0.75;
     env->setState(ipos);
 
-    std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE;
-    std::string name = "BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
-        ->UseRealTime()
-        ->Unit(benchmark::TimeUnit::kMicrosecond);
+    for (const auto& [kind, suffix] : qpSolverKinds())
+    {
+      const std::string name = "BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE/" + suffix;
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [env, kind = kind](benchmark::State& state) { BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(state, env, kind); })
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMicrosecond);
+    }
   }
 
   //////////////////////////////////////
@@ -251,12 +352,16 @@ int main(int argc, char** argv)
     ipos["r_wrist_roll_joint"] = 3.074;
     env->setState(ipos);
 
-    std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_PLANNING_SOLVE;
-    std::string name = "BM_TRAJOPT_IFOPT_PLANNING_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
-        ->UseRealTime()
-        ->Unit(benchmark::TimeUnit::kMillisecond)
-        ->MinTime(6);
+    for (const auto& [kind, suffix] : qpSolverKinds())
+    {
+      const std::string name = "BM_TRAJOPT_IFOPT_PLANNING_SOLVE/" + suffix;
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          [env, kind = kind](benchmark::State& state) { BM_TRAJOPT_IFOPT_PLANNING_SOLVE(state, env, kind); })
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMillisecond)
+          ->MinTime(6);
+    }
   }
 
   benchmark::Initialize(&argc, argv);

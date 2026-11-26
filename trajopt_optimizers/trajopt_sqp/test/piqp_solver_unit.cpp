@@ -400,3 +400,274 @@ TEST(PIQPSolverUnit, SolveAfterRejectedSettingsSetsUpAgain)  // NOLINT
   EXPECT_FALSE(solver.reusedSetup());
   EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(1.0, 1.0), kTol));
 }
+
+TEST(PIQPSolverUnit, EnablingDerivativesSetsUpAgain)  // NOLINT
+{
+  PIQPSolver solver;
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+  EXPECT_EQ(solver.inequalityRows(), std::vector<Eigen::Index>{ 0 });
+  EXPECT_TRUE(solver.equalityRows().empty());
+
+  // A bounds-only change would keep the setup, but PIQP reads enable_derivatives only at setup
+  solver.settings.enable_derivatives = true;
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(1.0));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.reusedSetup());
+
+  // x0 + x1 <= u is active at (u / 2, u / 2): raising u by one moves the solution by (0.5, 0.5)
+  const Eigen::Matrix<double, 1, 1> dh_u(1.0);
+  ASSERT_EQ(solver.solver().jvp(piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                Eigen::Ref<const Eigen::VectorXd>(dh_u)),
+            piqp::Status::PIQP_SOLVED);
+  EXPECT_TRUE(solver.solver().jvp_result().x.isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
+
+  // With the setting unchanged, a bounds-only change keeps the setup and the derivatives
+  solver.updateBounds(Eigen::Matrix<double, 1, 1>(-kInf), Eigen::Matrix<double, 1, 1>(0.5));
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.reusedSetup());
+  EXPECT_TRUE(solver.getSolution().isApprox(Eigen::Vector2d(0.25, 0.25), kTol));
+  ASSERT_EQ(solver.solver().jvp(piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                piqp::nullopt,
+                                Eigen::Ref<const Eigen::VectorXd>(dh_u)),
+            piqp::Status::PIQP_SOLVED);
+  EXPECT_TRUE(solver.solver().jvp_result().x.isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
+}
+
+namespace
+{
+/**
+ * @brief Rows of every kind for the active-set tests, over x in R^4
+ * @details Row 0 is an equality, rows 1 and 2 inequalities, rows 3 to 5 variable bounds, row 4 with a negative
+ * coefficient. With kGradientA the solution holds rows 0, 2 (upper) and 3 (upper); with kGradientB rows 0, 3 (upper)
+ * and 4 (lower, so x3 at its upper bound).
+ */
+trajopt_ifopt::Jacobian activeSetMatrix()
+{
+  return makeMatrix(6,
+                    4,
+                    { { 0, 0, 1.0 },
+                      { 0, 1, 1.0 },
+                      { 0, 2, 1.0 },
+                      { 0, 3, 1.0 },
+                      { 1, 0, 1.0 },
+                      { 1, 1, -1.0 },
+                      { 2, 2, 1.0 },
+                      { 2, 3, 2.0 },
+                      { 3, 0, 1.0 },
+                      { 4, 3, -1.0 },
+                      { 5, 1, 1.0 } });
+}
+const Eigen::Vector4d kGradientA(-2.0, 1.0, -1.0, -3.0);
+const Eigen::Vector4d kGradientB(-3.0, -2.0, 0.0, -4.0);
+
+Eigen::VectorXd activeSetLower()
+{
+  Eigen::VectorXd l(6);
+  l << 1.0, -kInf, -1.0, -0.2, -0.4, -2.0;
+  return l;
+}
+
+Eigen::VectorXd activeSetUpper()
+{
+  Eigen::VectorXd u(6);
+  u << 1.0, 0.1, 0.5, 0.3, 0.05, 2.0;
+  return u;
+}
+
+/** @brief Set up a solver with the active-set rows and the given gradient, without solving */
+void setUpActiveSetQP(PIQPSolver& solver, const Eigen::VectorXd& g)
+{
+  trajopt_ifopt::Jacobian hessian(4, 4);
+  hessian.setIdentity();
+  solver.clear();
+  solver.init(4, 6);
+  solver.updateHessianMatrix(hessian);
+  solver.updateGradient(g);
+  solver.updateLinearConstraintsMatrix(activeSetMatrix());
+  solver.updateBounds(activeSetLower(), activeSetUpper());
+}
+
+/** @brief The solution of PIQP alone at tight tolerances */
+Eigen::VectorXd referenceSolution(const Eigen::VectorXd& g,
+                                  const trajopt_ifopt::Jacobian& A,
+                                  const Eigen::VectorXd& l,
+                                  const Eigen::VectorXd& u)
+{
+  PIQPSolver reference;
+  reference.settings.eps_abs = 1e-10;
+  reference.settings.eps_rel = 1e-12;
+  Eigen::VectorXd x;
+  EXPECT_TRUE(solveQP(reference, g, A, l, u, x));
+  return x;
+}
+
+constexpr double kActiveSetTol = 1e-6;
+}  // namespace
+
+TEST(PIQPSolverUnit, ActiveSetPredictionIsOffByDefault)  // NOLINT
+{
+  PIQPSolver solver;
+  setUpActiveSetQP(solver, kGradientA);
+  ASSERT_TRUE(solver.solve());
+  solver.updateGradient(kGradientA * 1.01);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.usedActiveSet());
+}
+
+TEST(PIQPSolverUnit, ActiveSetReproducesPIQP)  // NOLINT
+{
+  for (const Eigen::Vector4d& g : { kGradientA, kGradientB })
+  {
+    PIQPSolver solver;
+    solver.active_set_prediction = true;
+    setUpActiveSetQP(solver, g);
+    ASSERT_TRUE(solver.solve());
+    EXPECT_FALSE(solver.usedActiveSet());  // nothing to predict from yet
+
+    // A nearby QP with the same binding rows: one KKT solve, the same solution as PIQP
+    const Eigen::Vector4d g2 = g + Eigen::Vector4d(0.01, -0.02, 0.015, 0.005);
+    solver.updateGradient(g2);
+    ASSERT_TRUE(solver.solve());
+    EXPECT_TRUE(solver.usedActiveSet());
+    EXPECT_TRUE(solver.getSolution().isApprox(
+        referenceSolution(g2, activeSetMatrix(), activeSetLower(), activeSetUpper()), kActiveSetTol));
+    EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kInitialized);
+  }
+}
+
+TEST(PIQPSolverUnit, ActiveSetFollowsMovedBounds)  // NOLINT
+{
+  // A trust region shrinking or a held bound moving changes only the bounds
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  setUpActiveSetQP(solver, kGradientB);
+  ASSERT_TRUE(solver.solve());
+
+  Eigen::VectorXd l = activeSetLower();
+  Eigen::VectorXd u = activeSetUpper();
+  u[3] = 0.25;   // the held bound on x0
+  l[4] = -0.35;  // the held bound on x3, through a negative coefficient
+  solver.updateBounds(l, u);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.usedActiveSet());
+  EXPECT_TRUE(solver.getSolution().isApprox(referenceSolution(kGradientB, activeSetMatrix(), l, u), kActiveSetTol));
+}
+
+TEST(PIQPSolverUnit, ActiveSetChangeFallsBackToPIQP)  // NOLINT
+{
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  setUpActiveSetQP(solver, kGradientA);
+  ASSERT_TRUE(solver.solve());
+
+  // kGradientB releases row 2 and holds row 4: the prediction fails its check and PIQP solves
+  solver.updateGradient(kGradientB);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.usedActiveSet());
+  EXPECT_TRUE(solver.getSolution().isApprox(
+      referenceSolution(kGradientB, activeSetMatrix(), activeSetLower(), activeSetUpper()), kActiveSetTol));
+
+  // PIQP's solution predicts the new binding rows
+  solver.updateGradient(kGradientB * 1.01);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.usedActiveSet());
+  EXPECT_TRUE(solver.getSolution().isApprox(
+      referenceSolution(kGradientB * 1.01, activeSetMatrix(), activeSetLower(), activeSetUpper()), kActiveSetTol));
+}
+
+TEST(PIQPSolverUnit, ActiveSetReleasedRowFallsBackToPIQP)  // NOLINT
+{
+  // Raising the held upper bound of row 2 far enough releases it: its multiplier turns negative
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  setUpActiveSetQP(solver, kGradientA);
+  ASSERT_TRUE(solver.solve());
+
+  Eigen::VectorXd u = activeSetUpper();
+  u[2] = 5.0;
+  solver.updateBounds(activeSetLower(), u);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.usedActiveSet());
+  EXPECT_TRUE(solver.getSolution().isApprox(referenceSolution(kGradientA, activeSetMatrix(), activeSetLower(), u),
+                                            kActiveSetTol));
+}
+
+TEST(PIQPSolverUnit, ActiveSetWithRedundantRows)  // NOLINT
+{
+  // Two copies of the binding inequality: the KKT system is singular without its regularization, and its
+  // multipliers are not unique, but the solution is
+  const trajopt_ifopt::Jacobian A = makeMatrix(2, 2, { { 0, 0, 1.0 }, { 0, 1, 1.0 }, { 1, 0, 1.0 }, { 1, 1, 1.0 } });
+  const Eigen::Vector2d l(-kInf, -kInf);
+  const Eigen::Vector2d u(1.0, 1.0);
+  const Eigen::Vector2d g(-4.0, -4.0);
+
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  trajopt_ifopt::Jacobian hessian(2, 2);
+  hessian.setIdentity();
+  solver.init(2, 2);
+  solver.updateHessianMatrix(hessian);
+  solver.updateGradient(g);
+  solver.updateLinearConstraintsMatrix(A);
+  solver.updateBounds(l, u);
+  ASSERT_TRUE(solver.solve());
+
+  const Eigen::Vector2d g2(-4.1, -3.9);
+  solver.updateGradient(g2);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.getSolution().isApprox(referenceSolution(g2, A, l, u), kActiveSetTol));
+}
+
+TEST(PIQPSolverUnit, ActiveSetWithNoBindingRows)  // NOLINT
+{
+  // The unconstrained minimum is feasible: the prediction holds no row, and the KKT system is P alone
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  const Eigen::Vector4d g(0.1, -0.1, 0.05, 0.0);
+  Eigen::VectorXd l = activeSetLower();
+  Eigen::VectorXd u = activeSetUpper();
+  l[0] = -kInf;  // drop the equality so that nothing binds
+  u[0] = kInf;
+  setUpActiveSetQP(solver, g);
+  solver.updateBounds(l, u);
+  ASSERT_TRUE(solver.solve());
+
+  solver.updateGradient(g * 2.0);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_TRUE(solver.usedActiveSet());
+  EXPECT_TRUE(solver.getSolution().isApprox(-g, kActiveSetTol));  // minimizer of x'x + 2 g'x
+}
+
+TEST(PIQPSolverUnit, ActiveSetSkippedWithDerivatives)  // NOLINT
+{
+  // PIQP's derivatives describe its own last solve, so the KKT solve must not replace it
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  solver.settings.enable_derivatives = true;
+  setUpActiveSetQP(solver, kGradientA);
+  ASSERT_TRUE(solver.solve());
+  solver.updateGradient(kGradientA * 1.01);
+  ASSERT_TRUE(solver.solve());
+  EXPECT_FALSE(solver.usedActiveSet());
+}
+
+TEST(PIQPSolverUnit, ActiveSetClearedByInit)  // NOLINT
+{
+  PIQPSolver solver;
+  solver.active_set_prediction = true;
+  setUpActiveSetQP(solver, kGradientA);
+  ASSERT_TRUE(solver.solve());
+
+  // A problem of another size: no prediction carries over
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+  EXPECT_FALSE(solver.usedActiveSet());
+}
