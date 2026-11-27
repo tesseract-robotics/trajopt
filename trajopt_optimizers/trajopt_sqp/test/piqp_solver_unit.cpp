@@ -441,3 +441,23 @@ TEST(PIQPSolverUnit, EnablingDerivativesSetsUpAgain)  // NOLINT
             piqp::Status::PIQP_SOLVED);
   EXPECT_TRUE(solver.solver().jvp_result().x.isApprox(Eigen::Vector2d(0.5, 0.5), kTol));
 }
+
+TEST(PIQPSolverUnit, SizesAreThoseOfInit)  // NOLINT
+{
+  PIQPSolver solver;
+  EXPECT_EQ(solver.numVars(), 0);
+  EXPECT_EQ(solver.numConstraints(), 0);
+
+  ASSERT_TRUE(solver.init(3, 5));
+  EXPECT_EQ(solver.numVars(), 3);
+  EXPECT_EQ(solver.numConstraints(), 5);
+
+  // A solve leaves the sizes as its own init() set them
+  ASSERT_TRUE(solveSumBoundedQP(solver));
+  EXPECT_EQ(solver.numVars(), 2);
+  EXPECT_EQ(solver.numConstraints(), 1);
+
+  ASSERT_TRUE(solver.clear());
+  EXPECT_EQ(solver.numVars(), 0);
+  EXPECT_EQ(solver.numConstraints(), 0);
+}

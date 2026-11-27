@@ -112,6 +112,16 @@ public:
   bool reusedSetup() const { return reused_setup_; }
 
   /**
+   * @brief The number of variables init() was last called with; zero before init() and after clear()
+   * @details The update methods and solve() take the size of their data on trust (updateLinearConstraintsMatrix()
+   * asserts it), so a caller that cannot rule out a mismatch checks against this and numConstraints() first.
+   */
+  Eigen::Index numVars() const { return num_vars_; }
+
+  /** @brief The number of constraint rows init() was last called with; zero before init() and after clear() */
+  Eigen::Index numConstraints() const { return num_cnts_; }
+
+  /**
    * @brief Settings applied at every solve. The KKT solver must be a sparse one.
    * @details PIQP reads kkt_solver, preconditioner_iter and preconditioner_scale_cost only when it is set up, so a
    * change to these takes effect at the next solve that does not keep the setup. A change to enable_derivatives, which
