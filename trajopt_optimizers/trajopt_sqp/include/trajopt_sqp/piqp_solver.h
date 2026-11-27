@@ -93,13 +93,39 @@ public:
    */
   const piqp::SparseSolver<double>& solver() const { return solver_; }
 
+  /**
+   * @brief The underlying solver, for PIQP's derivatives: jvp() and vjp() after a successful solve with
+   * settings.enable_derivatives set
+   * @details Their data perturbations and gradients are in PIQP's form of the QP: the equality rows are
+   * equalityRows(), the inequality rows inequalityRows(), and the rows that store a single coefficient are variable
+   * bounds divided by that coefficient.
+   */
+  piqp::SparseSolver<double>& solver() { return solver_; }
+
+  /** @brief The constraint rows passed to PIQP as equalities at its last setup, in order */
+  const std::vector<Eigen::Index>& equalityRows() const { return eq_rows_; }
+
+  /** @brief The constraint rows passed to PIQP as two-sided inequalities at its last setup, in order */
+  const std::vector<Eigen::Index>& inequalityRows() const { return ineq_rows_; }
+
   /** @brief Whether the last solve kept PIQP's setup and passed it only the bounds; false when PIQP did not run */
   bool reusedSetup() const { return reused_setup_; }
 
   /**
+   * @brief The number of variables init() was last called with; zero before init() and after clear()
+   * @details The update methods and solve() take the size of their data on trust (updateLinearConstraintsMatrix()
+   * asserts it), so a caller that cannot rule out a mismatch checks against this and numConstraints() first.
+   */
+  Eigen::Index numVars() const { return num_vars_; }
+
+  /** @brief The number of constraint rows init() was last called with; zero before init() and after clear() */
+  Eigen::Index numConstraints() const { return num_cnts_; }
+
+  /**
    * @brief Settings applied at every solve. The KKT solver must be a sparse one.
    * @details PIQP reads kkt_solver, preconditioner_iter and preconditioner_scale_cost only when it is set up, so a
-   * change to these takes effect at the next solve that does not keep the setup.
+   * change to these takes effect at the next solve that does not keep the setup. A change to enable_derivatives, which
+   * PIQP also reads only at setup, sets PIQP up again at the next solve.
    */
   piqp::Settings<double> settings;
 
@@ -121,6 +147,7 @@ private:
   std::vector<Eigen::Index> ineq_rows_;
   /** @brief Whether the next solve must set PIQP up: anything but the bounds changed, or PIQP did not run */
   bool setup_needed_{ true };
+  bool setup_enable_derivatives_{ false };
   bool reused_setup_{ false };
 
   QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
